@@ -2,26 +2,35 @@
 const Timeline = (() => {
   let kind = 'all', part = 'all', who = null;
 
-  /* 上面是一张稿纸：一百二十回排成六行，一行二十格，前八十回和后四十回正好在第四、五行之间分开。
-     有大事的那一回画一个圆圈，颜色按神话、家事、情缘、诗社、风波、生死；跨几回的，用一根细线串到最后一回。
-     悬停时稿纸下方题出回目与事件，点一下跳到下面那件事。 */
+  /* 上面一页照旧书的圈点来排：一回是纸上一个小墨点，像一行句读；有大事的那一回画一个圈，
+     要紧的画双圈，跨几回用一根细线串到最后一回，圈上方竖写两三个字的眉批。
+     桌面一行四十回，手机一行二十回，每二十回之间留一段空白。后四十回换一张略深的纸，开头盖一方“续”字印。 */
+  const narrow = matchMedia('(max-width: 640px)');
   function axis() {
-    const box = $('#tlAxis'), at = {};
+    const box = $('#tlAxis'), at = {}, per = narrow.matches ? 20 : 40;
     EVENTS.forEach(e => { for (let c = e.c[0]; c <= e.c[e.c.length - 1]; c++) at[c] = e; });
     const cell = n => {
-      const e = at[n];
-      if (!e) return `<span class="tlg-c"><i>${n}</i></span>`;
+      const e = at[n], num = n % 10 ? '' : `<i class="tlb-n">${cnNum(n)}</i>`;
+      if (!e) return `<span class="tlb-c">${num}</span>`;
       const a = e.c[0], b = e.c[e.c.length - 1], pos = a === b ? 'one' : n === a ? 'head' : n === b ? 'tail' : 'mid';
-      return `<button class="tlg-c tl-dot ${pos}" type="button" data-i="${e.i}" style="--c:${EVENT_KINDS[e.k]}"`
-        + `${n === a ? ` aria-label="${chName(e.c)}，${esc(e.t)}"` : ' tabindex="-1" aria-hidden="true"'}><i>${n}</i></button>`;
+      const lab = n === a ? `<span class="tlb-lab">${e.s}</span>` : '';
+      return `<button class="tlb-c tl-dot ${pos}${e.m ? ' major' : ''}" type="button" data-i="${e.i}" style="--c:${EVENT_KINDS[e.k]}"`
+        + `${n === a ? ` aria-label="${chName(e.c)}，${esc(e.t)}"` : ' tabindex="-1" aria-hidden="true"'}>${lab}${num}</button>`;
     };
-    const part = (from, to, side, late) => `<div class="tlg-part${late ? ' late' : ''}"><div class="tlg-side">${side}</div>`
-      + `<div class="tlg-cells">${Array.from({ length: to - from + 1 }, (_, k) => cell(from + k)).join('')}</div></div>`;
-    box.innerHTML = '<div class="tlg-sheet">'
-      + part(1, 80, '<b>前八十回</b><small>曹雪芹原著</small>')
-      + part(81, 120, '<b>后四十回</b><span class="tlg-seal">续书</span>', true)
-      + '</div><p class="tlg-read" aria-hidden="true"></p>';
-    const read = $('.tlg-read', box), READ0 = '一格一回，圆圈是一件大事，跨几回的串在一起；点圆圈跳到下面那件事';
+    const rows = (from, to) => {
+      let h = '';
+      for (let r = from; r <= to; r += per) {
+        h += '<div class="tlb-row">';
+        for (let s = r; s < r + per; s += 20) h += `<div class="tlb-seg">${Array.from({ length: 20 }, (_, k) => cell(s + k)).join('')}</div>`;
+        h += '</div>';
+      }
+      return h;
+    };
+    box.innerHTML = '<div class="tlb-sheet">'
+      + `<div class="tlb-part"><div class="tlb-side"><b>前八十回</b><small>曹雪芹原著</small></div><div class="tlb-rows">${rows(1, 80)}</div></div>`
+      + `<div class="tlb-part late"><div class="tlb-side"><b>后四十回</b></div><div class="tlb-rows"><span class="tlb-seal" title="后四十回通常认为出自续书">续</span>${rows(81, 120)}</div></div>`
+      + '</div><p class="tlb-read" aria-hidden="true"></p>';
+    const read = $('.tlb-read', box), READ0 = '一点一回；圈是大事，双圈更要紧，跨几回的用细线串起。点圈跳到下面那件事';
     const say = e => {
       read.textContent = e ? `${chName(e.c)}　${e.t}` : READ0;
       read.classList.toggle('on', !!e);
@@ -29,12 +38,20 @@ const Timeline = (() => {
       if (e) $$(`.tl-dot[data-i="${e.i}"]`, box).forEach(c => c.classList.add('hot'));
     };
     say(null);
+    if (box.dataset.bound) return;
+    box.dataset.bound = 1;
     const hit = ev => ev.target.closest && ev.target.closest('.tl-dot');
-    box.addEventListener('pointerover', ev => { const c = hit(ev); if (c) say(EVENTS[+c.dataset.i]); });
-    box.addEventListener('pointerout', ev => { const c = hit(ev); if (c && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest(`.tl-dot[data-i="${c.dataset.i}"]`))) say(null); });
-    box.addEventListener('focusin', ev => { const c = hit(ev); if (c) say(EVENTS[+c.dataset.i]); });
-    box.addEventListener('focusout', () => say(null));
+    const same = (c, el) => el && el.closest && el.closest(`.tl-dot[data-i="${c.dataset.i}"]`);
+    const sayOf = c => { const p = $('.tlb-read', box); p.textContent = `${chName(EVENTS[+c.dataset.i].c)}　${EVENTS[+c.dataset.i].t}`; p.classList.add('on');
+      $$('.tl-dot.hot', box).forEach(x => x.classList.remove('hot')); $$(`.tl-dot[data-i="${c.dataset.i}"]`, box).forEach(x => x.classList.add('hot')); };
+    const clear = () => { const p = $('.tlb-read', box); p.textContent = READ0; p.classList.remove('on'); $$('.tl-dot.hot', box).forEach(x => x.classList.remove('hot')); };
+    box.addEventListener('pointerover', ev => { const c = hit(ev); if (c) sayOf(c); });
+    box.addEventListener('pointerout', ev => { const c = hit(ev); if (c && !same(c, ev.relatedTarget)) clear(); });
+    box.addEventListener('focusin', ev => { const c = hit(ev); if (c) sayOf(c); });
+    box.addEventListener('focusout', clear);
     box.addEventListener('click', ev => { const c = hit(ev); if (c) focus(+c.dataset.i); });
+    /* 跨过手机与桌面的宽度时，一行的回数要变，重排一遍再套上筛选 */
+    narrow.addEventListener('change', () => { axis(); apply(); });
   }
 
   function list() {
