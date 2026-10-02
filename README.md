@@ -34,23 +34,14 @@ node build.mjs          # 合成 index.html，直接用浏览器打开就能看
 
 ## 上线
 
-推到 `main` 分支后，GitHub Actions 会自动构建并部署到 Cloudflare Pages 项目 `hongloumeng`，一两分钟后线上更新。流程在 `.github/workflows/deploy.yml`，也可以在 Actions 页面手动触发。
-
-自动部署要在仓库 Settings → Secrets and variables → Actions 里配两项。
-
-| 名称 | 值 |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | 有 Cloudflare Pages 编辑权限的 API token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账号 ID |
-
-没配的时候 Actions 只构建和检查，不部署，不会报错。
-
-想在本地出一份和线上一样的构建，需要 Python 3 和 `pip install fonttools brotli`。
+在本机构建、本机部署，GitHub 只放源码。线上是 Cloudflare Pages 项目 `hongloumeng`，部署脚本在工作区的 `Deployments/hongloumeng/scripts/deploy.ps1`，它会调用下面的构建脚本，再用 wrangler 上传 `dist/` 并检查线上页面。
 
 ```sh
-python tools/build-site.py          # 输出到 dist/
+python tools/build-site.py          # 输出到 dist/，需要 Python 3 和 pip install fonttools brotli
 python tools/check-html.py dist/index.html
 ```
+
+部署脚本上传的是工作区当前内容，没提交的改动也会上线，所以习惯上先提交再部署。
 
 ### 字体
 
