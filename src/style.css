@@ -32,7 +32,7 @@
   --lock1: #f8ebc6; --lock2: #e5c97e; --seal: #b5302a; --seal-ink: #fbeee0; --seal-on: #fbeee0; --rule: rgba(168, 39, 29, .28);
   --sheet2: #f2ead9;
 
-  --k-my: #4f5b72; --k-fam: #a0763a; --k-lv: #a9475b; --k-poem: #3f6f8e; --k-storm: #b13a2a; --k-death: #3d3731;
+  --k-my: #4a5466; --k-fam: #9a7334; --k-lv: #96414d; --k-poem: #3a5d76; --k-storm: #a93a2b; --k-death: #3b3530;
   --g-rong: #b8342a; --g-ning: #b38429; --g-shi: #23807d; --g-wang: #9c4a78; --g-xue: #cb6a26;
   --g-lin: #3a65a8; --g-oth: #548b4a; --g-out: #7b7364; --g-myth: #9061c6;
   --e-b: #ad2a20; --e-m: #bf8c1c; --e-in: #1f7c82; --e-sv: #6c7376;
@@ -65,7 +65,7 @@
     --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
     --lac1: #6a1613; --lac2: #2d0909;
     --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
-    --k-my: #9eabc4; --k-fam: #d4ab68; --k-lv: #d98192; --k-poem: #84adc8; --k-storm: #e2735f; --k-death: #cfc5b8;
+    --k-my: #a2abbd; --k-fam: #cfa866; --k-lv: #c98790; --k-poem: #8aa8bd; --k-storm: #db7a64; --k-death: #cfc5b8;
     --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
     --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
     --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -94,7 +94,7 @@
   --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
   --lac1: #6a1613; --lac2: #2d0909;
   --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
-  --k-my: #9eabc4; --k-fam: #d4ab68; --k-lv: #d98192; --k-poem: #84adc8; --k-storm: #e2735f; --k-death: #cfc5b8;
+  --k-my: #a2abbd; --k-fam: #cfa866; --k-lv: #c98790; --k-poem: #8aa8bd; --k-storm: #db7a64; --k-death: #cfc5b8;
   --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
   --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
   --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -219,7 +219,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .sec-head::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 72px; border-bottom: 2px solid var(--ink); }
 .sec-head h2 { margin: 0; display: flex; align-items: baseline; gap: 16px; font-family: var(--f-serif); font-weight: 900; font-size: clamp(27px, 3.4vw, 38px); letter-spacing: .1em; line-height: 1.2; }
 .sec-head h2::before { content: attr(data-no); font-family: var(--f-display); font-weight: 400; font-size: .92em; letter-spacing: 0; color: var(--red); }
-.sec-head p { justify-self: end; margin: 0; max-width: 58ch; color: var(--ink2); font-size: 14px; line-height: 1.85; text-wrap: pretty; }
+.sec-head p { justify-self: end; margin: 0; max-width: 36em; padding-left: 14px; border-left: 1px solid var(--rule); color: var(--ink3); font-size: 13.5px; line-height: 1.75; letter-spacing: .02em; text-wrap: pretty; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-sans); font-size: 13px; line-height: 1.2;
@@ -895,7 +895,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tlb-seg { flex: 1; display: flex; min-width: 0; }
 .tlb-c { position: relative; flex: 1; min-width: 0; height: calc(var(--mk) + 26px); margin: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; }
 /* 每一回的墨点 */
-.tlb-c::after { content: ""; position: absolute; left: 50%; top: var(--mk); width: 2.4px; height: 2.4px; margin: -1.2px 0 0 -1.2px; border-radius: 50%; background: var(--ink3); opacity: .45; }
+.tlb-c::after { content: ""; position: absolute; left: 50%; top: var(--mk); width: 1.7px; height: 1.7px; margin: -.85px 0 0 -.85px; border-radius: 50%; background: var(--ink3); opacity: .38; }
 .tlb-n { position: absolute; left: 50%; top: calc(var(--mk) + 9px); transform: translateX(-50%); font-style: normal; font-family: var(--f-serif); font-size: 10px; letter-spacing: .05em; white-space: nowrap; color: var(--ink3); opacity: .8; }
 .tl-dot { cursor: pointer; outline: none; }
 /* 串起几回的细线 */
@@ -907,16 +907,20 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* 圈：一笔圈住；要紧的再套一圈 */
 .tl-dot.head::after, .tl-dot.one::after { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; box-sizing: border-box; border: 1.4px solid var(--c); background: var(--ground); }
 .tl-dot.major.head::after, .tl-dot.major.one::after { width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; box-shadow: 0 0 0 2.2px var(--ground), 0 0 0 3.5px var(--c); }
-.tlb-lab { position: absolute; left: 50%; bottom: calc(100% - var(--mk) + 12px); transform: translateX(-50%); writing-mode: vertical-rl; font-family: var(--f-display); font-size: 13.5px; line-height: 1; letter-spacing: .06em; white-space: nowrap; color: var(--c); transition: color .15s, opacity .2s; }
-.tl-dot.major .tlb-lab { font-size: 15px; }
-.tl-dot.hot .tlb-lab, .tl-dot:focus-visible .tlb-lab { color: var(--ink); }
+.tlb-lab { position: absolute; left: 50%; bottom: calc(100% - var(--mk) + 12px); transform: translateX(-50%); writing-mode: vertical-rl; font-family: var(--f-display); font-size: 12.5px; line-height: 1.02; letter-spacing: .04em; white-space: nowrap; color: var(--c); opacity: .78; transition: color .15s, opacity .2s; }
+.tl-dot.major .tlb-lab { font-size: 16.5px; letter-spacing: .08em; opacity: 1; color: color-mix(in srgb, var(--c) 82%, var(--ink)); }
+.tl-dot:not(.major).head::after, .tl-dot:not(.major).one::after { opacity: .85; }
+.tl-dot.hot .tlb-lab, .tl-dot:focus-visible .tlb-lab { color: var(--ink); opacity: 1; }
+.tl-dot.hot::after { opacity: 1; }
 .tl-dot.hot::after { transform: scale(1.25); }
 .tl-dot.hot.head::after, .tl-dot.hot.one::after { background: color-mix(in srgb, var(--c) 22%, var(--ground)); }
 .tl-dot.dim::before, .tl-dot.dim::after, .tl-dot.dim .tlb-lab { opacity: .16; }
 .tlb-part.late .tl-dot { filter: saturate(.6); }
-.tlb-part.late .tlb-c:not(.tl-dot)::after { opacity: .35; }
+.tlb-part.late .tlb-c:not(.tl-dot)::after { opacity: .3; }
 /* 续书印：朱文小方印，盖在后四十回开头的空白处 */
 .tlb-seal { position: absolute; left: 24px; top: 12px; width: 21px; height: 21px; display: grid; place-items: center; border: 1.5px solid var(--seal); border-radius: 2px; font-family: var(--f-display); font-size: 14px; line-height: 1; color: var(--seal); opacity: .85; transform: rotate(-3deg); }
+.tlb-tiji { position: absolute; left: 70px; top: 26px; margin: 0; font-family: var(--f-display); font-size: 14px; line-height: 2; letter-spacing: .16em; color: var(--ink3); opacity: .55; pointer-events: none; }
+.tlb-tiji small { display: block; font-family: var(--f-serif); font-size: 10.5px; letter-spacing: .2em; line-height: 1.6; }
 .tlb-read { min-height: 1.7em; margin: 14px 0 0; text-align: center; font-family: var(--f-serif); font-size: 13.5px; letter-spacing: .08em; color: var(--ink3); }
 .tlb-read.on { color: var(--ink); font-weight: 600; font-size: 15px; }
 .tl-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
@@ -1070,12 +1074,14 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .tlb-side small { display: none; }
   .tlb-rows { padding: 2px 16px 0 8px; }
   .tlb-c { height: calc(var(--mk) + 22px); }
-  .tlb-lab { font-size: 11.5px; letter-spacing: 0; bottom: calc(100% - var(--mk) + 10px); }
-  .tl-dot.major .tlb-lab { font-size: 12.5px; }
+  .tlb-lab { font-size: 11px; letter-spacing: 0; bottom: calc(100% - var(--mk) + 10px); }
+  .tl-dot.major .tlb-lab { font-size: 13px; letter-spacing: 0; }
   .tl-dot.head::after, .tl-dot.one::after { width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; }
   .tl-dot.major.head::after, .tl-dot.major.one::after { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; box-shadow: 0 0 0 1.8px var(--ground), 0 0 0 2.9px var(--c); }
   .tlb-n { font-size: 9px; top: calc(var(--mk) + 7px); }
   .tlb-seal { left: 8px; top: 8px; width: 18px; height: 18px; font-size: 12px; }
+  .tlb-tiji { left: 36px; top: 10px; font-size: 11px; letter-spacing: .08em; line-height: 1.8; }
+  .tlb-tiji small { font-size: 9px; }
   .tlb-read { font-size: 12.5px; }
   .tl::before { left: 5px; }
   .tl-i { grid-template-columns: minmax(0, 1fr); padding-left: 26px; }

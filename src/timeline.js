@@ -28,7 +28,8 @@ const Timeline = (() => {
     };
     box.innerHTML = '<div class="tlb-sheet">'
       + `<div class="tlb-part"><div class="tlb-side"><b>前八十回</b><small>曹雪芹原著</small></div><div class="tlb-rows">${rows(1, 80)}</div></div>`
-      + `<div class="tlb-part late"><div class="tlb-side"><b>后四十回</b></div><div class="tlb-rows"><span class="tlb-seal" title="后四十回通常认为出自续书">续</span>${rows(81, 120)}</div></div>`
+      + `<div class="tlb-part late"><div class="tlb-side"><b>后四十回</b></div><div class="tlb-rows"><span class="tlb-seal" title="后四十回通常认为出自续书">续</span>`
+      + `<p class="tlb-tiji" aria-hidden="true">好一似食尽鸟投林，<br>落了片白茫茫大地真干净。<small>第五回　飞鸟各投林</small></p>${rows(81, 120)}</div></div>`
       + '</div><p class="tlb-read" aria-hidden="true"></p>';
     const read = $('.tlb-read', box), READ0 = '一点一回；圈是大事，双圈更要紧，跨几回的用细线串起。点圈跳到下面那件事';
     const say = e => {
