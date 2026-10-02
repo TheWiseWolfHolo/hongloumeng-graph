@@ -1,0 +1,11 @@
+# 构建产物,由 build.mjs 与 tools/build-site.py 生成
+index.html
+dist/
+.bundle.check.js
+
+# 字体源文件缓存,首次构建时从 google/fonts 下载
+.fonts-cache/
+
+node_modules/
+.wrangler/
+__pycache__/

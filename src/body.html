@@ -1,0 +1,226 @@
+<header class="hero">
+  <div class="wrap hero-in">
+    <h1 class="hero-title" aria-label="红楼梦">红楼梦</h1>
+    <div class="hero-side">
+      <div class="hero-kicker">石头记 · 金陵十二钗 · 太虚幻境</div>
+      <h2 class="hero-h1">人物关系图谱</h2>
+      <p class="hero-p">从荣宁二府到大观园,从判词到仆役,把书里的人放进一张能拖动、能筛选、能追问的图里。点任何一个名字,都能看到这个人是谁的什么人。</p>
+      <p class="hero-poem"><span>满纸荒唐言,一把辛酸泪。</span><span>都云作者痴,谁解其中味?</span></p>
+      <div class="hero-stats">
+        <div><b id="stPeople">0</b><span>人物</span></div>
+        <div><b id="stRel">0</b><span>关系</span></div>
+        <div><b>12</b><span>金陵十二钗</span></div>
+        <div><b>4</b><span>贾史王薛</span></div>
+        <div><b id="stEv">0</b><span>回目大事</span></div>
+        <div><b>120</b><span>回</span></div>
+      </div>
+    </div>
+    <div class="seal" aria-hidden="true">红<br>楼</div>
+    <button class="theme-btn" id="themeBtn" type="button">换漆夜底</button>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="图谱分页">
+  <div class="wrap tabs-in" role="tablist">
+    <button class="tab" role="tab" data-tab="graph" aria-selected="true">关系星图</button>
+    <button class="tab" role="tab" data-tab="tree" aria-selected="false">贾府世系</button>
+    <button class="tab" role="tab" data-tab="families" aria-selected="false">四大家族</button>
+    <button class="tab" role="tab" data-tab="twelve" aria-selected="false">金陵十二钗</button>
+    <button class="tab" role="tab" data-tab="garden" aria-selected="false">大观园</button>
+    <button class="tab" role="tab" data-tab="timeline" aria-selected="false">百二十回</button>
+    <button class="tab" role="tab" data-tab="love" aria-selected="false">情缘与风波</button>
+    <button class="tab" role="tab" data-tab="index" aria-selected="false">人物谱</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <!-- 关系星图 -->
+  <section class="sec" id="tab-graph">
+    <div class="sec-head">
+      <h2>关系星图</h2>
+      <p>每个圆点是一个人,颜色代表所属家族,线的颜色与样式代表关系。名字按空隙自动显示,放大能看到更多。悬停看关系,点击打开详情,双击进入以这个人为中心的命盘。</p>
+    </div>
+    <div class="gtool">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="gSearch" type="search" placeholder="搜人物,如 晴雯 或 潇湘" autocomplete="off" aria-label="搜索人物">
+        <div class="suggest" id="gSuggest" hidden></div>
+      </div>
+      <div class="presets" id="gPresets" aria-label="聚焦视角"></div>
+    </div>
+    <details class="gfold" id="gFold" open>
+      <summary>筛选关系类型与家族</summary>
+    <div class="gfilters">
+      <div class="frow" id="gTypes"></div>
+      <div class="frow" id="gGroups"></div>
+    </div>
+    </details>
+    <div class="stage">
+      <svg id="gsvg" role="img" aria-label="红楼梦人物关系力导向图"></svg>
+      <div class="stage-ov gstat" id="gStat"></div>
+      <div class="stage-ov zoomctl">
+        <button id="zIn" type="button" aria-label="放大">+</button>
+        <button id="zOut" type="button" aria-label="缩小">−</button>
+        <button id="zFit" type="button" aria-label="适合画面" style="font-size:12px">适合</button>
+      </div>
+      <div class="stage-ov hintbar">大圆为核心人物,金环是十二钗册中人,菱形是通灵宝玉与金锁。鼠标停在线上能看到两人的关系。</div>
+      <div class="stage-ov rbar" id="radialBar" hidden></div>
+      <div class="gtip" id="gTip" hidden></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+      <button class="btn" id="gLayout" type="button">布局 按家族聚拢</button>
+      <button class="btn" id="gFit" type="button">适合画面</button>
+    </div>
+    <details class="pathbox" open>
+      <summary>关系速查,两个人之间隔着几层</summary>
+      <div class="pathrow">
+        <div class="search"><input id="pathA" placeholder="起点,如 贾宝玉" autocomplete="off" aria-label="起点人物"><div class="suggest" id="pathASug" hidden></div></div>
+        <span class="sans" style="color:var(--ink3)">到</span>
+        <div class="search"><input id="pathB" placeholder="终点,如 刘姥姥" autocomplete="off" aria-label="终点人物"><div class="suggest" id="pathBSug" hidden></div></div>
+        <button class="btn primary" id="pathGo" type="button">查关系链</button>
+        <button class="btn" id="pathEx" type="button">看个例子</button>
+        <button class="btn" id="pathClear" type="button">清除</button>
+      </div>
+      <div class="pathout" id="pathOut"></div>
+    </details>
+  </section>
+
+  <!-- 贾府世系 -->
+  <section class="sec" id="tab-tree" hidden>
+    <div class="sec-head">
+      <h2>贾府世系</h2>
+      <p>宁国公、荣国公兄弟二支,按"水、代、文、玉、草"的字辈排开。方框是男子,圆角框是女子,点击可看详情。</p>
+    </div>
+    <div class="tbar">
+      <span class="tleg"><svg width="30" height="10"><path d="M0 2H30M0 8H30" stroke="var(--gold2)" stroke-width="2.6" fill="none"/></svg>正室</span>
+      <span class="tleg"><svg width="30" height="10"><path d="M0 5H30" stroke="var(--ink3)" stroke-width="2.4" stroke-dasharray="3 2" fill="none"/></svg>妾室</span>
+      <span class="tleg"><svg width="30" height="10"><path d="M0 5H30" stroke="var(--e-lv)" stroke-width="2.4" stroke-dasharray="3 2" fill="none"/></svg>情缘或偷娶</span>
+      <span style="flex:1"></span>
+      <button class="btn" id="tJumpNing" type="button">宁国府</button>
+      <button class="btn" id="tJumpRong" type="button">荣国府</button>
+      <button class="btn" id="tZoomOut" type="button">缩小</button>
+      <button class="btn" id="tZoomIn" type="button">放大</button>
+      <button class="btn" id="tFit" type="button">全部适合宽度</button>
+    </div>
+    <div class="treebox" id="treeBox"></div>
+    <p class="sans" style="font-size:12px;color:var(--ink3);margin:8px 2px 0">宝玉身边的虚线框是林黛玉,二人没有成婚。林黛玉在图中出现两次,一次是贾敏之女,一次是宝玉的情缘。拖动空白处可以平移。</p>
+  </section>
+
+  <!-- 四大家族 -->
+  <section class="sec" id="tab-families" hidden>
+    <div class="sec-head">
+      <h2>四大家族</h2>
+      <p>贾、史、王、薛四家互为姻亲,"一荣皆荣,一损皆损"。点家族看出身与成员,点连线看联姻。林家是黛玉的娘家,与贾家也有一桩婚事。</p>
+    </div>
+    <div class="fam-grid">
+      <div class="fam-map"><svg id="famSvg" viewBox="0 50 900 540" role="img" aria-label="贾史王薛林五家联姻关系图"></svg></div>
+      <div>
+        <blockquote class="guan" id="guan"></blockquote>
+        <div class="house-panel" id="housePanel"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 金陵十二钗 -->
+  <section class="sec" id="tab-twelve" hidden>
+    <div class="sec-head">
+      <h2>金陵十二钗</h2>
+      <p>第五回宝玉梦游太虚幻境,在薄命司翻看正册、副册、又副册。判词按册页的样子竖排,每张卡片列出画、曲、花签与解读。</p>
+    </div>
+    <div class="seg" id="segBook" role="group" aria-label="册别">
+      <button type="button" data-k="z" aria-pressed="true">正册</button>
+      <button type="button" data-k="f" aria-pressed="false">副册</button>
+      <button type="button" data-k="y" aria-pressed="false">又副册</button>
+    </div>
+    <div class="cards12" id="cards12"></div>
+    <div class="song-bar" id="songBar"></div>
+  </section>
+
+  <!-- 大观园 -->
+  <section class="sec" id="tab-garden" hidden>
+    <div class="sec-head">
+      <h2>大观园</h2>
+      <p>为元春省亲而建的园子,后来成了宝玉和姐妹们的住处。点院落、匾额或下方的名字看住户与旧事,也可以跟着第十七回贾政一行走一遍。</p>
+    </div>
+    <div class="garden-grid">
+      <div class="gmain">
+        <div class="gtools"><button class="btn primary" type="button" id="gTour">随贾政一行游园</button><span class="gt-hint">第十七回,宝玉一路题匾额对联,共九处</span></div>
+        <div class="gmap"><div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园示意图"></svg></div></div>
+        <div class="gplaces" id="gPlaces" aria-label="园中各处"></div>
+        <p class="map-note">示意图。方位按书中叙述大致安排,并非考据地图。水从东北山坳引进来,流过全园,经沁芳闸出去。</p>
+      </div>
+      <div class="gcard" id="gcard" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- 百二十回 -->
+  <section class="sec" id="tab-timeline" hidden>
+    <div class="sec-head">
+      <h2>百二十回</h2>
+      <p>按回目排开的五十件大事。上面的卷轴是全书一百二十回,点圆点跳到对应事件;可以只看某个人的经历,也可以只看前八十回。</p>
+    </div>
+    <div class="tl-axisbox"><svg id="tlAxis" viewBox="0 0 1200 106" role="img" aria-label="一百二十回大事分布"></svg></div>
+    <div class="tl-tools">
+      <div class="seg" id="segPart" role="group" aria-label="原著或续书">
+        <button type="button" data-k="all" aria-pressed="true">全部</button>
+        <button type="button" data-k="early" aria-pressed="false">前八十回</button>
+        <button type="button" data-k="late" aria-pressed="false">后四十回</button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="tlWho" type="search" placeholder="只看某人的经历,如 晴雯" autocomplete="off" aria-label="按人物筛选大事">
+        <div class="suggest" id="tlWhoSug" hidden></div>
+      </div>
+      <span class="chip on" id="tlWhoChip" hidden>只看 <b id="tlWhoName"></b><button type="button" id="tlWhoClear" aria-label="取消人物筛选">×</button></span>
+    </div>
+    <div class="frow" id="tlKinds"></div>
+    <p class="idx-count" id="tlCount"></p>
+    <ol class="tl" id="tlList"></ol>
+    <p class="idx-count" id="tlEmpty" hidden>没有符合条件的大事,换个筛选试试。</p>
+  </section>
+
+  <!-- 情缘与风波 -->
+  <section class="sec" id="tab-love" hidden>
+    <div class="sec-head">
+      <h2>情缘与风波</h2>
+      <p>书里的感情大多没有好结局。上面是宝玉、黛玉、宝钗三人和他们各自的前缘信物,下面是其他情缘与几场改变了人物命运的风波。</p>
+    </div>
+    <div class="lovemain"><svg id="loveSvg" viewBox="0 0 900 400" role="img" aria-label="木石前盟与金玉良缘关系图"></svg></div>
+    <h3 class="subhead">情缘档案</h3>
+    <div class="seg" id="segLove" role="group" aria-label="结局筛选">
+      <button type="button" data-k="all" aria-pressed="true">全部</button>
+      <button type="button" data-k="悲" aria-pressed="false">悲剧</button>
+      <button type="button" data-k="喜" aria-pressed="false">圆满</button>
+      <button type="button" data-k="另" aria-pressed="false">另说</button>
+    </div>
+    <div class="lov-grid" id="lovGrid"></div>
+    <h3 class="subhead">府中风波</h3>
+    <div id="feuds"></div>
+  </section>
+
+  <!-- 人物谱 -->
+  <section class="sec" id="tab-index" hidden>
+    <div class="sec-head">
+      <h2>人物谱</h2>
+      <p>全部人物按家族与重要程度排列,右上角的颜色是所属家族。点开可以看到简介、结局与全部关系。</p>
+    </div>
+    <div class="gtool">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="idxQ" type="search" placeholder="按姓名、称号或简介搜索" autocomplete="off" aria-label="搜索人物谱">
+      </div>
+    </div>
+    <div class="frow" id="idxChips" style="margin-top:6px"></div>
+    <div class="idx-count" id="idxCount"></div>
+    <div class="idx-grid" id="idxGrid"></div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="人物详情"></aside>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><b>说明</b>　人物与关系依通行本《红楼梦》整理。前八十回为曹雪芹原著,后四十回通常认为是续书,凡标"续书"的情节出自后四十回,标"批语"的推断来自脂砚斋批语与判词。</p>
+    <p>判词、画与曲引自第五回,护官符引自第四回,花签引自第六十三回。"百二十回"只挑了推动人物命运的五十件大事,回目按通行的一百二十回本计。收录的是重要人物与有名有姓的仆从,没有穷尽全书七百余人。关系的"称谓"按"右边的人是左边那位的什么人"来读。</p>
+  </div>
+</footer>
