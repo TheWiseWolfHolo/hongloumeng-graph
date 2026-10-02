@@ -172,7 +172,7 @@
       <h2 data-no="陆">百二十回</h2>
       <p>按回目排开的五十件大事。上面的卷轴是全书一百二十回，点圆点跳到对应事件；可以只看某个人的经历，也可以只看前八十回。</p>
     </div>
-    <div class="tl-axisbox"><svg id="tlAxis" viewBox="0 0 1200 106" role="img" aria-label="一百二十回大事分布"></svg></div>
+    <div class="tl-axisbox"><svg id="tlAxis" viewBox="0 0 1200 138" role="img" aria-label="一百二十回大事分布"></svg></div>
     <div class="tl-tools">
       <div class="seg" id="segPart" role="group" aria-label="原著或续书">
         <button type="button" data-k="all" aria-pressed="true">全部</button>
@@ -196,19 +196,78 @@
   <section class="sec" id="tab-love" hidden>
     <div class="sec-head">
       <h2 data-no="柒">情缘与风波</h2>
-      <p>书里的感情大多没有好结局。上面是宝玉、黛玉、宝钗三人和他们各自的前缘信物，下面是其他情缘与几场改变了人物命运的风波。</p>
+      <p>书里的感情大多没有好结局。上面是宝玉、黛玉、宝钗三人与两段前缘，下面是其他情缘，和几场改变了人物命运的风波。</p>
     </div>
-    <div class="lovemain"><svg id="loveSvg" viewBox="0 0 900 400" role="img" aria-label="木石前盟与金玉良缘关系图"></svg></div>
-    <h3 class="subhead">情缘档案</h3>
-    <div class="seg" id="segLove" role="group" aria-label="结局筛选">
-      <button type="button" data-k="all" aria-pressed="true">全部</button>
-      <button type="button" data-k="悲" aria-pressed="false">悲剧</button>
-      <button type="button" data-k="喜" aria-pressed="false">圆满</button>
-      <button type="button" data-k="另" aria-pressed="false">另说</button>
+    <div class="duet" id="duet">
+      <header class="duet-q">
+        <p><span>都道是金玉良姻，</span><span>俺只念木石前盟。</span></p>
+        <small>第五回　红楼梦曲 · 终身误</small>
+      </header>
+      <div class="pacts">
+        <section class="pact" style="--c: var(--e-lv)">
+          <svg class="pact-art" viewBox="0 0 320 196" aria-hidden="true">
+            <g class="pa-cloud"><path d="M34 52c-9 0-12-11-3-14c-1-11 13-16 20-8c4-10 21-11 25 0c11-3 18 9 10 16c6 6 0 13-7 13H40c-7 0-10-5-6-7z"/><path d="M50 40c3-4 9-4 11 1M70 38c4-3 9-1 10 3"/></g>
+            <text class="pa-lab" x="58" y="82">赤瑕宫</text>
+            <g class="pa-dew"><path d="M101 94c4 7 7 11 7 15a7 7 0 0 1-14 0c0-4 3-8 7-15z"/><circle cx="96" cy="76" r="1.6"/><circle cx="92" cy="64" r="1.2"/></g>
+            <g class="pa-river"><path d="M14 172q12-5 24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0"/><path d="M40 182q12-5 24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0t24 0"/><path d="M84 191q12-5 24 0t24 0t24 0t24 0t24 0t24 0"/></g>
+            <text class="pa-lab" x="40" y="160">灵河岸</text>
+            <g class="pa-rock"><path d="M196 168c-5-18 3-40 21-48c14-12 38-10 50 4c14 12 18 32 12 44z"/><path d="M222 132c8-4 18-2 24 6M252 146c6-4 14 0 16 8M212 154c6-4 14-2 18 4M238 160c4-5 12-5 15 0"/></g>
+            <text class="pa-lab" x="292" y="114">三生石</text>
+            <g class="pa-grass"><path d="M154 168c-4-26-10-48-24-70M154 168c2-30 6-54 0-88M154 168c8-20 20-36 36-48M154 168c-10-14-22-22-36-26"/><path class="lf" d="M146 134q-18-4-26-18q16 3 26 18zM157 124q16-8 20-24q-14 7-20 24zM151 104q-14-8-16-24q12 8 16 24zM168 146q18-2 28-14q-17 1-28 14zM140 150q-14 2-26-6q14-3 26 6z"/></g>
+            <g class="pa-pearl"><circle cx="130" cy="97" r="4.4"/><circle cx="124" cy="102" r="3.2"/><circle cx="134" cy="90" r="3"/><circle cx="154" cy="79" r="4.8"/><circle cx="148" cy="73" r="3.3"/><circle cx="159" cy="72" r="3.5"/><circle cx="154" cy="66" r="2.8"/><circle cx="190" cy="119" r="4.2"/><circle cx="195" cy="113" r="3"/><circle cx="117" cy="142" r="3.4"/></g>
+          </svg>
+          <div class="pact-tx">
+            <h4>木石前盟</h4>
+            <p class="pact-k">第一回　甄士隐梦幻识通灵</p>
+            <p>西方灵河岸上三生石畔有一株绛珠草，赤瑕宫的神瑛侍者天天用甘露浇灌它。草修成女体，跟着他下世为人，说要“把我一生所有的眼泪还他”。</p>
+            <div class="mem" data-ids="绛珠仙草,神瑛侍者"></div>
+          </div>
+        </section>
+        <section class="pact" style="--c: var(--e-m)">
+          <svg class="pact-art" viewBox="0 0 320 196" aria-hidden="true">
+            <defs>
+              <radialGradient id="jadeG" cx=".38" cy=".32" r=".8"><stop offset="0" class="jd-s1"/><stop offset="1" class="jd-s2"/></radialGradient>
+              <linearGradient id="lockG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="lk-s1"/><stop offset="1" class="lk-s2"/></linearGradient>
+            </defs>
+            <text class="pa-ins" x="46" y="70"><tspan x="46">莫</tspan><tspan x="46" dy="1.25em">失</tspan><tspan x="46" dy="1.25em">莫</tspan><tspan x="46" dy="1.25em">忘</tspan></text>
+            <text class="pa-ins" x="24" y="70"><tspan x="24">仙</tspan><tspan x="24" dy="1.25em">寿</tspan><tspan x="24" dy="1.25em">恒</tspan><tspan x="24" dy="1.25em">昌</tspan></text>
+            <path class="pa-cord" d="M104 71C101 60 102 50 106 43M108 71C111 60 110 50 106 43M106 43V8"/><circle class="pa-knot" cx="106" cy="43" r="3"/>
+            <g class="pa-jade"><ellipse cx="106" cy="108" rx="31" ry="40"/><path class="sw" d="M90 92c6-8 18-6 18 2s-10 8-10 2M112 118c8-2 14 6 8 12s-14 0-10-6M88 126c-4 8 4 14 10 10M116 86c6 0 10 6 6 10"/><circle class="hole" cx="106" cy="73" r="3.2"/></g>
+            <path class="pa-chain" d="M196 104C190 48 270 48 264 104"/>
+            <g class="pa-lock"><path d="M188 104c0-14 18-18 28-9c6-4 22-4 28 0c10-9 28-5 28 9c0 26-20 46-42 48c-22-2-42-22-42-48z"/><path class="in" d="M197 107c0-8 12-11 19-5c6-3 22-3 28 0c7-6 19-3 19 5c0 20-15 35-33 37c-18-2-33-17-33-37z"/><path class="ky" d="M230 110a4.2 4.2 0 0 1 2.4 7.6l1.4 9.4h-7.6l1.4-9.4a4.2 4.2 0 0 1 2.4-7.6z"/></g>
+            <text class="pa-ins" x="306" y="70"><tspan x="306">不</tspan><tspan x="306" dy="1.25em">离</tspan><tspan x="306" dy="1.25em">不</tspan><tspan x="306" dy="1.25em">弃</tspan></text>
+            <text class="pa-ins" x="286" y="70"><tspan x="286">芳</tspan><tspan x="286" dy="1.25em">龄</tspan><tspan x="286" dy="1.25em">永</tspan><tspan x="286" dy="1.25em">继</tspan></text>
+          </svg>
+          <div class="pact-tx">
+            <h4>金玉良缘</h4>
+            <p class="pact-k">第八回　比通灵金莺微露意</p>
+            <p>宝玉的玉上刻着“莫失莫忘，仙寿恒昌”，宝钗的金锁上刻着“不离不弃，芳龄永继”。莺儿听了说“倒像和姑娘的项圈上的两句话是一对儿”；和尚给锁时也留过话，要等日后有玉的方可正配。</p>
+            <div class="mem" data-ids="通灵宝玉,金锁"></div>
+          </div>
+        </section>
+      </div>
+      <div class="trio">
+        <button class="tslip" type="button" data-pick="林黛玉">
+          <span class="ts-n">林黛玉</span><span class="ts-l" title="第五回《终身误》">世外仙姝寂寞林</span><span class="ts-seal">泪尽</span>
+        </button>
+        <div class="thread" style="--c: var(--e-lv)"><b>知己</b><i></i><span title="第五回《枉凝眉》">心事终虚化</span></div>
+        <button class="tslip ts-main" type="button" data-pick="贾宝玉">
+          <span class="ts-n">贾宝玉</span><span class="ts-l" title="第三十六回，宝玉的梦话">我偏说是木石姻缘</span><span class="ts-seal">出家</span>
+        </button>
+        <div class="thread t-wed" style="--c: var(--e-m)"><b>夫妻</b><i></i><span title="第五回《终身误》">到底意难平</span></div>
+        <button class="tslip" type="button" data-pick="薛宝钗">
+          <span class="ts-n">薛宝钗</span><span class="ts-l" title="第五回《终身误》">山中高士晶莹雪</span><span class="ts-seal">守寡</span>
+        </button>
+      </div>
+      <p class="duet-end"><span>“当时黛玉气绝，</span><span>正是宝玉娶宝钗的这个时辰。”</span><small>第九十八回 · 续书</small></p>
+    </div>
+    <div class="sub-row">
+      <h3 class="subhead">情缘档案</h3>
+      <div class="seg" id="segLove" role="group" aria-label="结局筛选"></div>
     </div>
     <div class="lov-grid" id="lovGrid"></div>
-    <h3 class="subhead">府中风波</h3>
-    <div id="feuds"></div>
+    <div class="sub-row"><h3 class="subhead">府中风波</h3></div>
+    <ol class="feuds" id="feuds"></ol>
   </section>
 
   <!-- 人物谱 -->

@@ -90,62 +90,30 @@ function flash(el) {
 
 /* ============ 情缘与风波 ============ */
 const Love = (() => {
+  /* 上半部分的图与文字写在 body.html 里，这里只补人物按钮 */
+  const ENDS = { 悲: '悲剧', 喜: '圆满', 另: '另说' };
   let filter = 'all';
-  function main() {
-    const svg = $('#loveSvg');
-    const P = {
-      '绛珠仙草': [150, 90, 'obj'], '神瑛侍者': [330, 90, 'obj'], '通灵宝玉': [570, 90, 'obj'], '金锁': [750, 90, 'obj'],
-      '林黛玉': [150, 250, ''], '贾宝玉': [450, 250, ''], '薛宝钗': [750, 250, '']
-    };
-    const line = (a, b, color, dash, w) => {
-      const A = P[a], B = P[b];
-      const dx = B[0] - A[0], dy = B[1] - A[1], d = Math.hypot(dx, dy), ra = A[2] ? 40 : 54, rb = B[2] ? 40 : 54;
-      const e = svgEl('path', { class: 'lm-curve', d: `M${(A[0] + dx / d * ra).toFixed(1)} ${(A[1] + dy / d * ra).toFixed(1)}L${(B[0] - dx / d * rb).toFixed(1)} ${(B[1] - dy / d * rb).toFixed(1)}`, stroke: color, 'stroke-width': w }, svg);
-      if (dash) e.setAttribute('stroke-dasharray', dash);
-    };
-    line('绛珠仙草', '神瑛侍者', 'var(--e-my)', '4 6', 3);
-    line('通灵宝玉', '金锁', 'var(--e-my)', '4 6', 3);
-    line('绛珠仙草', '林黛玉', 'var(--e-my)', '2 5', 2.5);
-    line('神瑛侍者', '贾宝玉', 'var(--e-my)', '2 5', 2.5);
-    line('通灵宝玉', '贾宝玉', 'var(--e-my)', '2 5', 2.5);
-    line('金锁', '薛宝钗', 'var(--e-my)', '2 5', 2.5);
-    line('贾宝玉', '林黛玉', 'var(--e-lv)', '', 4.5);
-    line('贾宝玉', '薛宝钗', 'var(--e-m)', '', 4.5);
-    const t = (x, y, cls, s) => { const e = svgEl('text', { class: cls, x, y }, svg); e.textContent = s; return e; };
-    t(240, 28, 'lm-lab', '木石前盟').style.fill = 'var(--e-lv)';
-    t(660, 28, 'lm-lab', '金玉良缘').style.fill = 'var(--e-m)';
-    t(240, 150, 'lm-sub', '灌溉之恩，以泪相还');
-    t(660, 150, 'lm-sub', '玉有字，锁也有字');
-    t(300, 232, 'lm-sub', '同住同长，知己');
-    t(600, 232, 'lm-sub', '家长之意，续书成婚');
-    t(450, 358, 'lm-sub', '续书第九十七回“掉包计”：黛玉焚稿，宝玉与宝钗成亲');
-    t(450, 380, 'lm-sub', '黛玉泪尽而逝，宝玉后来出家');
-    Object.entries(P).forEach(([id, [x, y, k]]) => {
-      const p = byId.get(id);
-      const g = svgEl('g', { class: 'lm-n ' + k, tabindex: 0, role: 'button', 'aria-label': id }, svg);
-      g.style.setProperty('--c', `var(--g-${p.grp})`);
-      svgEl('circle', { cx: x, cy: y, r: k ? 38 : 52 }, g);
-      const nm = svgEl('text', { class: 'nm', x, y: y + (k ? 7 : 9) }, g);
-      nm.textContent = id;
-      if (k) nm.style.fontSize = id.length > 3 ? '16px' : '21px';
-      else svgEl('text', { class: 'sb', x, y: y + 74 }, g).textContent = p.sub.split(' · ')[0];
-      g.addEventListener('click', () => pickPerson(id));
-      g.addEventListener('keydown', ev => { if (ev.key === 'Enter') pickPerson(id); });
-    });
-  }
   function renderCards() {
     $$('#lovGrid .lov').forEach(e => { e.hidden = filter !== 'all' && e.dataset.end !== filter; });
     $$('#segLove button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === filter)));
   }
   function init() {
-    main();
+    $$('#duet [data-ids]').forEach(el => { el.innerHTML = el.dataset.ids.split(',').map(pill).join(''); });
+    const n = k => LOVES.filter(l => l.end === k).length;
+    $('#segLove').innerHTML = `<button type="button" data-k="all" aria-pressed="true">全部 <small>${LOVES.length}</small></button>`
+      + Object.entries(ENDS).map(([k, v]) => `<button type="button" data-k="${k}" aria-pressed="false">${v} <small>${n(k)}</small></button>`).join('');
     $('#lovGrid').innerHTML = LOVES.map(l => `<article class="lov" data-end="${l.end}">
-      <h4>${esc(l.title)}<span class="badge b-${l.end}">${l.end === '悲' ? '悲' : l.end === '喜' ? '圆满' : '另说'}</span><span class="badge muted">${esc(l.kind)}</span></h4>
-      <div class="mem">${l.ids.map(pill).join('')}</div>
-      <p>${esc(l.text)}</p><div class="out">${esc(l.out)}</div></article>`).join('');
+      <span class="lov-seal">${ENDS[l.end]}</span>
+      <p class="lov-k">${esc(l.kind)}</p>
+      <h4>${esc(l.title)}</h4>
+      <p class="lov-t">${esc(l.text)}</p>
+      <p class="out"><b>结局</b>${esc(l.out)}</p>
+      <div class="mem">${l.ids.map(pill).join('')}</div></article>`).join('');
     renderCards();
     $('#segLove').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; filter = b.dataset.k; renderCards(); });
-    $('#feuds').innerHTML = FEUDS.map(f => `<div class="fe"><h4>${esc(f.title)}<small>${esc(f.ch)}</small></h4><p>${esc(f.text)}</p><div class="mem">${f.ids.map(pill).join('')}</div></div>`).join('');
+    $('#feuds').innerHTML = FEUDS.map(f => `<li class="fe">
+      <p class="fe-hui"><small>${esc(f.ch)}</small><span>${esc(f.hui)}</span></p>
+      <div class="fe-b"><h4>${esc(f.title)}</h4><p>${esc(f.text)}</p><div class="mem">${f.ids.map(pill).join('')}</div></div></li>`).join('');
   }
   return { init };
 })();

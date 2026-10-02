@@ -27,6 +27,11 @@
   --sl-bg: #efe5cf; --sl-ink: #221a14; --sl-line: #b0945f; --sl-sub: #6c5a44; --stitch: #efe1c1; --corner: #3e0d0a; --hole: #2a0705;
   --lac1: #7f1b17; --lac2: #451010; --h-gold: #ecc872; --h-ink: #f7e9d2;
 
+  /* 情缘页的白描小画与印章 */
+  --dew: rgba(44, 62, 92, .08); --leaf: #d7dfc0; --jade1: #f3f6ea; --jade2: #b7cdae; --jade-line: #5f8463;
+  --lock1: #f7e4ab; --lock2: #cfa24c; --lock-line: #8a6820; --seal: #b5302a; --seal-ink: #fbeee0;
+  --sheet2: #f2ead9; --rod: #4c3122; --rod2: #e2d3ae;
+
   --g-rong: #b8342a; --g-ning: #b38429; --g-shi: #23807d; --g-wang: #9c4a78; --g-xue: #cb6a26;
   --g-lin: #3a65a8; --g-oth: #548b4a; --g-out: #7b7364; --g-myth: #9061c6;
   --e-b: #ad2a20; --e-m: #bf8c1c; --e-in: #1f7c82; --e-sv: #6c7376;
@@ -58,6 +63,7 @@
     --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
     --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
     --lac1: #6a1613; --lac2: #2d0909;
+    --dew: rgba(143, 176, 224, .1); --leaf: #34402f; --jade1: #5a7563; --jade2: #1f3027; --jade-line: #9cc2a4; --lock1: #d4ac58; --lock2: #6b5020; --lock-line: #e3c278; --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
     --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
     --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
     --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -85,6 +91,7 @@
   --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
   --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
   --lac1: #6a1613; --lac2: #2d0909;
+  --dew: rgba(143, 176, 224, .1); --leaf: #34402f; --jade1: #5a7563; --jade2: #1f3027; --jade-line: #9cc2a4; --lock1: #d4ac58; --lock2: #6b5020; --lock-line: #e3c278; --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
   --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
   --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
   --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -694,48 +701,142 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .gcard .gc-hint { font-family: var(--f-sans); font-size: 12px; color: var(--ink3); margin: 10px 0 0; }
 
 /* ---------- 情缘与风波 ---------- */
-.lovemain { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 6px; margin-bottom: 22px; }
-.lovemain { overflow-x: auto; }
-.lovemain svg { width: 100%; height: auto; display: block; }
-.lm-n { cursor: pointer; }
-.lm-n circle { fill: var(--panel2); stroke: var(--c); stroke-width: 3.5; }
-.lm-n text.nm { font-family: var(--f-display); font-size: 26px; fill: var(--ink); text-anchor: middle; }
-.lm-n text.sb { font-family: var(--f-sans); font-size: 12px; fill: var(--ink3); text-anchor: middle; }
-.lm-n:hover circle { fill: var(--bg2); }
-.lm-n.obj circle { stroke-dasharray: 4 4; }
-.lm-n.obj text.nm { font-size: 22px; }
-.lm-curve { fill: none; stroke: var(--c); stroke-width: 3; stroke-linecap: round; }
-.lm-lab { font-family: var(--f-serif); font-weight: 900; font-size: 20px; fill: var(--c); text-anchor: middle; letter-spacing: .2em; }
-.lm-sub { font-family: var(--f-sans); font-size: 12px; fill: var(--ink3); text-anchor: middle; }
-.subhead { font-size: 22px; font-weight: 900; margin: 28px 0 12px; letter-spacing: .08em; }
-.lov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; }
-.lov { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+/* 上半部分排成古籍的一个版面:四周双边,中间一道竖线把木石与金玉分开 */
+.duet {
+  position: relative; background: var(--panel) var(--grain); border: 1px solid var(--line); border-radius: 4px; box-shadow: var(--shadow-s);
+  padding: clamp(26px, 4vw, 46px) clamp(16px, 4vw, 52px) clamp(24px, 3vw, 36px);
+}
+.duet::before { content: ""; position: absolute; inset: 8px; border: 2px solid var(--red); outline: 1px solid var(--red); outline-offset: -7px; opacity: .32; pointer-events: none; }
+.duet-q { text-align: center; margin-bottom: clamp(20px, 3vw, 34px); }
+.duet-q p { margin: 0; font-family: var(--f-display); font-size: clamp(25px, 3.4vw, 40px); line-height: 1.5; letter-spacing: .12em; color: var(--ink); text-wrap: balance; }
+.duet-q p span { display: inline-block; white-space: nowrap; }
+.duet-q small { display: inline-flex; align-items: center; gap: 12px; margin-top: 4px; font-family: var(--f-sans); font-size: 12px; letter-spacing: .3em; color: var(--ink3); }
+.duet-q small::before, .duet-q small::after { content: ""; width: 34px; height: 1px; background: var(--line); }
+.pacts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.pact { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 0 clamp(14px, 3vw, 38px); }
+.pact + .pact { border-left: 1px solid var(--line); }
+.pact-art { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto 10px; overflow: visible; }
+.pact h4 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 34px; line-height: 1.2; letter-spacing: .22em; color: var(--c); }
+.pact-k { margin: 0; font-family: var(--f-sans); font-size: 12px; letter-spacing: .22em; color: var(--ink3); }
+.pact-tx > p:not(.pact-k) { margin: 8px 0 12px; font-size: 14.5px; line-height: 1.95; color: var(--ink2); max-width: 34em; text-wrap: pretty; }
+.pact .mem { display: flex; gap: 6px; flex-wrap: wrap; }
+/* 两幅白描:墨线为主,只有绛珠、丝绦、玉色与金色上一点颜色 */
+.pact-art path, .pact-art ellipse { stroke-linecap: round; stroke-linejoin: round; }
+.pa-cloud path { fill: none; stroke: var(--ink3); stroke-width: 1.3; }
+.pa-cloud path:first-child { fill: var(--panel2); }
+.pa-dew path { fill: var(--dew); stroke: var(--indigo); stroke-width: 1.2; }
+.pa-dew circle { fill: var(--indigo); opacity: .55; }
+.pa-river path { fill: none; stroke: var(--ink3); stroke-width: 1.1; opacity: .75; }
+.pa-rock path { fill: none; stroke: var(--ink3); stroke-width: 1.1; }
+.pa-rock path:first-child { fill: var(--bg2); stroke: var(--ink2); stroke-width: 1.6; }
+.pa-grass path { fill: none; stroke: var(--ink2); stroke-width: 1.5; }
+.pa-grass .lf { fill: var(--leaf); stroke-width: 1; }
+.pa-pearl circle { fill: var(--red); stroke: var(--panel); stroke-width: .8; }
+.pa-lab { font-family: var(--f-serif); font-size: 11px; letter-spacing: .25em; fill: var(--ink3); text-anchor: middle; }
+.pa-jade ellipse { fill: url(#jadeG); stroke: var(--jade-line); stroke-width: 1.6; }
+.jd-s1 { stop-color: var(--jade1); } .jd-s2 { stop-color: var(--jade2); }
+.lk-s1 { stop-color: var(--lock1); } .lk-s2 { stop-color: var(--lock2); }
+.pa-jade .sw { fill: none; stroke: var(--jade-line); stroke-width: 1; opacity: .7; }
+.pa-jade .hole { fill: var(--panel); stroke: var(--jade-line); stroke-width: 1; }
+.pa-cord { fill: none; stroke: var(--red); stroke-width: 2; }
+.pa-knot { fill: var(--red); }
+.pa-chain { fill: none; stroke: var(--lock-line); stroke-width: 4.2; stroke-linecap: round; stroke-dasharray: 0 7.4; }
+.pa-lock path { fill: url(#lockG); stroke: var(--lock-line); stroke-width: 1.6; }
+.pa-lock .in { fill: none; stroke-width: 1; opacity: .75; }
+.pa-lock .ky { fill: var(--lock-line); stroke: none; }
+.pa-ins { font-family: var(--f-display); font-size: 17px; fill: var(--ink); text-anchor: middle; }
+/* 三人:三张竖写的题签,底下各盖一方结局的印 */
+.trio { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; max-width: 780px; margin: clamp(30px, 4vw, 46px) auto 0; }
+.tslip {
+  position: relative; display: grid; grid-template-areas: "l n" "s s"; grid-template-rows: 1fr auto; justify-content: center; justify-items: center; gap: 14px 6px;
+  width: 104px; min-height: 252px; padding: 22px 10px 16px; border: 0; border-radius: 2px;
+  background: var(--sl-bg) var(--grain); color: var(--sl-ink); box-shadow: 0 0 0 1px var(--line), var(--shadow-s); transition: transform .2s, box-shadow .2s;
+}
+.tslip::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--sl-line); outline: 1px solid var(--sl-line); outline-offset: -4px; opacity: .8; pointer-events: none; }
+.tslip:hover { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--sl-line), var(--shadow); }
+.ts-n { grid-area: n; writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-size: 40px; line-height: 1; letter-spacing: .06em; }
+.ts-l { grid-area: l; writing-mode: vertical-rl; text-orientation: upright; padding-top: 2.4em; font-family: var(--f-serif); font-weight: 600; font-size: 12.5px; line-height: 1.2; letter-spacing: .28em; color: var(--sl-sub); }
+.ts-seal {
+  grid-area: s; writing-mode: vertical-rl; text-orientation: upright; padding: 6px 3px; border-radius: 2px; transform: rotate(-4deg);
+  background: var(--seal); color: var(--seal-ink); font-family: var(--f-serif); font-weight: 900; font-size: 12px; line-height: 1; letter-spacing: .1em;
+  box-shadow: inset 0 0 0 1.5px rgba(251, 238, 224, .6);
+}
+.ts-main { width: 120px; min-height: 290px; }
+.ts-main .ts-n { font-size: 47px; }
+.thread { align-self: stretch; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; min-width: 0; text-align: center; }
+.thread b { align-self: end; margin-bottom: 10px; padding-left: .3em; font-family: var(--f-display); font-weight: 400; font-size: 23px; line-height: 1; letter-spacing: .3em; color: var(--c); }
+.thread i { position: relative; width: 100%; height: 2px; background: var(--c); }
+.thread i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: var(--c); transform: translate(-50%, -50%) rotate(45deg); box-shadow: 0 0 0 3px var(--panel); }
+.thread.t-wed i { height: 7px; background: none; border-block: 2px solid var(--c); }
+.thread span { align-self: start; margin-top: 12px; font-family: var(--f-serif); font-size: 13px; letter-spacing: .2em; color: var(--ink2); }
+.duet-end { margin: clamp(26px, 3vw, 36px) 0 0; text-align: center; font-family: var(--f-serif); font-size: 15px; letter-spacing: .06em; color: var(--ink); text-wrap: balance; }
+.duet-end span { display: inline-block; }
+.duet-end small { display: block; margin-top: 2px; font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .3em; color: var(--ink3); }
+
+.sub-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin: clamp(34px, 4vw, 48px) 0 18px; }
+.sub-row .subhead, .sub-row .seg { margin: 0; }
+.subhead { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 900; margin: 28px 0 12px; letter-spacing: .12em; }
+.subhead::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--red); transform: rotate(45deg); }
+.seg button small { margin-left: 2px; font-size: 11px; opacity: .6; font-variant-numeric: tabular-nums; }
+/* 情缘档案:卡片右上角盖结局的印,悲剧是白文印,圆满是朱文印,另说用金色 */
+.lov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+.lov { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: 0 1px 0 var(--line2); }
+.lov::before, .fe::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--line2); border-radius: 3px; pointer-events: none; }
 .lov[hidden] { display: none; }
-.lov h4 { margin: 0; font-size: 18px; font-weight: 900; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.lov .badge { font-family: var(--f-sans); font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 3px; letter-spacing: .12em; border: 1px solid currentColor; }
-.badge.muted { color: var(--ink3); }
-.badge.b-悲 { color: var(--red); } .badge.b-喜 { color: var(--g-oth); } .badge.b-另 { color: var(--gold); }
-.lov p { margin: 0; font-size: 14px; color: var(--ink2); }
-.lov .out { font-size: 13.5px; color: var(--ink); padding-top: 8px; border-top: 1px dashed var(--line); margin-top: auto; }
-.lov .mem { display: flex; gap: 6px; flex-wrap: wrap; }
-.fe { border-left: 3px solid var(--red); padding: 4px 0 4px 16px; margin: 0 0 18px; }
-.fe h4 { margin: 0; font-size: 17px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-.fe h4 small { font-family: var(--f-sans); font-size: 12px; color: var(--ink3); font-weight: 400; letter-spacing: .08em; }
-.fe p { margin: 4px 0 8px; font-size: 14px; color: var(--ink2); }
-.fe .mem { display: flex; gap: 6px; flex-wrap: wrap; }
+.lov-k { margin: 0; font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .4em; color: var(--ink3); }
+.lov h4 { margin: -2px 0 2px; padding-right: 40px; font-size: 21px; font-weight: 900; line-height: 1.4; letter-spacing: .08em; }
+.lov-seal {
+  position: absolute; top: 18px; right: 18px; writing-mode: vertical-rl; text-orientation: upright; padding: 6px 4px; border-radius: 2px; transform: rotate(4deg);
+  font-family: var(--f-serif); font-weight: 900; font-size: 12px; line-height: 1; letter-spacing: .1em;
+}
+.lov[data-end="悲"] .lov-seal { background: var(--seal); color: var(--seal-ink); box-shadow: inset 0 0 0 1.5px rgba(251, 238, 224, .55); }
+.lov[data-end="喜"] .lov-seal { color: var(--red); box-shadow: inset 0 0 0 1.5px var(--red); }
+.lov[data-end="另"] .lov-seal { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.lov-t { margin: 0; font-size: 14px; line-height: 1.85; color: var(--ink2); }
+.lov .out { margin: auto 0 4px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line); font-size: 13.5px; line-height: 1.8; color: var(--ink); }
+.lov .out b { margin-right: 8px; font-family: var(--f-sans); font-size: 11.5px; font-weight: 600; letter-spacing: .3em; color: var(--red); }
+.lov .mem, .fe .mem { display: flex; gap: 6px; flex-wrap: wrap; }
+/* 府中风波:按回目先后,左边竖写那一回的回目 */
+.feuds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 470px), 1fr)); gap: 16px; }
+.fe { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 20px; padding: 20px 22px 18px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: 0 1px 0 var(--line2); }
+.fe-hui { margin: 0; padding-right: 14px; border-right: 1px solid var(--line); writing-mode: vertical-rl; text-orientation: upright; }
+.fe-hui small, .fe-hui span { display: block; }
+.fe-hui small { margin-left: 6px; font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .2em; color: var(--ink3); }
+.fe-hui span { font-family: var(--f-display); font-size: 21px; line-height: 1; letter-spacing: .14em; color: var(--red); }
+.fe-b h4 { margin: 0 0 4px; font-size: 19px; font-weight: 900; letter-spacing: .08em; }
+.fe-b p { margin: 0 0 12px; font-size: 14px; line-height: 1.85; color: var(--ink2); }
 
 /* ---------- 百二十回 ---------- */
-.tl-axisbox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px 10px 4px; overflow-x: auto; margin-bottom: 14px; }
-#tlAxis { display: block; width: 100%; min-width: 760px; height: auto; }
-.tl-late { fill: var(--bg2); }
-.tl-part { font-family: var(--f-sans); font-size: 12px; fill: var(--ink3); text-anchor: middle; letter-spacing: .14em; }
-.tl-base { stroke: var(--ink3); stroke-width: 1.5; }
-.tl-tick { stroke: var(--ink3); stroke-width: 1.2; }
-.tl-tlab { font-family: var(--f-sans); font-size: 11px; fill: var(--ink3); text-anchor: middle; font-variant-numeric: tabular-nums; }
-.tl-dot { cursor: pointer; }
-.tl-dot circle { fill: var(--c); stroke: var(--panel); stroke-width: 2; transition: opacity .2s; }
-.tl-dot:hover circle, .tl-dot:focus-visible circle { stroke: var(--ink); }
-.tl-dot.dim circle { opacity: .14; }
+/* 手卷:卷轴、红绫引首、两张纸、朱丝栏 */
+.tl-axisbox { overflow-x: auto; margin: 0 0 18px; padding: 4px 0 2px; scrollbar-width: thin; }
+#tlAxis { display: block; width: 100%; min-width: 860px; height: auto; overflow: visible; }
+.tl-rod { fill: var(--rod); }
+.tl-cap { fill: var(--rod2); }
+.tl-shine { fill: #fff; opacity: .16; }
+.tl-yin { fill: var(--lac1); }
+.tl-yin-in { fill: none; stroke: var(--h-gold); stroke-width: .8; opacity: .55; }
+.tl-yt { font-family: var(--f-display); font-size: 25px; fill: var(--h-gold); text-anchor: middle; }
+.tl-sheet { fill: var(--panel2); stroke: var(--line); stroke-width: 1; }
+.tl-sheet.late { fill: var(--sheet2); }
+.tl-rule { stroke: var(--red); stroke-width: .7; opacity: .2; }
+.tl-rule.ten { opacity: .42; }
+.tl-frame { fill: none; stroke: var(--red); stroke-width: 1.6; opacity: .5; }
+.tl-frame.in { stroke-width: .7; }
+.tl-seam { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
+.tl-num { font-family: var(--f-serif); font-size: 11.5px; fill: var(--ink3); text-anchor: middle; }
+.tl-read { font-family: var(--f-serif); font-weight: 600; font-size: 14px; letter-spacing: .16em; fill: var(--ink3); text-anchor: middle; paint-order: stroke; stroke: var(--panel2); stroke-width: 6px; stroke-linejoin: round; pointer-events: none; }
+.tl-read.late { stroke: var(--sheet2); }
+.tl-read.on { fill: var(--ink); font-size: 15px; letter-spacing: .1em; }
+.tl-seal { pointer-events: none; }
+.tl-seal rect { fill: var(--seal); }
+.tl-seal text { font-family: var(--f-serif); font-weight: 900; font-size: 11px; fill: var(--seal-ink); text-anchor: middle; }
+.tl-dot { cursor: pointer; outline: none; }
+.tl-tint { fill: var(--c); opacity: 0; transition: opacity .2s; }
+.tl-rib { fill: var(--c); transform-box: fill-box; transform-origin: 50% 0; transition: transform .2s, opacity .2s; }
+.tl-dot:hover .tl-tint, .tl-dot:focus-visible .tl-tint { opacity: .22; }
+.tl-dot:hover .tl-rib, .tl-dot:focus-visible .tl-rib { transform: scaleY(1.45); }
+.tl-dot.dim .tl-tint { opacity: 0; }
+.tl-dot.dim .tl-rib { opacity: .14; }
 .tl-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
 .tl-tools .seg { margin: 0; }
 #tlWhoChip button { background: none; border: 0; color: inherit; font-size: 15px; line-height: 1; padding: 0 0 0 4px; }
@@ -844,7 +945,22 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .c12 .vt span { margin-inline-start: 0; }
   .gscroll svg { min-width: 760px; }
   .fam-map svg { min-width: 620px; }
-  .lovemain svg { min-width: 640px; }
+  .pacts { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .pact { padding: 0; }
+  .pact + .pact { border-left: 0; border-top: 1px solid var(--line); padding-top: 26px; }
+  .pact h4 { font-size: 30px; }
+  .duet::before { inset: 5px; outline-offset: -5px; }
+  .tslip { width: 72px; min-height: 200px; padding: 16px 5px 12px; gap: 10px 3px; }
+  .ts-main { width: 82px; min-height: 222px; }
+  .ts-n { font-size: 30px; }
+  .ts-main .ts-n { font-size: 35px; }
+  .ts-l { font-size: 11px; letter-spacing: .14em; padding-top: 1.8em; }
+  .thread b { font-size: 17px; letter-spacing: .1em; padding-left: 0; margin-bottom: 8px; }
+  .thread span { writing-mode: vertical-rl; text-orientation: upright; margin-top: 10px; font-size: 11.5px; letter-spacing: .12em; }
+  .fe { grid-template-columns: minmax(0, 1fr); padding: 18px 18px 16px; }
+  .fe-hui { writing-mode: horizontal-tb; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 0 0 10px; margin-bottom: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .fe-hui small { margin: 0; order: 2; }
+  .fe-hui span { font-size: 20px; letter-spacing: .08em; }
   .guan p { font-size: 17px; letter-spacing: .02em; }
   .gt-hint { display: none; }
   .tlabels { width: 52px; }
