@@ -28,8 +28,8 @@
   --lac1: #7f1b17; --lac2: #451010; --h-gold: #ecc872; --h-ink: #f7e9d2;
 
   /* 情缘页的白描小画与印章 */
-  --dew: rgba(44, 62, 92, .08); --leaf: #d7dfc0; --jade1: #f3f6ea; --jade2: #b7cdae; --jade-line: #5f8463;
-  --lock1: #f7e4ab; --lock2: #cfa24c; --lock-line: #8a6820; --seal: #b5302a; --seal-ink: #fbeee0;
+  --zhu1: #f7e9e6; --zhu2: #ecccc6; --ying1: #f6f4ee; --ying2: #e0dbcf; --jade1: #eef3e6; --jade2: #cfdcc4;
+  --lock1: #f8ebc6; --lock2: #e5c97e; --seal: #b5302a; --seal-ink: #fbeee0; --seal-on: #fbeee0; --rule: rgba(168, 39, 29, .28);
   --sheet2: #f2ead9; --rod: #4c3122; --rod2: #e2d3ae;
 
   --g-rong: #b8342a; --g-ning: #b38429; --g-shi: #23807d; --g-wang: #9c4a78; --g-xue: #cb6a26;
@@ -63,7 +63,7 @@
     --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
     --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
     --lac1: #6a1613; --lac2: #2d0909;
-    --dew: rgba(143, 176, 224, .1); --leaf: #34402f; --jade1: #5a7563; --jade2: #1f3027; --jade-line: #9cc2a4; --lock1: #d4ac58; --lock2: #6b5020; --lock-line: #e3c278; --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
+    --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
     --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
     --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
     --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -91,7 +91,7 @@
   --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
   --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
   --lac1: #6a1613; --lac2: #2d0909;
-  --dew: rgba(143, 176, 224, .1); --leaf: #34402f; --jade1: #5a7563; --jade2: #1f3027; --jade-line: #9cc2a4; --lock1: #d4ac58; --lock2: #6b5020; --lock-line: #e3c278; --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
+  --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
   --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
   --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
   --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -483,27 +483,73 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .gen-note { font-family: var(--f-sans); font-size: 11px; fill: var(--ink3); }
 
 /* ---------- 四大家族 ---------- */
-.fam-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-.fam-map { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px; }
-.fam-map { overflow-x: auto; }
-.fam-map svg { width: 100%; height: auto; display: block; }
-.fm-node { cursor: pointer; }
-.fm-node rect { fill: var(--panel2); stroke: var(--c); stroke-width: 3; }
-.fm-node .big { font-family: var(--f-display); font-size: 54px; fill: var(--c); text-anchor: middle; }
-.fm-node .sm { font-family: var(--f-sans); font-size: 13px; fill: var(--ink2); text-anchor: middle; }
-.fm-node:hover rect, .fm-node.on rect { fill: var(--bg2); stroke-width: 5; }
-.fm-link { stroke: var(--gold2); stroke-width: 3; fill: none; stroke-linecap: round; opacity: .75; cursor: pointer; }
-.fm-link:hover, .fm-link.on { stroke: var(--red); opacity: 1; stroke-width: 4.5; }
-.fm-lab { font-family: var(--f-sans); font-size: 13px; fill: var(--ink); text-anchor: middle; paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke-linejoin: round; font-weight: 600; pointer-events: none; }
-.guan { margin: 0; padding: 18px 20px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); position: relative; }
-.guan::before { content: "护官符"; position: absolute; right: 14px; top: -11px; background: var(--red); color: #fff; font-family: var(--f-sans); font-size: 12px; letter-spacing: .2em; padding: 1px 10px; border-radius: 3px; }
-.guan p.on { color: var(--red); }
-.guan p { margin: 0; font-family: var(--f-display); font-size: clamp(19px, 2.3vw, 24px); line-height: 1.9; letter-spacing: .06em; }
-.guan footer { font-family: var(--f-sans); font-size: 12px; color: var(--ink3); margin-top: 8px; }
-.house-panel { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--panel); }
-.house-panel h3 { margin: 0 0 4px; font-size: 20px; display: flex; align-items: center; gap: 10px; }
-.house-panel p { margin: 6px 0; font-size: 14px; color: var(--ink2); }
-.house-panel .mem { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+/* 左边是那张抄写的护官符,从右往左读,每句旁有原书小注 */
+.fam-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: start; }
+.hgf {
+  position: relative; justify-self: center; display: flex; flex-direction: row-reverse; align-items: stretch;
+  padding: 30px 24px 26px; background: var(--panel2) var(--grain); border: 1px solid var(--line); border-radius: 3px; box-shadow: var(--shadow-s);
+}
+.hgf::before { content: ""; position: absolute; inset: 8px; border: 2px solid var(--red); outline: 1px solid var(--red); outline-offset: -7px; opacity: .3; pointer-events: none; }
+.hgf-t { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 2px 16px 0 14px; }
+.hgf-t b { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: .3em; color: var(--red); }
+.hgf-t small { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .3em; color: var(--ink3); }
+.hgf-col { display: flex; flex-direction: row-reverse; gap: 6px; padding: 4px 12px; border-left: 1px solid var(--rule); cursor: pointer; outline: none; transition: background .2s; }
+.hgf-t + .hgf-col { border-right: 1px solid var(--rule); }
+.hgf-col:hover, .hgf-col:focus-visible { background: color-mix(in srgb, var(--c) 6%, transparent); }
+.hgf-col.on { background: color-mix(in srgb, var(--c) 10%, transparent); }
+.hgf-m { margin: 0; writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-size: 25px; line-height: 1.55; letter-spacing: .1em; color: var(--ink); }
+.hgf-col.on .hgf-m { -webkit-text-emphasis: open circle var(--red); text-emphasis: open circle var(--red); -webkit-text-emphasis-position: over right; text-emphasis-position: over right; }
+.hgf-seal {
+  display: inline-block; writing-mode: horizontal-tb; width: 1.3em; height: 1.3em; margin-bottom: .5em; border-radius: 3px; text-align: center;
+  font-style: normal; font-size: .76em; line-height: 1.3em; letter-spacing: 0; background: var(--c); color: var(--seal-on); -webkit-text-emphasis: none; text-emphasis: none;
+}
+.hgf-n { margin: 0; padding-top: 2.8em; writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-serif); font-size: 12.5px; line-height: 1.5; letter-spacing: .1em; color: var(--ink3); }
+.hgf-end { margin: 0; align-self: flex-end; padding: 0 4px 0 14px; writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .22em; color: var(--ink3); }
+/* 右边是五方印:四大家族用白文印,林家用朱文印 */
+.fam-side { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.fam-map { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 16px 18px 6px; }
+.fam-cap { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-family: var(--f-sans); font-size: 12px; letter-spacing: .08em; color: var(--ink3); }
+.fam-cap b { font-family: var(--f-serif); font-weight: 900; font-size: 16px; letter-spacing: .2em; color: var(--ink); }
+.fam-map svg { display: block; width: 100%; max-width: 500px; height: auto; margin: 0 auto; }
+.fm-node, .fm-l { cursor: pointer; outline: none; }
+.fm-node .body { fill: var(--c); }
+.fm-node .inner { fill: none; stroke: var(--seal-on); stroke-width: 1.2; opacity: .5; }
+.fm-node .big { font-family: var(--f-display); fill: var(--seal-on); text-anchor: middle; }
+.fm-node.zhu .body { fill: var(--panel2); stroke: var(--c); stroke-width: 3; }
+.fm-node.zhu .inner { stroke: var(--c); }
+.fm-node.zhu .big { fill: var(--c); }
+.fm-node .sm { font-family: var(--f-sans); font-size: 12.5px; letter-spacing: .16em; fill: var(--ink3); text-anchor: middle; }
+.fm-node .ring { fill: none; stroke: var(--ink); stroke-width: 1.4; opacity: 0; transition: opacity .2s; }
+.fm-node:hover .ring, .fm-node:focus-visible .ring { opacity: .3; }
+.fm-node.on .ring { opacity: .75; }
+.fm-hit { fill: none; stroke: transparent; stroke-width: 18; }
+.fm-link { fill: none; stroke: var(--gold2); stroke-width: 2; stroke-linecap: round; transition: stroke .2s; }
+.fm-l.late .fm-link { stroke-dasharray: 5 5; }
+.fm-arrow { fill: var(--gold2); transition: fill .2s; }
+.fm-lab { font-family: var(--f-serif); font-weight: 700; font-size: 15px; letter-spacing: .04em; fill: var(--ink); text-anchor: middle; paint-order: stroke; stroke: var(--panel); stroke-width: 6px; stroke-linejoin: round; pointer-events: none; }
+.fm-l:hover .fm-link, .fm-l:focus-visible .fm-link, .fm-l.on .fm-link { stroke: var(--red); stroke-width: 2.6; }
+.fm-l:hover .fm-arrow, .fm-l:focus-visible .fm-arrow, .fm-l.on .fm-arrow { fill: var(--red); }
+.fm-l.on .fm-lab { fill: var(--red); }
+.house-panel { position: relative; padding: 20px 22px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.house-panel::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--line2); border-radius: 3px; pointer-events: none; }
+.hp-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.hp-seal {
+  flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 4px; background: var(--c); color: var(--seal-on);
+  font-family: var(--f-display); font-size: 28px; line-height: 1; box-shadow: inset 0 0 0 4px var(--c), inset 0 0 0 5px color-mix(in srgb, var(--seal-on) 50%, transparent);
+}
+.hp-seal.zhu { background: none; color: var(--c); box-shadow: inset 0 0 0 2.5px var(--c); }
+.hp-to { font-family: var(--f-sans); font-size: 12px; letter-spacing: .2em; color: var(--ink3); }
+.hp-head h3 { margin: 0; font-size: 20px; font-weight: 900; line-height: 1.35; letter-spacing: .08em; }
+.hp-k { margin: 2px 0 0; font-family: var(--f-sans); font-size: 12px; letter-spacing: .14em; color: var(--ink3); }
+.hp-dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0 0 14px; font-size: 14px; line-height: 1.8; }
+.hp-dl dt { padding-top: 2px; font-family: var(--f-sans); font-size: 12px; font-weight: 600; letter-spacing: .2em; color: var(--gold); }
+.hp-dl dd { margin: 0; color: var(--ink2); }
+.hp-p { margin: 0 0 14px; font-size: 14px; line-height: 1.85; color: var(--ink2); }
+.fang { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-right: 10px; vertical-align: -1px; }
+.fang i { width: 10px; height: 10px; border: 1.5px solid var(--c); border-radius: 1.5px; }
+.fang i.du { background: var(--c); }
+.fang-t { font-size: 13px; }
+.house-panel .mem { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { font-family: var(--f-sans); font-size: 13px; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--c, var(--line)); background: var(--panel2); color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
 .pill:hover { background: var(--bg2); }
 
@@ -715,36 +761,31 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .pacts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .pact { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 0 clamp(14px, 3vw, 38px); }
 .pact + .pact { border-left: 1px solid var(--line); }
-.pact-art { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto 10px; overflow: visible; }
 .pact h4 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 34px; line-height: 1.2; letter-spacing: .22em; color: var(--c); }
 .pact-k { margin: 0; font-family: var(--f-sans); font-size: 12px; letter-spacing: .22em; color: var(--ink3); }
 .pact-tx > p:not(.pact-k) { margin: 8px 0 12px; font-size: 14.5px; line-height: 1.95; color: var(--ink2); max-width: 34em; text-wrap: pretty; }
 .pact .mem { display: flex; gap: 6px; flex-wrap: wrap; }
-/* 两幅白描:墨线为主,只有绛珠、丝绦、玉色与金色上一点颜色 */
-.pact-art path, .pact-art ellipse { stroke-linecap: round; stroke-linejoin: round; }
-.pa-cloud path { fill: none; stroke: var(--ink3); stroke-width: 1.3; }
-.pa-cloud path:first-child { fill: var(--panel2); }
-.pa-dew path { fill: var(--dew); stroke: var(--indigo); stroke-width: 1.2; }
-.pa-dew circle { fill: var(--indigo); opacity: .55; }
-.pa-river path { fill: none; stroke: var(--ink3); stroke-width: 1.1; opacity: .75; }
-.pa-rock path { fill: none; stroke: var(--ink3); stroke-width: 1.1; }
-.pa-rock path:first-child { fill: var(--bg2); stroke: var(--ink2); stroke-width: 1.6; }
-.pa-grass path { fill: none; stroke: var(--ink2); stroke-width: 1.5; }
-.pa-grass .lf { fill: var(--leaf); stroke-width: 1; }
-.pa-pearl circle { fill: var(--red); stroke: var(--panel); stroke-width: .8; }
-.pa-lab { font-family: var(--f-serif); font-size: 11px; letter-spacing: .25em; fill: var(--ink3); text-anchor: middle; }
-.pa-jade ellipse { fill: url(#jadeG); stroke: var(--jade-line); stroke-width: 1.6; }
-.jd-s1 { stop-color: var(--jade1); } .jd-s2 { stop-color: var(--jade2); }
-.lk-s1 { stop-color: var(--lock1); } .lk-s2 { stop-color: var(--lock2); }
-.pa-jade .sw { fill: none; stroke: var(--jade-line); stroke-width: 1; opacity: .7; }
-.pa-jade .hole { fill: var(--panel); stroke: var(--jade-line); stroke-width: 1; }
-.pa-cord { fill: none; stroke: var(--red); stroke-width: 2; }
-.pa-knot { fill: var(--red); }
-.pa-chain { fill: none; stroke: var(--lock-line); stroke-width: 4.2; stroke-linecap: round; stroke-dasharray: 0 7.4; }
-.pa-lock path { fill: url(#lockG); stroke: var(--lock-line); stroke-width: 1.6; }
-.pa-lock .in { fill: none; stroke-width: 1; opacity: .75; }
-.pa-lock .ky { fill: var(--lock-line); stroke: none; }
-.pa-ins { font-family: var(--f-display); font-size: 17px; fill: var(--ink); text-anchor: middle; }
+/* 两对签牌:木石写《枉凝眉》的两句,金玉写玉与锁上的刻字,中间一根线连着 */
+.pact-art { display: flex; align-items: center; max-width: 360px; margin: 4px 0 22px; }
+.ptab {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 98px; min-height: 212px; padding: 20px 8px 12px;
+  border: 0; border-radius: 3px; background: linear-gradient(170deg, var(--t1), var(--t2)); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-s); transition: transform .2s, box-shadow .2s;
+}
+.ptab::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--t3); border-radius: 2px; opacity: .7; pointer-events: none; }
+.ptab:hover { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--t3), var(--shadow); }
+.ptab-m { flex: 1; display: block; writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-size: 30px; line-height: 1.25; letter-spacing: .14em; }
+.ptab-m span { display: block; }
+.ptab-m.two { font-size: 24px; }
+.ptab small { font-family: var(--f-sans); font-size: 11.5px; letter-spacing: .24em; color: var(--ink2); padding-left: .24em; }
+.t-zhu { --t1: var(--zhu1); --t2: var(--zhu2); --t3: var(--e-lv); }
+.t-ying { --t1: var(--ying1); --t2: var(--ying2); --t3: var(--ink3); }
+.t-jade { --t1: var(--jade1); --t2: var(--jade2); --t3: var(--g-oth); }
+.t-lock { --t1: var(--lock1); --t2: var(--lock2); --t3: var(--gold); }
+.ptab-x { flex: 0 1 120px; min-width: 56px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ptab-x b { font-family: var(--f-serif); font-weight: 600; font-size: 12.5px; letter-spacing: .24em; color: var(--c); padding-left: .24em; white-space: nowrap; }
+.ptab-x i { position: relative; width: 100%; height: 2px; background: var(--c); }
+.ptab-x i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; background: var(--c); transform: translate(-50%, -50%) rotate(45deg); box-shadow: 0 0 0 3px var(--panel); }
 /* 三人:三张竖写的题签,底下各盖一方结局的印 */
 .trio { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; max-width: 780px; margin: clamp(30px, 4vw, 46px) auto 0; }
 .tslip {
@@ -944,7 +985,15 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .c12 .vt { grid-row: auto; writing-mode: horizontal-tb; text-orientation: mixed; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 8px; max-height: none; letter-spacing: .1em; font-size: 22px; }
   .c12 .vt span { margin-inline-start: 0; }
   .gscroll svg { min-width: 760px; }
-  .fam-map svg { min-width: 620px; }
+  .hgf { padding: 26px 12px 20px; }
+  .hgf::before { inset: 5px; outline-offset: -5px; }
+  .hgf-t { padding: 2px 10px 0 8px; gap: 12px; }
+  .hgf-t b { font-size: 26px; }
+  .hgf-col { padding: 4px 6px; gap: 3px; }
+  .hgf-m { font-size: 19px; }
+  .hgf-n { font-size: 11px; }
+  .hgf-end { display: none; }
+  .fam-map { padding: 14px 10px 4px; }
   .pacts { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .pact { padding: 0; }
   .pact + .pact { border-left: 0; border-top: 1px solid var(--line); padding-top: 26px; }
@@ -961,7 +1010,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .fe-hui { writing-mode: horizontal-tb; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 0 0 10px; margin-bottom: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
   .fe-hui small { margin: 0; order: 2; }
   .fe-hui span { font-size: 20px; letter-spacing: .08em; }
-  .guan p { font-size: 17px; letter-spacing: .02em; }
   .gt-hint { display: none; }
   .tlabels { width: 52px; }
   .tlab { left: 8px; right: 8px; padding: 7px 0; align-items: center; }

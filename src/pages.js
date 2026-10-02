@@ -1,45 +1,83 @@
 /* ============ 四大家族 ============ */
+/* 左边是第四回门子递给雨村的那张护官符：四句竖写，句旁是原书小注，选中哪家就在那一句旁加圈点。
+   右边是五家的印：四大家族用白文印，不在护官符上的林家用朱文印；箭头从娘家指向夫家，线上写嫁过去的人。 */
 const Families = (() => {
-  const HW = 88, HH = 54;
+  const ORDER = ['jia', 'shi', 'wang', 'xue'];
   let selHouse = 'jia', selLink = null, svg;
-  function trim(a, b) {
-    const dx = b[0] - a[0], dy = b[1] - a[1];
-    const s = Math.min(HW / Math.abs(dx || 1e-6), HH / Math.abs(dy || 1e-6)) + .04;
+  const half = k => k === 'jia' ? 50 : 34;
+  /* 从 a 印的边上出发，到 b 印的边上为止 */
+  function edge(a, b, k) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], h = half(k) + 6;
+    const s = Math.min(h / Math.abs(dx || 1e-6), h / Math.abs(dy || 1e-6));
     return [a[0] + dx * s, a[1] + dy * s];
+  }
+  function link(l, i) {
+    const A = HOUSES[l.a].pos, B = HOUSES[l.b].pos;
+    const p = edge(A, B, l.a), q = edge(B, A, l.b);
+    const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy);
+    const bend = l.a === 'wang' && l.b === 'xue' ? -44 : 22;
+    const c = [mx - dy / d * bend, my + dx / d * bend];
+    const g = svgEl('g', { class: 'fm-l' + (l.late ? ' late' : ''), 'data-l': i, tabindex: 0, role: 'button', 'aria-label': `${l.who.join('、')}从${HOUSES[l.a].name}家嫁到${HOUSES[l.b].name}家` }, svg);
+    svgEl('path', { class: 'fm-hit', d: `M${p}Q${c} ${q}` }, g);
+    svgEl('path', { class: 'fm-link', d: `M${p}Q${c} ${q}` }, g);
+    const tx = q[0] - c[0], ty = q[1] - c[1], tl = Math.hypot(tx, ty), ux = tx / tl, uy = ty / tl;
+    svgEl('path', { class: 'fm-arrow', d: `M${q[0]} ${q[1]}L${q[0] - ux * 11 - uy * 5} ${q[1] - uy * 11 + ux * 5}L${q[0] - ux * 11 + uy * 5} ${q[1] - uy * 11 - ux * 5}Z` }, g);
+    const lx = .25 * p[0] + .5 * c[0] + .25 * q[0], ly = .25 * p[1] + .5 * c[1] + .25 * q[1];
+    svgEl('text', { class: 'fm-lab', x: lx.toFixed(1), y: (ly + 5).toFixed(1) }, g).textContent = l.who.join('、') + (l.late ? '（续书）' : '');
+  }
+  function seal(k) {
+    const h = HOUSES[k], r = half(k), [x, y] = h.pos;
+    const g = svgEl('g', { class: 'fm-node' + (k === 'lin' ? ' zhu' : ''), 'data-h': k, tabindex: 0, role: 'button', 'aria-label': `${h.name}家` }, svg);
+    g.style.setProperty('--c', `var(--g-${h.grp})`);
+    svgEl('rect', { class: 'ring', x: x - r - 6, y: y - r - 6, width: 2 * r + 12, height: 2 * r + 12, rx: 8 }, g);
+    svgEl('rect', { class: 'body', x: x - r, y: y - r, width: 2 * r, height: 2 * r, rx: 5 }, g);
+    svgEl('rect', { class: 'inner', x: x - r + 5, y: y - r + 5, width: 2 * r - 10, height: 2 * r - 10, rx: 3 }, g);
+    svgEl('text', { class: 'big', x, y: y + r * .36, 'font-size': r * 1.2 }, g).textContent = h.name;
+    svgEl('text', { class: 'sm', x, y: y < 150 ? y - r - 15 : y + r + 24 }, g).textContent = h.label;
   }
   function init() {
     svg = $('#famSvg');
-    HOUSE_LINKS.forEach((l, i) => {
-      const p = trim(HOUSES[l.a].pos, HOUSES[l.b].pos), q = trim(HOUSES[l.b].pos, HOUSES[l.a].pos);
-      const g = svgEl('g', { 'data-l': i }, svg);
-      svgEl('path', { class: 'fm-link', d: `M${p[0].toFixed(1)} ${p[1].toFixed(1)}L${q[0].toFixed(1)} ${q[1].toFixed(1)}` }, g);
-      svgEl('text', { class: 'fm-lab', x: (p[0] + q[0]) / 2, y: (p[1] + q[1]) / 2 + 4 }, g).textContent = l.text;
-      g.addEventListener('click', () => { selLink = i; render(); });
+    HOUSE_LINKS.forEach(link);
+    Object.keys(HOUSES).forEach(seal);
+    svg.addEventListener('click', ev => {
+      const n = ev.target.closest('.fm-node'), l = ev.target.closest('.fm-l');
+      if (n) { selHouse = n.dataset.h; selLink = null; render(); }
+      else if (l) { selLink = +l.dataset.l; render(); }
     });
-    Object.entries(HOUSES).forEach(([k, h]) => {
-      const g = svgEl('g', { class: 'fm-node', 'data-h': k }, svg);
-      g.style.setProperty('--c', `var(--g-${h.grp})`);
-      svgEl('rect', { x: h.pos[0] - HW, y: h.pos[1] - HH, width: HW * 2, height: HH * 2, rx: 6 }, g);
-      svgEl('text', { class: 'big', x: h.pos[0], y: h.pos[1] + 8 }, g).textContent = h.name;
-      svgEl('text', { class: 'sm', x: h.pos[0], y: h.pos[1] + 34 }, g).textContent = h.label;
-      g.addEventListener('click', () => { selHouse = k; selLink = null; render(); });
-    });
-    $('#guan').innerHTML = GUANFU.map((t, i) => `<p data-i="${i}">${esc(t)}</p>`).join('') + '<footer>第四回，门子给贾雨村看的“护官符”。四句各指一家。</footer>';
+    svg.addEventListener('keydown', ev => { if (ev.key === 'Enter') ev.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    $('#guan').innerHTML = `<div class="hgf-t"><b>护官符</b><small>第四回</small></div>`
+      + ORDER.map((k, i) => `<div class="hgf-col" role="button" tabindex="0" data-h="${k}" style="--c:var(--g-${HOUSES[k].grp})">
+        <p class="hgf-m"><i class="hgf-seal">${HOUSES[k].name}</i>${esc(GUANFU[i])}</p><p class="hgf-n">${esc(HOUSES[k].note)}</p></div>`).join('')
+      + `<p class="hgf-end">门子从顺袋中取出一张抄写的护官符来，递与雨村</p>`;
+    $('#guan').addEventListener('click', ev => { const c = ev.target.closest('.hgf-col'); if (c) { selHouse = c.dataset.h; selLink = null; render(); } });
+    $('#guan').addEventListener('keydown', ev => { const c = ev.target.closest('.hgf-col'); if (c && ev.key === 'Enter') { selHouse = c.dataset.h; selLink = null; render(); } });
     render();
+  }
+  function fang(h) {
+    if (!h.fang) return `<dt>房分</dt><dd>${esc(h.few)}</dd>`;
+    const [all, du] = h.fang;
+    const box = Array.from({ length: all }, (_, i) => `<i${du && i < du ? ' class="du"' : ''}></i>`).join('');
+    const say = du ? `共${cnNum(all)}房，在京${cnNum(du)}房，原籍${cnNum(all - du)}房` : `共${cnNum(all)}房`;
+    return `<dt>房分</dt><dd><span class="fang">${box}</span><span class="fang-t">${say}</span></dd>`;
   }
   function render() {
     $$('.fm-node', svg).forEach(g => g.classList.toggle('on', g.dataset.h === selHouse && selLink == null));
-    $$('[data-l]', svg).forEach(g => $('.fm-link', g).classList.toggle('on', +g.dataset.l === selLink));
-    const idx = ['jia', 'shi', 'wang', 'xue'].indexOf(selHouse);
-    $$('#guan p').forEach(p => p.classList.toggle('on', +p.dataset.i === idx && selLink == null));
+    $$('.fm-l', svg).forEach(g => g.classList.toggle('on', +g.dataset.l === selLink));
+    $$('#guan .hgf-col').forEach(c => c.classList.toggle('on', c.dataset.h === selHouse && selLink == null));
     const el = $('#housePanel');
+    const mark = k => `<span class="hp-seal${k === 'lin' ? ' zhu' : ''}" style="--c:var(--g-${HOUSES[k].grp})">${HOUSES[k].name}</span>`;
     if (selLink != null) {
       const l = HOUSE_LINKS[selLink], A = HOUSES[l.a], B = HOUSES[l.b];
-      el.innerHTML = `<h3>${A.name} 与 ${B.name} · ${esc(l.text)}</h3><p>${esc(l.note)}</p><div class="mem">${[...new Set([...A.members, ...B.members])].map(pill).join('')}</div>`;
+      el.style.setProperty('--c', `var(--g-${B.grp})`);
+      el.innerHTML = `<div class="hp-head">${mark(l.a)}<span class="hp-to">嫁入</span>${mark(l.b)}<div><h3>${esc(l.text)}</h3><p class="hp-k">${A.name}家的女儿嫁进${B.name}家${l.late ? '（续书）' : ''}</p></div></div>
+        <p class="hp-p">${esc(l.note)}</p><div class="mem">${[...new Set([...l.who, ...A.members, ...B.members])].map(pill).join('')}</div>`;
       return;
     }
-    const h = HOUSES[selHouse];
-    el.innerHTML = `<h3><i class="dot" style="--c:var(--g-${h.grp})"></i>${h.name} · ${esc(h.label)}</h3><p><b class="sans">出身</b>　${esc(h.guan)}</p><p><b class="sans">在书中</b>　${esc(h.now)}</p><div class="mem">${h.members.map(pill).join('')}</div>`;
+    const h = HOUSES[selHouse], i = ORDER.indexOf(selHouse);
+    el.style.setProperty('--c', `var(--g-${h.grp})`);
+    el.innerHTML = `<div class="hp-head">${mark(selHouse)}<div><h3>${h.name}家 · ${esc(h.label)}</h3><p class="hp-k">${i < 0 ? '不在护官符上' : '护官符第' + cnNum(i + 1) + '句'}</p></div></div>
+      <dl class="hp-dl"><dt>出身</dt><dd>${esc(h.guan)}</dd><dt>在书中</dt><dd>${esc(h.now)}</dd>${fang(h)}</dl>
+      <div class="mem">${h.members.map(pill).join('')}</div>`;
   }
   return { init };
 })();
