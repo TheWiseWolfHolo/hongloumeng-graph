@@ -48,6 +48,27 @@ function cnNum(n) {
   const r = n - 100;
   return '一百' + (r === 0 ? '' : r < 10 ? '零' + d[r] : (r < 20 ? '一' : '') + cnNum(r));
 }
+/* 正册十二钗的画像：AI 生成的工笔设色，衣饰与场景依书中描写补足，不作考证 */
+const PORTRAITS = {
+  林黛玉: 'daiyu', 薛宝钗: 'baochai', 贾元春: 'yuanchun', 贾探春: 'tanchun', 史湘云: 'xiangyun', 妙玉: 'miaoyu',
+  贾迎春: 'yingchun', 贾惜春: 'xichun', 王熙凤: 'xifeng', 巧姐: 'qiaojie', 李纨: 'liwan', 秦可卿: 'keqing'
+};
+const portrait = id => PORTRAITS[id] ? `img/12/${PORTRAITS[id]}.webp` : '';
+/* 看大图：点画像铺满屏幕，再点一下或按 Esc 收起 */
+const Zoom = {
+  open(src, label) {
+    const o = document.createElement('div');
+    o.className = 'zoom';
+    o.setAttribute('role', 'dialog');
+    o.setAttribute('aria-label', label);
+    o.innerHTML = `<img src="${src}" alt="${esc(label)}">`;
+    const key = ev => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); close(); } };
+    const close = () => { o.remove(); document.removeEventListener('keydown', key, true); };
+    o.addEventListener('click', close);
+    document.addEventListener('keydown', key, true);
+    document.body.appendChild(o);
+  }
+};
 const chName = c => c.length > 1 ? `第${cnNum(c[0])}至${cnNum(c[c.length - 1])}回` : `第${cnNum(c[0])}回`;
 const chShort = c => c.length > 1 ? `${c[0]}–${c[c.length - 1]} 回` : `${c[0]} 回`;
 
@@ -190,7 +211,9 @@ const Drawer = {
     if (n.kind === 'o') h += `<span class="tag">器物</span>`;
     h += `<span class="tag">${rels.length} 条关系</span>`;
     if (evs.length) h += `<span class="tag">${evs.length} 件大事</span>`;
-    h += `</div><p class="d-bio">${esc(n.bio)}</p>`;
+    h += `</div>`;
+    if (PORTRAITS[id]) h += `<button class="d-pic" type="button" data-zoom="${portrait(id)}" aria-label="${esc(id)}画像"><img src="${portrait(id)}" alt="" loading="lazy" decoding="async" width="640" height="960"></button>`;
+    h += `<p class="d-bio">${esc(n.bio)}</p>`;
     if (n.fate) h += `<div class="d-fate"><b>结局</b>${esc(n.fate)}</div>`;
     /* 判词两句一行，像诗那样断开 */
     if (v) h += `<div class="d-verse"><b>判词</b>${v.verse.map((l, i) => esc(l) + (i % 2 || i === v.verse.length - 1 ? '。' : '，')).map((l, i) => i % 2 ? l + '<br>' : l).join('').replace(/<br>$/, '')}</div>`;

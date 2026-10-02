@@ -25,6 +25,8 @@ node build.mjs          # 合成 index.html，直接用浏览器打开就能看
 
 本地生成的 `index.html` 引用 Google Fonts，只用来预览，不进仓库。
 
+`img/12/` 是正册十二钗的画像，640×960 的 WebP，页面按相对路径引用，线上构建会整个拷进 `dist/`。这组画是作者用 AI 生成的工笔设色插画，衣饰与场景依书中描写补足，不作考证。
+
 ## 数据约定
 
 - 人物以名字作 id，`EDGES`、`EVENTS` 的 `ids`、大观园院落的 `who` 里出现的名字都要在 `NODES` 里有。
@@ -63,7 +65,7 @@ python tools/check-html.py dist/index.html
 
 - 浅色、深色主题各看一眼。
 - 把视口调到 390px 宽，在控制台确认 `document.documentElement.scrollWidth === document.documentElement.clientWidth`，八个页签都点一遍，页面不能横向滚动。
-- 星图要用触屏模拟再试一遍。手机上页面里的星图只是预览，轻点进入全屏；全屏里点人、再点进命盘、拖动人物卡片、返回键退出全屏都要走通。
+- 星图要用触屏模拟再试一遍。手机上页面里的星图只是预览，轻点进入全屏；全屏里点人开关卡片、双击进命盘、拖动人物卡片、返回键退出全屏都要走通。
 - 控制台没有报错。
 
 ## 许可

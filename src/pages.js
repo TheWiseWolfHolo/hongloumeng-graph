@@ -91,8 +91,10 @@ const Twelve = (() => {
     const wide = v.verse.length > 4 || v.ids.length > 1;
     const names = v.ids.map(id => `<button type="button" data-pick="${esc(id)}" style="--c:var(--g-${byId.get(id).grp})">${esc(id)}</button>`).join('<span class="sans and">与</span>');
     const fates = v.ids.filter(id => byId.get(id).fate).map(id => `<b class="sans">${esc(id)}</b>　${esc(byId.get(id).fate)}`).join('<br>');
-    return `<article class="c12${wide ? ' wide' : ''}" data-ids="${v.ids.join(',')}">
-      <div class="vt">${v.verse.map(l => `<span>${esc(l)}</span>`).join('')}</div>
+    const pics = v.ids.filter(id => PORTRAITS[id]);
+    const fig = pics.length ? `<div class="c12-pics">${pics.map(id => `<button class="c12-pic" type="button" data-zoom="${portrait(id)}" aria-label="${esc(id)}画像"><img src="${portrait(id)}" alt="" loading="lazy" decoding="async" width="640" height="960"></button>`).join('')}</div>` : '';
+    return `<article class="c12${wide ? ' wide' : ''}${pics.length ? ' has-pic' : ''}" data-ids="${v.ids.join(',')}">
+      ${fig}<div class="vt">${v.verse.map(l => `<span>${esc(l)}</span>`).join('')}</div>
       <div class="rt"><h3>${names}</h3>
       <p class="ln"><b>图</b>${esc(v.pic)}</p>
       ${v.song ? `<p class="ln"><b>曲</b>${esc(v.song)}</p>` : ''}
@@ -102,6 +104,7 @@ const Twelve = (() => {
   }
   function render() {
     $('#cards12').innerHTML = list().map(card).join('');
+    $('#cards12').classList.toggle('pics', book === 'z');
     $$('#segBook button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === book)));
   }
   function init() {

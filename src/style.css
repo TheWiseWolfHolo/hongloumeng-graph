@@ -602,6 +602,18 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .c12 .fate { grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 13px; font-family: var(--f-sans); color: var(--ink2); }
 .c12.wide { grid-column: 1 / -1; }
 .c12.wide .vt { max-height: none; }
+/* 正册配画像：像一幅裱好的小画放在判词左边 */
+.cards12.pics { grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); }
+.c12.has-pic { grid-template-columns: auto auto minmax(0, 1fr); }
+.c12-pics { display: flex; gap: 8px; align-self: start; }
+.c12-pic { width: 150px; margin: 0; padding: 5px; border: 1px solid var(--line); border-radius: 2px; background: var(--panel2); box-shadow: 0 1px 4px rgb(40 24 12 / .1); cursor: zoom-in; transition: border-color .15s; }
+.c12-pic:hover, .c12-pic:focus-visible { border-color: var(--ink3); }
+.c12-pic img, .d-pic img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; background: var(--bg2); }
+.d-pic { float: right; width: 108px; margin: 0 0 10px 14px; padding: 4px; border: 1px solid var(--line); border-radius: 2px; background: var(--panel2); cursor: zoom-in; }
+.d-body .d-sec, .d-body .d-fate, .d-body .d-verse { clear: both; }
+.zoom { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: rgb(16 11 8 / .84); cursor: zoom-out; animation: zoomIn .2s ease-out; }
+.zoom img { max-width: min(92vw, 640px); max-height: 92vh; width: auto; height: auto; border: 6px solid var(--panel2); border-radius: 2px; box-shadow: 0 12px 40px rgb(0 0 0 / .45); }
+@keyframes zoomIn { from { opacity: 0; } to { opacity: 1; } }
 .song-bar { margin-top: 26px; padding: 16px 20px; border-radius: 10px; background: linear-gradient(160deg, var(--lac1), var(--lac2)); color: var(--h-ink); display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
 .song-bar b { font-family: var(--f-display); font-size: 24px; color: var(--h-gold); font-weight: 400; letter-spacing: .1em; }
 .song-bar span { font-size: 14px; color: rgba(247, 233, 210, .86); }
@@ -1010,7 +1022,12 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .d-actions .btn { padding: 7px 14px; }
 
   .frow > .lab { width: 100%; }
-  .c12 { grid-template-columns: minmax(0, 1fr); }
+  .c12, .c12.has-pic { grid-template-columns: minmax(0, 1fr); }
+  .c12-pics { width: 100%; }
+  .c12-pic { flex: 1; width: auto; min-width: 0; }
+  .c12-pic:only-child img { aspect-ratio: 4 / 3; object-position: 50% 16%; }
+  .c12-pic img { aspect-ratio: 3 / 4; object-position: 50% 12%; }
+  .d-pic { width: 92px; }
   .c12 .vt { grid-row: auto; writing-mode: horizontal-tb; text-orientation: mixed; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 8px; max-height: none; letter-spacing: .1em; font-size: 22px; }
   .c12 .vt span { margin-inline-start: 0; }
   .gscroll svg { min-width: 760px; }

@@ -36,6 +36,9 @@ HEADERS = """/fonts/*
   Cache-Control: public, max-age=31536000, immutable
   Access-Control-Allow-Origin: *
 
+/img/*
+  Cache-Control: public, max-age=604800
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
@@ -94,6 +97,7 @@ def main():
     html = GOOGLE.sub(lambda _: preload + '<style>\n' + '\n'.join(faces) + '\n</style>\n', html)
     (DIST / 'index.html').write_text(html, encoding='utf-8')
     (DIST / '_headers').write_text(HEADERS, encoding='utf-8')
+    shutil.copytree(ROOT / 'img', DIST / 'img')
     print(f'dist/index.html {len(html.encode()) / 1024:.0f} KB,用到 {len(unicodes)} 个字符')
 
 

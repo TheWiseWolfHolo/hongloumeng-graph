@@ -5,6 +5,8 @@
   $('#stEv').textContent = EVENTS.length;
   /* 页面上所有带 data-pick 的按钮都走同一个入口；卡片外再点一次正在看的那个人，就收起卡片 */
   document.addEventListener('click', ev => {
+    const z = ev.target.closest('[data-zoom]');
+    if (z) { Zoom.open(z.dataset.zoom, z.getAttribute('aria-label') || ''); return; }
     const b = ev.target.closest('[data-pick]');
     if (!b) return;
     if (Drawer.cur === b.dataset.pick && !b.closest('#drawer')) Tabs.closeDrawerAndClear();
