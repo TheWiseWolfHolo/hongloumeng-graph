@@ -2,7 +2,7 @@
 const Tree = (() => {
   const BW = 94, BH = 50, SG = 10, CG = 20, RH = 150, TOP = 70, LEFT = 30;
   let scale = .85, totalW = 0, totalH = 0, rongLeft = 0, svg, box, labels, posOf = {};
-  /* 字辈列是独立的冻结列,树从它右边开始;可视区的宽度要扣掉这一列 */
+  /* 字辈列是独立的冻结列，树从它右边开始；可视区的宽度要扣掉这一列 */
   const colW = () => labels.offsetWidth;
   const viewW = () => box.clientWidth - colW();
 
@@ -47,7 +47,7 @@ const Tree = (() => {
     svg = svgEl('svg', { id: 'tsvg', viewBox: `0 0 ${totalW} ${totalH}`, role: 'img', 'aria-label': '宁荣二府世系图' });
     scroller.appendChild(svg);
 
-    /* 字辈说明放在左侧冻结列里,横向滚动时一直看得见,也不会压住树 */
+    /* 字辈说明放在左侧冻结列里，横向滚动时一直看得见，也不会压住树 */
     GENERATIONS.forEach((g, i) => svgEl('rect', { class: 'gen-band', x: 0, y: TOP + i * RH - 28, width: totalW, height: BH + 56, rx: 6 }, svg));
     labels.innerHTML = GENERATIONS.map(g => `<div class="tlab"><b>${g.label}</b><span>${g.note}</span></div>`).join('');
 
@@ -65,7 +65,7 @@ const Tree = (() => {
     }));
     const y0 = TOP + BH / 2;
     svgEl('path', { class: 't-link', d: `M${ning.ux + BW} ${y0}H${rong.ux}`, 'stroke-dasharray': '6 5', stroke: 'var(--gold2)', 'stroke-width': 2.4 }, gl);
-    svgEl('text', { class: 'gen-note', x: (ning.ux + BW + rong.ux) / 2, y: y0 - 8, 'text-anchor': 'middle' }, gl).textContent = '宁荣二公,同胞兄弟';
+    svgEl('text', { class: 'gen-note', x: (ning.ux + BW + rong.ux) / 2, y: y0 - 8, 'text-anchor': 'middle' }, gl).textContent = '宁荣二公，同胞兄弟';
 
     [ning, rong].forEach(r => walk(r, t => {
       drawBox(gb, t.ux, t.y, t.n, t.s, t.grp, t.g, { x: t.x });

@@ -24,7 +24,7 @@ const Families = (() => {
       svgEl('text', { class: 'sm', x: h.pos[0], y: h.pos[1] + 34 }, g).textContent = h.label;
       g.addEventListener('click', () => { selHouse = k; selLink = null; render(); });
     });
-    $('#guan').innerHTML = GUANFU.map((t, i) => `<p data-i="${i}">${esc(t)}</p>`).join('') + '<footer>第四回,门子给贾雨村看的"护官符"。四句各指一家。</footer>';
+    $('#guan').innerHTML = GUANFU.map((t, i) => `<p data-i="${i}">${esc(t)}</p>`).join('') + '<footer>第四回，门子给贾雨村看的“护官符”。四句各指一家。</footer>';
     render();
   }
   function render() {
@@ -114,12 +114,12 @@ const Love = (() => {
     const t = (x, y, cls, s) => { const e = svgEl('text', { class: cls, x, y }, svg); e.textContent = s; return e; };
     t(240, 28, 'lm-lab', '木石前盟').style.fill = 'var(--e-lv)';
     t(660, 28, 'lm-lab', '金玉良缘').style.fill = 'var(--e-m)';
-    t(240, 150, 'lm-sub', '灌溉之恩,以泪相还');
-    t(660, 150, 'lm-sub', '玉有字,锁也有字');
-    t(300, 232, 'lm-sub', '同住同长,知己');
-    t(600, 232, 'lm-sub', '家长之意,续书成婚');
-    t(450, 358, 'lm-sub', '续书第九十七回"掉包计":黛玉焚稿,宝玉与宝钗成亲');
-    t(450, 380, 'lm-sub', '黛玉泪尽而逝,宝玉后来出家');
+    t(240, 150, 'lm-sub', '灌溉之恩，以泪相还');
+    t(660, 150, 'lm-sub', '玉有字，锁也有字');
+    t(300, 232, 'lm-sub', '同住同长，知己');
+    t(600, 232, 'lm-sub', '家长之意，续书成婚');
+    t(450, 358, 'lm-sub', '续书第九十七回“掉包计”：黛玉焚稿，宝玉与宝钗成亲');
+    t(450, 380, 'lm-sub', '黛玉泪尽而逝，宝玉后来出家');
     Object.entries(P).forEach(([id, [x, y, k]]) => {
       const p = byId.get(id);
       const g = svgEl('g', { class: 'lm-n ' + k, tabindex: 0, role: 'button', 'aria-label': id }, svg);

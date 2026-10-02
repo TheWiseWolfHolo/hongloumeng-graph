@@ -1,6 +1,6 @@
 /* ============ 大观园 ============
-   按绢本青绿界画的路子画:先铺绢地、水系和围墙,再起山石、种树,最后放院落、景致和匾额。
-   颜色全部走 --gd-* 变量,换成漆夜底时就是月夜的园子。随机量用固定种子,每次画出来都一样。 */
+   按绢本青绿界画的路子画：先铺绢地、水系和围墙，再起山石、种树，最后放院落、景致和匾额。
+   颜色全部走 --gd-* 变量，换成漆夜底时就是月夜的园子。随机量用固定种子，每次画出来都一样。 */
 const Garden = (() => {
   const W = 1200, H = 790, WALL = [60, 62, 1140, 736];
   let svg, card, box, sel = 'yhy', seed = 11;
@@ -19,7 +19,7 @@ const Garden = (() => {
     { w: 9, pts: [[452, 336], [420, 324], [380, 334], [330, 358], [280, 386], [230, 402], [170, 408], [112, 400]] },
     { w: 5, pts: [[470, 488], [440, 522], [412, 558], [388, 586], [356, 606], [320, 626], [284, 634], [252, 626]] }
   ];
-  /* 园中小径:游园路线之外的几条支路 */
+  /* 园中小径：游园路线之外的几条支路 */
   const WALKS = [
     [[812, 296], [850, 266], [920, 262], [990, 244], [1055, 222]],
     [[832, 420], [900, 414], [950, 408]],
@@ -30,7 +30,7 @@ const Garden = (() => {
     [[946, 606], [958, 644], [968, 676], [1020, 686], [1048, 686]],
     [[345, 434], [372, 432], [400, 434]]
   ];
-  /* [中心 x, 山脚 y, 宽, 高] */
+  /* [中心 x, 山脚 y, 宽， 高] */
   const HILLS = [
     [118, 128, 150, 60], [190, 122, 96, 40], [80, 124, 60, 30],
     [104, 282, 124, 50], [176, 276, 108, 42], [244, 284, 86, 32],
@@ -69,7 +69,7 @@ const Garden = (() => {
       el('circle', { class: 'g-moss', cx: r1(tx + u * w), cy: r1(t + h * (u * u * 2.4 + rr(.03, .1))), r: r1(rr(1, 1.9)) }, g);
     }
   }
-  /* 太湖石:高的腰细、多孔,矮的是卧石 */
+  /* 太湖石：高的腰细、多孔，矮的是卧石 */
   function rock(g, x, y, s, tall) {
     const H = (tall ? 34 : 12) * s, rx = (tall ? 9 : 13) * s, n = 6, L = [], R = [], ph = rr(0, 3);
     for (let i = 0; i <= n; i++) {
@@ -83,7 +83,7 @@ const Garden = (() => {
     el('path', { class: 'g-cun', d: cun }, g);
     for (let i = 0; i < (tall ? 4 : 1); i++) el('ellipse', { class: 'g-hole', cx: r1(x + rr(-.35, .35) * rx), cy: r1(y - H * rr(.18, .85)), rx: r1(rr(1.1, 2.2) * s), ry: r1(rr(1.6, 3) * s) }, g);
   }
-  /* 叠石假山:一整片起伏的石壁,带孔洞、苔点和藤蔓 */
+  /* 叠石假山：一整片起伏的石壁，带孔洞、苔点和藤蔓 */
   function rockery(g, x, y, w, h) {
     const pts = [[x - w / 2, y]], n = 7;
     for (let i = 0; i <= n; i++) {
@@ -363,7 +363,7 @@ const Garden = (() => {
     }
   }
 
-  /* ---------- 摆放:先占位,再在空处种树 ---------- */
+  /* ---------- 摆放：先占位，再在空处种树 ---------- */
   const blocked = [];
   const block = (x0, y0, x1, y1) => blocked.push([x0, y0, x1, y1]);
   function inPoly(poly, x, y) {
@@ -442,7 +442,7 @@ const Garden = (() => {
     tp.textContent = '沁芳溪';
     void flow;
 
-    /* 田畦(稻香村) */
+    /* 田畦（稻香村） */
     const fields = el('g', null, svg);
     for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) {
       const x = 102 + c * 29 + r * 5, y = 424 + r * 15;
@@ -477,7 +477,7 @@ const Garden = (() => {
     el('ellipse', { class: 'g-cave', cx: 418, cy: 322, rx: 8, ry: 4.5 }, hills);
     [[110, 230], [880, 640], [1100, 470], [420, 640], [760, 560], [160, 160], [990, 300]].forEach(([x, y]) => rock(hills, x, y, rr(.6, 1)));
 
-    /* 占位:院落、匾额、景致、标注 */
+    /* 占位：院落、匾额、景致、标注 */
     GARDEN.forEach(b => {
       if (b.kind === 'home') {
         const [w, h] = courtSize(b);
@@ -561,7 +561,7 @@ const Garden = (() => {
     });
     ting(labels, 702, 240, .7);
 
-    /* 匾额放最上层,和院落共用一个可点的组 */
+    /* 匾额放最上层，和院落共用一个可点的组 */
     GARDEN.filter(b => b.kind === 'home').forEach(b => {
       const g = $(`.g-home[data-id="${b.id}"]`, svg);
       plaque(g, b);
@@ -579,7 +579,7 @@ const Garden = (() => {
     el('text', { y: 1 }, north).textContent = '北';
     el('rect', { class: 'g-grain', x: 12, y: 12, width: W - 24, height: H - 24, filter: 'url(#gdGrain)' }, svg);
 
-    /* 游园用的路线、站点与行人,平时隐藏 */
+    /* 游园用的路线、站点与行人，平时隐藏 */
     const tg = el('g', { class: 'g-tour' }, svg);
     route = el('path', { class: 'g-route', d: spline(GARDEN_TOUR_PATH, false), mask: 'url(#gdTourMask)' }, tg);
     reveal = $('#gdTourReveal', svg);
@@ -623,7 +623,7 @@ const Garden = (() => {
     }
   }
 
-  /* 游园:路线按站点逐段展开,行人沿路走过去 */
+  /* 游园：路线按站点逐段展开，行人沿路走过去 */
   const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   function measure() {
     total = route.getTotalLength();

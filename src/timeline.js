@@ -17,7 +17,7 @@ const Timeline = (() => {
       svgEl('line', { class: 'tl-tick', x1: xOf(n), x2: xOf(n), y1: 76, y2: big ? 84 : 80 }, svg);
       if (big) svgEl('text', { class: 'tl-tlab', x: xOf(n), y: 98 }, svg).textContent = n;
     }
-    /* 事件点:同一位置附近的往上叠 */
+    /* 事件点：同一位置附近的往上叠 */
     const lanes = [];
     EVENTS.forEach(e => {
       const x = xOf(e.n);
@@ -36,7 +36,7 @@ const Timeline = (() => {
   function list() {
     let h = '', sep = false;
     EVENTS.forEach(e => {
-      if (e.late && !sep) { h += '<li class="tl-sep" id="tlSep">以下为后四十回,通常认为出自续书,与前八十回的伏笔并不都相合</li>'; sep = true; }
+      if (e.late && !sep) { h += '<li class="tl-sep" id="tlSep">以下为后四十回，通常认为出自续书，与前八十回的伏笔并不都相合</li>'; sep = true; }
       h += `<li class="tl-i" data-i="${e.i}" style="--c:${EVENT_KINDS[e.k]}">
         <div class="tl-ch">${chName(e.c)}</div>
         <div class="tl-body"><h4>${esc(e.t)}<span class="badge">${e.k}</span></h4><p>${esc(e.d)}</p><div class="mem">${e.ids.map(pill).join('')}</div></div></li>`;
@@ -60,7 +60,7 @@ const Timeline = (() => {
     if (who) {
       const evs = evOf.get(who);
       s = evs.length
-        ? `${who}出现在 ${evs.length} 件大事里,最早是${chName(evs[0].c)},最后是${chName(evs[evs.length - 1].c)}。`
+        ? `${who}出现在 ${evs.length} 件大事里，最早是${chName(evs[0].c)}，最后是${chName(evs[evs.length - 1].c)}。`
         : `${who}没有收录在这些大事里。`;
     }
     $('#tlCount').textContent = s;
