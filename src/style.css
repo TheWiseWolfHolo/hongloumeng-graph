@@ -30,7 +30,7 @@
   /* 情缘页的白描小画与印章 */
   --zhu1: #f7e9e6; --zhu2: #ecccc6; --ying1: #f6f4ee; --ying2: #e0dbcf; --jade1: #eef3e6; --jade2: #cfdcc4;
   --lock1: #f8ebc6; --lock2: #e5c97e; --seal: #b5302a; --seal-ink: #fbeee0; --seal-on: #fbeee0; --rule: rgba(168, 39, 29, .28);
-  --sheet2: #f2ead9; --rod: #4c3122; --rod2: #e2d3ae;
+  --sheet2: #f2ead9;
 
   --g-rong: #b8342a; --g-ning: #b38429; --g-shi: #23807d; --g-wang: #9c4a78; --g-xue: #cb6a26;
   --g-lin: #3a65a8; --g-oth: #548b4a; --g-out: #7b7364; --g-myth: #9061c6;
@@ -63,7 +63,7 @@
     --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
     --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
     --lac1: #6a1613; --lac2: #2d0909;
-    --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
+    --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
     --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
     --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
     --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -91,7 +91,7 @@
   --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
   --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
   --lac1: #6a1613; --lac2: #2d0909;
-  --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815; --rod: #5d3f2c; --rod2: #a8977a;
+  --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
   --g-rong: #e0604f; --g-ning: #dfaa44; --g-shi: #43b5b0; --g-wang: #cc78a8; --g-xue: #ee9140;
   --g-lin: #6c9be0; --g-oth: #78bf6a; --g-out: #a49c8a; --g-myth: #c493e8;
   --e-b: #e4604f; --e-m: #e2b043; --e-in: #46b6b6; --e-sv: #8f979c;
@@ -867,36 +867,35 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 /* ---------- 百二十回 ---------- */
 /* 手卷:卷轴、红绫引首、两张纸、朱丝栏 */
-.tl-axisbox { overflow-x: auto; margin: 0 0 18px; padding: 4px 0 2px; scrollbar-width: thin; }
-#tlAxis { display: block; width: 100%; min-width: 860px; height: auto; overflow: visible; }
-.tl-rod { fill: var(--rod); }
-.tl-cap { fill: var(--rod2); }
-.tl-shine { fill: #fff; opacity: .16; }
-.tl-yin { fill: var(--lac1); }
-.tl-yin-in { fill: none; stroke: var(--h-gold); stroke-width: .8; opacity: .55; }
-.tl-yt { font-family: var(--f-display); font-size: 28px; fill: var(--h-gold); text-anchor: middle; }
-.tl-sheet { fill: var(--panel2); stroke: var(--line); stroke-width: 1; }
-.tl-sheet.late { fill: var(--sheet2); }
-.tl-rule { stroke: var(--red); stroke-width: .7; opacity: .3; }
-.tl-lane { stroke: var(--ink3); stroke-width: .6; stroke-dasharray: 1 4; opacity: .5; }
-.tl-kind { font-family: var(--f-sans); font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-anchor: end; }
-.tl-frame { fill: none; stroke: var(--red); stroke-width: 1.6; opacity: .5; }
-.tl-frame.in { stroke-width: .7; }
-.tl-seam { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
-.tl-num { font-family: var(--f-serif); font-size: 11.5px; fill: var(--ink3); text-anchor: middle; }
-.tl-read { font-family: var(--f-serif); font-weight: 600; font-size: 14px; letter-spacing: .16em; fill: var(--ink3); text-anchor: middle; paint-order: stroke; stroke: var(--panel2); stroke-width: 6px; stroke-linejoin: round; pointer-events: none; }
-.tl-read.late { stroke: var(--sheet2); }
-.tl-read.on { fill: var(--ink); font-size: 15px; letter-spacing: .1em; }
-.tl-seal { pointer-events: none; }
-.tl-seal rect { fill: var(--seal); }
-.tl-seal text { font-family: var(--f-serif); font-weight: 900; font-size: 9.5px; fill: var(--seal-ink); text-anchor: middle; }
-.tl-dot { cursor: pointer; outline: none; }
-.tl-tint { fill: var(--c); opacity: 0; transition: opacity .2s; }
-.tl-stamp { fill: var(--c); stroke: var(--panel2); stroke-width: .8; transition: opacity .2s; }
-.tl-dot:hover .tl-tint, .tl-dot:focus-visible .tl-tint { opacity: .22; }
-.tl-dot:hover .tl-stamp, .tl-dot:focus-visible .tl-stamp { stroke: var(--ink); stroke-width: 1.2; }
-.tl-dot.dim .tl-tint { opacity: 0; }
-.tl-dot.dim .tl-stamp { opacity: .15; }
+/* 百二十回稿纸：朱丝双线版框，一格一回；后四十回换一张略深的纸，中间双线隔开 */
+.tlg { --grid: color-mix(in srgb, var(--rule) 55%, transparent); margin: 6px 5px 24px; }
+.tlg-sheet { border: 1px solid var(--rule); outline: 1px solid var(--rule); outline-offset: 4px; background: var(--panel); }
+.tlg-part { --ground: var(--panel); display: grid; grid-template-columns: 62px minmax(0, 1fr); background: var(--ground); }
+.tlg-part.late { --ground: var(--sheet2); position: relative; border-top: 3px double var(--rule); }
+.tlg-part.late .tlg-side { justify-content: flex-end; padding-bottom: 4px; }
+.tlg-side { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 6px 0; border-right: 1px solid var(--rule); }
+.tlg-side b { writing-mode: vertical-rl; font-family: var(--f-serif); font-weight: 900; font-size: 16px; letter-spacing: .24em; color: var(--ink); }
+.tlg-side small { writing-mode: vertical-rl; font-family: var(--f-serif); font-size: 11.5px; letter-spacing: .22em; color: var(--ink3); }
+/* 续书印骑在前后两张纸的接缝上，像骑缝章 */
+.tlg-seal { position: absolute; left: 31px; top: -1.5px; z-index: 1; font-family: var(--f-serif); font-weight: 900; font-size: 11px; line-height: 1; letter-spacing: .1em; white-space: nowrap; padding: 4px 4px 4px 5px; border-radius: 2px; background: var(--seal); color: var(--seal-ink); transform: translate(-50%, -50%) rotate(-5deg); }
+.tlg-cells { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); }
+.tlg-c { position: relative; height: 46px; margin: 0; padding: 0; border: 0; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); background: none; font: inherit; color: inherit; }
+.tlg-c:nth-child(20n) { border-right: 0; }
+.tlg-c:nth-last-child(-n+20) { border-bottom: 0; }
+.tlg-c i { position: absolute; left: 4px; top: 2px; font-style: normal; font-family: var(--f-serif); font-size: 9.5px; line-height: 1.2; color: var(--ink3); opacity: .65; font-variant-numeric: tabular-nums; }
+.tl-dot { cursor: pointer; outline: none; transition: background .15s; }
+.tl-dot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--c); transition: opacity .2s; }
+.tl-dot.head::before { left: 50%; }
+.tl-dot.tail::before { right: 50%; }
+.tl-dot.one::before { display: none; }
+.tl-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--c); transition: opacity .2s, transform .2s; }
+.tl-dot.head::after, .tl-dot.one::after { width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; box-shadow: 0 0 0 2.5px var(--ground), 0 0 0 3.6px var(--c); }
+.tl-dot.hot, .tl-dot:focus-visible { background: color-mix(in srgb, var(--c) 13%, transparent); }
+.tl-dot.hot::after { transform: scale(1.18); }
+.tl-dot.dim::before, .tl-dot.dim::after { opacity: .14; }
+.tl-dot.dim.hot { background: none; }
+.tlg-read { min-height: 1.7em; margin: 14px 0 0; text-align: center; font-family: var(--f-serif); font-size: 13.5px; letter-spacing: .08em; color: var(--ink3); }
+.tlg-read.on { color: var(--ink); font-weight: 600; font-size: 15px; }
 .tl-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
 .tl-tools .seg { margin: 0; }
 #tlWhoChip button { background: none; border: 0; color: inherit; font-size: 15px; line-height: 1; padding: 0 0 0 4px; }
@@ -1037,6 +1036,23 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   #tZoomIn, #tZoomOut { display: none; }
   .tlab span { display: none; }
   .treebox { max-height: 78vh; }
+  .tlg-part { grid-template-columns: 34px minmax(0, 1fr); }
+  .tlg-side { gap: 8px; }
+  .tlg-side b { font-size: 13px; letter-spacing: .2em; }
+  .tlg-side small { display: none; }
+  .tlg-part.late .tlg-side { justify-content: center; padding-bottom: 6px; }
+  .tlg-seal { position: static; writing-mode: vertical-rl; font-size: 10px; padding: 4px 2px; transform: rotate(-4deg); }
+  .tlg-cells { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  .tlg-c { height: 31px; }
+  .tlg-c:nth-child(20n) { border-right: 1px solid var(--grid); }
+  .tlg-c:nth-child(10n) { border-right: 0; }
+  .tlg-c:nth-last-child(-n+20) { border-bottom: 1px solid var(--grid); }
+  .tlg-c:nth-last-child(-n+10) { border-bottom: 0; }
+  .tlg-c i { display: none; }
+  .tlg-c:nth-child(10n+1) i { display: block; font-size: 8.5px; left: 2px; top: 1px; }
+  .tl-dot.head::after, .tl-dot.one::after { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; box-shadow: 0 0 0 2px var(--ground), 0 0 0 3px var(--c); }
+  .tl-dot::after { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; }
+  .tlg-read { font-size: 12.5px; }
   .tl::before { left: 5px; }
   .tl-i { grid-template-columns: minmax(0, 1fr); padding-left: 26px; }
   .tl-i::before { left: 0; top: 7px; }

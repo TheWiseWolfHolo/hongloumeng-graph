@@ -2,70 +2,39 @@
 const Timeline = (() => {
   let kind = 'all', part = 'all', who = null;
 
-  /* 上面的轴画成一幅手卷：两头是卷轴，开头一段红绫引首，每十回一道界栏。
-     前八十回与后四十回是两张纸，接缝上骑着盖一方“续书”印。
-     每件大事是一方小印，按神话、家事、情缘、诗社、风波、生死分六行盖在它开始的那一回，跨几回就拉长几栏；
-     悬停时那几回铺一层浅色，纸的下方题出回目与事件。 */
+  /* 上面是一张稿纸：一百二十回排成六行，一行二十格，前八十回和后四十回正好在第四、五行之间分开。
+     有大事的那一回画一个圆圈，颜色按神话、家事、情缘、诗社、风波、生死；跨几回的，用一根细线串到最后一回。
+     悬停时稿纸下方题出回目与事件，点一下跳到下面那件事。 */
   function axis() {
-    const svg = $('#tlAxis');
-    const W = 1200, T = 12, B = 160, X0 = 140, X1 = 1166, CW = (X1 - X0) / 120;
-    const xs = n => X0 + (n - 1) * CW;
-    const seam = xs(81), F0 = T + 8, F1 = B - 8;
-    const KINDS = Object.keys(EVENT_KINDS), rowY = k => F0 + 18 + KINDS.indexOf(k) * 16;
-    [6, W - 22].forEach(x => {
-      svgEl('rect', { class: 'tl-cap', x: x + 3, y: T - 9, width: 10, height: B - T + 18, rx: 3 }, svg);
-      svgEl('rect', { class: 'tl-rod', x, y: T - 3, width: 16, height: B - T + 6, rx: 4 }, svg);
-      svgEl('rect', { class: 'tl-shine', x: x + 4, y: T, width: 2.5, height: B - T, rx: 1 }, svg);
-    });
-    svgEl('rect', { class: 'tl-yin', x: 22, y: T, width: 70, height: B - T }, svg);
-    svgEl('rect', { class: 'tl-yin-in', x: 28, y: T + 6, width: 58, height: B - T - 12 }, svg);
-    const yt = svgEl('text', { class: 'tl-yt', x: 57, y: T + 50 }, svg);
-    [...'百廿回'].forEach((ch, i) => { svgEl('tspan', { x: 57, dy: i ? '1.12em' : 0 }, yt).textContent = ch; });
-    svgEl('rect', { class: 'tl-sheet', x: 92, y: T, width: seam - 92, height: B - T }, svg);
-    svgEl('rect', { class: 'tl-sheet late', x: seam, y: T, width: W - 22 - seam, height: B - T }, svg);
-    for (let n = 0; n <= 120; n += 10) {
-      const x = X0 + n * CW;
-      svgEl('line', { class: 'tl-rule', x1: x, x2: x, y1: F0, y2: F1 }, svg);
-    }
-    KINDS.forEach(k => {
-      svgEl('line', { class: 'tl-lane', x1: X0, x2: X1, y1: rowY(k), y2: rowY(k) }, svg);
-      const t = svgEl('text', { class: 'tl-kind', x: X0 - 8, y: rowY(k) + 4 }, svg);
-      t.style.fill = EVENT_KINDS[k];
-      t.textContent = k;
-    });
-    svgEl('rect', { class: 'tl-frame', x: X0 - 40, y: F0 - 4, width: X1 - X0 + 46, height: F1 - F0 + 8 }, svg);
-    svgEl('rect', { class: 'tl-frame in', x: X0 - 36, y: F0, width: X1 - X0 + 38, height: F1 - F0 }, svg);
-    svgEl('line', { class: 'tl-seam', x1: seam, x2: seam, y1: T, y2: B }, svg);
-    Array.from({ length: 12 }, (_, i) => (i + 1) * 10).forEach(n => {
-      svgEl('text', { class: 'tl-num', x: xs(n) + CW / 2, y: B + 18 }, svg).textContent = cnNum(n);
-    });
-    const read = [
-      svgEl('text', { class: 'tl-read', x: (X0 + seam) / 2, y: F1 - 11 }, svg),
-      svgEl('text', { class: 'tl-read late', x: (seam + X1) / 2, y: F1 - 11 }, svg)
-    ];
-    const READ0 = ['前八十回　曹雪芹原著', '后四十回　通常认为出自续书'];
-    const say = (k, s) => { read[k].textContent = s || READ0[k]; read[k].classList.toggle('on', !!s); };
-    say(0); say(1);
-    const rand = (i => () => { i = (i * 9301 + 49297) % 233280; return i / 233280; })(120);
-    EVENTS.forEach(e => {
-      const x0 = xs(e.c[0]), x1 = xs(e.c[e.c.length - 1]) + CW, y = rowY(e.k), w = x1 - x0 - 2.4, cx = (x0 + x1) / 2;
-      const g = svgEl('g', { class: 'tl-dot', 'data-i': e.i, tabindex: 0, role: 'button', 'aria-label': `${chName(e.c)} ${e.t}` }, svg);
-      g.style.setProperty('--c', EVENT_KINDS[e.k]);
-      svgEl('rect', { class: 'tl-tint', x: x0, y: F0, width: x1 - x0, height: 6 * 16 + 14 }, g);
-      /* 手盖的印不会摆得笔直，每方随手歪一点 */
-      const tilt = ((rand() - .5) * (e.c.length > 1 ? 4 : 12)).toFixed(1);
-      svgEl('rect', { class: 'tl-stamp', x: (x0 + 1.2).toFixed(1), y: y - 5, width: w.toFixed(1), height: 10, rx: 1.4, transform: `rotate(${tilt} ${cx.toFixed(1)} ${y})` }, g);
-      svgEl('title', {}, g).textContent = `${chName(e.c)} · ${e.t}`;
-    });
-    const seal = svgEl('g', { class: 'tl-seal', transform: `rotate(-5 ${seam.toFixed(1)} ${T + 6})` }, svg);
-    svgEl('rect', { x: seam - 7.5, y: T - 8, width: 15, height: 28, rx: 1.5 }, seal);
-    const st = svgEl('text', { x: seam, y: T + 3 }, seal);
-    [...'续书'].forEach((ch, i) => { svgEl('tspan', { x: seam.toFixed(1), dy: i ? '1.1em' : 0 }, st).textContent = ch; });
+    const box = $('#tlAxis'), at = {};
+    EVENTS.forEach(e => { for (let c = e.c[0]; c <= e.c[e.c.length - 1]; c++) at[c] = e; });
+    const cell = n => {
+      const e = at[n];
+      if (!e) return `<span class="tlg-c"><i>${n}</i></span>`;
+      const a = e.c[0], b = e.c[e.c.length - 1], pos = a === b ? 'one' : n === a ? 'head' : n === b ? 'tail' : 'mid';
+      return `<button class="tlg-c tl-dot ${pos}" type="button" data-i="${e.i}" style="--c:${EVENT_KINDS[e.k]}"`
+        + `${n === a ? ` aria-label="${chName(e.c)}，${esc(e.t)}"` : ' tabindex="-1" aria-hidden="true"'}><i>${n}</i></button>`;
+    };
+    const part = (from, to, side, late) => `<div class="tlg-part${late ? ' late' : ''}"><div class="tlg-side">${side}</div>`
+      + `<div class="tlg-cells">${Array.from({ length: to - from + 1 }, (_, k) => cell(from + k)).join('')}</div></div>`;
+    box.innerHTML = '<div class="tlg-sheet">'
+      + part(1, 80, '<b>前八十回</b><small>曹雪芹原著</small>')
+      + part(81, 120, '<b>后四十回</b><span class="tlg-seal">续书</span>', true)
+      + '</div><p class="tlg-read" aria-hidden="true"></p>';
+    const read = $('.tlg-read', box), READ0 = '一格一回，圆圈是一件大事，跨几回的串在一起；点圆圈跳到下面那件事';
+    const say = e => {
+      read.textContent = e ? `${chName(e.c)}　${e.t}` : READ0;
+      read.classList.toggle('on', !!e);
+      $$('.tl-dot.hot', box).forEach(c => c.classList.remove('hot'));
+      if (e) $$(`.tl-dot[data-i="${e.i}"]`, box).forEach(c => c.classList.add('hot'));
+    };
+    say(null);
     const hit = ev => ev.target.closest && ev.target.closest('.tl-dot');
-    svg.addEventListener('pointerover', ev => { const g = hit(ev); if (!g) return; const e = EVENTS[+g.dataset.i]; say(e.late ? 1 : 0, `${chName(e.c)}　${e.t}`); });
-    svg.addEventListener('pointerout', ev => { const g = hit(ev); if (g && !g.contains(ev.relatedTarget)) { say(0); say(1); } });
-    svg.addEventListener('click', ev => { const g = hit(ev); if (g) focus(+g.dataset.i); });
-    svg.addEventListener('keydown', ev => { const g = hit(ev); if (g && ev.key === 'Enter') focus(+g.dataset.i); });
+    box.addEventListener('pointerover', ev => { const c = hit(ev); if (c) say(EVENTS[+c.dataset.i]); });
+    box.addEventListener('pointerout', ev => { const c = hit(ev); if (c && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest(`.tl-dot[data-i="${c.dataset.i}"]`))) say(null); });
+    box.addEventListener('focusin', ev => { const c = hit(ev); if (c) say(EVENTS[+c.dataset.i]); });
+    box.addEventListener('focusout', () => say(null));
+    box.addEventListener('click', ev => { const c = hit(ev); if (c) focus(+c.dataset.i); });
   }
 
   function list() {
