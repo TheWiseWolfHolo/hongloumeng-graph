@@ -27,6 +27,8 @@ node build.mjs          # 合成 index.html，直接用浏览器打开就能看
 
 `img/12/` 是正册十二钗的画像，640×960 的 WebP，页面按相对路径引用，线上构建会整个拷进 `dist/`。这组画是作者用 AI 生成的工笔设色插画，衣饰与场景依书中描写补足，不作考证。
 
+`img/icon.svg`、`img/icon-32.png`、`img/icon-180.png` 是标签页和手机桌面的图标，由 `tools/make-icons.py` 从马善政毛笔楷里取“红”字生成，字形写成矢量路径，不靠访问者电脑上的字体。
+
 ## 数据约定
 
 - 人物以名字作 id，`EDGES`、`EVENTS` 的 `ids`、大观园院落的 `who` 里出现的名字都要在 `NODES` 里有。
