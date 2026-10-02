@@ -1,6 +1,6 @@
 /* ============ 关系星图 ============
    全景是力导向布局，每个家族有自己的锚点和一团底色。名字按空隙自动显示，挤不下的先藏起来，放大后会陆续出现。
-   点一个人，与之相连的人亮起来；再点一次（或选“命盘”）进入命盘：关系按类型分扇区，一人一个方位，
+   点一个人，与之相连的人亮起来，再点一次收起。双击一个人（或用卡片上的按钮、底部切换）进命盘，以这个人为中心：关系按类型分扇区，一人一个方位，
    连线都是从中心发出的直线，上下两侧的名字竖排。关系链把两人之间的关系拉成一条线。
    手机上页面里的星图只是预览，轻点进入全屏，拖动、双指缩放、点选都在全屏里做。 */
 const Graph = (() => {
@@ -31,9 +31,10 @@ const Graph = (() => {
   const COST = { b: 1, m: 1, in: 1.2, sv: 1.3, lv: 1.4, fr: 1.6, ri: 2, my: 2.2 };
   const SHORT = { b: '血亲', m: '婚配', in: '姻亲', sv: '主仆', lv: '情缘', fr: '交游', ri: '恩怨', my: '神缘' };
   const BEND = .1;
+  /* 按家族聚拢时各家的锚点：荣府居中，其余各家围成一圈，彼此隔开，像一座座岛 */
   const ANCH = {
-    rong: [0, 20], ning: [620, -150], shi: [-620, -300], wang: [-480, 380], xue: [420, 430],
-    lin: [-720, 60], oth: [760, 240], out: [80, -600], myth: [-400, -620]
+    rong: [0, 0], ning: [760, -170], shi: [-760, -330], wang: [-600, 470], xue: [600, 500],
+    lin: [-900, 90], oth: [920, 300], out: [60, -760], myth: [-470, -760]
   };
   const f1 = v => v.toFixed(1);
   /* 缩小时文字按比例放大一些，屏幕上的字号不至于小到看不清；手机屏幕小，补得更多 */
@@ -47,7 +48,7 @@ const Graph = (() => {
   function step() {
     const vis = nodes.filter(n => n.vis);
     const a = alpha;
-    const kc = state.layout === 'family' ? .034 : .004;
+    const fam = state.layout === 'family', kc = fam ? .05 : .004;
     for (let i = 0; i < vis.length; i++) {
       const p = vis[i];
       for (let j = i + 1; j < vis.length; j++) {
@@ -74,12 +75,12 @@ const Graph = (() => {
       const p = l.s, q = l.t;
       const dx = q.x - p.x, dy = q.y - p.y;
       const d = Math.sqrt(dx * dx + dy * dy) || 1;
-      const f = (d - l.len) * l.str * a / d;
+      const f = (d - l.len * (fam && l.x ? 2.1 : 1)) * l.str * (fam && l.x ? .22 : 1) * a / d;
       p.vx += dx * f; p.vy += dy * f; q.vx -= dx * f; q.vy -= dy * f;
     }
     for (const n of vis) {
       if (n.fx != null) { n.x = n.fx; n.y = n.fy; n.vx = n.vy = 0; continue; }
-      const an = anch[n.p.grp], kk = n.p.grp === 'rong' ? kc * .3 : kc;
+      const an = anch[n.p.grp], kk = n.p.grp === 'rong' ? kc * .45 : kc;
       n.vx += (an[0] - n.x) * kk * a; n.vy += (an[1] - n.y) * kk * a;
       n.vx -= n.x * .0008 * a; n.vy -= n.y * .0008 * a;
       n.vx *= .76; n.vy *= .76;
@@ -120,14 +121,22 @@ const Graph = (() => {
     if (!raf) raf = requestAnimationFrame(loop);
   }
 
-  /* ---------- 家族星云：每家一团淡淡的底色，上面写家名 ---------- */
+  /* ---------- 家族星云：每家一团淡淡的底色；家名写在这座岛背对全图中心的一侧，不压在人身上 ---------- */
   function paintNebulae() {
     const acc = {};
+    let gx = 0, gy = 0, gn = 0;
     for (const n of nodes) {
       if (!n.vis) continue;
-      const a = acc[n.p.grp] || (acc[n.p.grp] = { x: 0, y: 0, list: [] });
+      const a = acc[n.p.grp] || (acc[n.p.grp] = { x: 0, y: 0, x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, list: [] });
       a.x += n.x; a.y += n.y; a.list.push(n);
+      a.x0 = Math.min(a.x0, n.x); a.x1 = Math.max(a.x1, n.x); a.y0 = Math.min(a.y0, n.y); a.y1 = Math.max(a.y1, n.y);
+      gx += n.x; gy += n.y; gn++;
     }
+    gx /= gn || 1; gy /= gn || 1;
+    /* 竖屏宽度最紧，家名只放在岛的上方或下方，并且收在全图人物的左右范围之内 */
+    const narrow = H > W;
+    let nx0 = 1e9, nx1 = -1e9;
+    if (narrow) Object.values(acc).forEach(a => { nx0 = Math.min(nx0, a.x0); nx1 = Math.max(nx1, a.x1); });
     ALL_GROUPS.forEach(g => {
       const nb = nebs[g], a = acc[g];
       if (!a || a.list.length < 3) { nb.g.style.display = 'none'; return; }
@@ -137,7 +146,27 @@ const Graph = (() => {
       const sp = Math.sqrt(s / a.list.length);
       nb.g.style.display = '';
       nb.c.setAttribute('cx', f1(cx)); nb.c.setAttribute('cy', f1(cy)); nb.c.setAttribute('r', f1(sp * 1.45 + 70));
-      nb.t.setAttribute('x', f1(cx)); nb.t.setAttribute('y', f1(cy - sp * 1.05 - 26));
+      let vx = cx - gx, vy = cy - gy;
+      const vl = Math.hypot(vx, vy);
+      if (narrow) {
+        const hw = GROUPS[g].name.length * 30 * inv * .68, x = Math.max(nx0 + hw, Math.min(nx1 - hw, (a.x0 + a.x1) / 2));
+        const fs = 30 * inv, pad = 18 * inv;
+        const up = a.y0 - 40 * inv, down = a.y1 + 56 * inv;
+        const hits = y => Object.entries(acc).some(([k, o]) => k !== g && o.list.length >= 3
+          && x - hw < o.x1 + pad && x + hw > o.x0 - pad && y - fs < o.y1 + pad && y + 6 * inv > o.y0 - pad);
+        const pref = cy > gy + 60 ? [down, up] : [up, down];
+        nb.t.setAttribute('x', f1(x));
+        nb.t.setAttribute('y', f1(pref.find(y => !hits(y)) ?? pref[0]));
+        nb.t.style.textAnchor = 'middle';
+        return;
+      }
+      if (vl < 120) { vx = 0; vy = -1; } else { vx /= vl; vy /= vl; }
+      const side = Math.abs(vx) > .72 ? (vx > 0 ? 'start' : 'end') : 'middle';
+      const m = 46 * inv, hw = (a.x1 - a.x0) / 2 + m, hh = (a.y1 - a.y0) / 2 + m;
+      const bx = (a.x0 + a.x1) / 2, by = (a.y0 + a.y1) / 2;
+      const t = Math.min(hw / Math.abs(vx || 1e-6), hh / Math.abs(vy || 1e-6));
+      nb.t.setAttribute('x', f1(bx + vx * t)); nb.t.setAttribute('y', f1(by + vy * t + (vy > .3 ? 22 * inv : vy < -.3 ? 0 : 10 * inv)));
+      nb.t.style.textAnchor = side;
     });
   }
 
@@ -236,7 +265,28 @@ const Graph = (() => {
     pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
     fitBox(x0, y0, x1, y1, instant, pad);
   }
-  const fitVisible = instant => fitPts(nodes.filter(n => n.vis), instant, 60);
+  /* 全景取景时把家名也算进去；家名的字号随缩放变，来回算几次 */
+  function fitVisible(instant) {
+    const vis = nodes.filter(n => n.vis);
+    if (mode !== 'all' || !vis.length) return fitPts(vis, instant, 60);
+    const ins = insets(), w = Math.max(80, W - ins.l - ins.r), h = Math.max(80, H - ins.t - ins.b);
+    let k = T.k, box = null;
+    for (let i = 0; i < 3; i++) {
+      inv = invFor(k);
+      svg.style.setProperty('--inv', inv.toFixed(3));
+      paintNebulae();
+      box = [1e9, 1e9, -1e9, -1e9];
+      const add = (x, y) => { box[0] = Math.min(box[0], x); box[1] = Math.min(box[1], y); box[2] = Math.max(box[2], x); box[3] = Math.max(box[3], y); };
+      vis.forEach(n => add(n.x, n.y));
+      ALL_GROUPS.forEach(g => {
+        if (nebs[g].g.style.display === 'none') return;
+        const b = nebs[g].t.getBBox();
+        add(b.x, b.y); add(b.x + b.width, b.y + b.height);
+      });
+      k = Math.max(.2, Math.min(1.5, w / (box[2] - box[0] + 60), h / (box[3] - box[1] + 60)));
+    }
+    fitBox(box[0], box[1], box[2], box[3], instant, 30);
+  }
   /* 命盘的外框取决于字号，字号又取决于缩放，来回算两三次就稳了 */
   function fitEgo(instant) {
     const { cx, cy, R } = egoInfo, ins = insets();
@@ -341,7 +391,9 @@ const Graph = (() => {
       const line = svgEl('path', { class: 'edge-line' }, g);
       const lab = svgEl('text', { class: 'edge-lab' }, g);
       lab.textContent = e.label.replace('/', '·');
-      const l = { e, g, hit, line, lab, s: nmap.get(e.a), t: nmap.get(e.b), len: LEN[e.type], str: STR[e.type], vis: true, lit: false, onPath: false };
+      const s0 = nmap.get(e.a), t0 = nmap.get(e.b), x = s0.p.grp !== t0.p.grp;
+      if (x) g.classList.add('x');
+      const l = { e, g, hit, line, lab, s: s0, t: t0, x, len: LEN[e.type], str: STR[e.type], vis: true, lit: false, onPath: false };
       hit.__l = l;
       lmap.set(e, l);
       return l;
@@ -440,7 +492,7 @@ const Graph = (() => {
   function select(id, center) {
     const n = nmap.get(id);
     if (!n) return;
-    if (mode === 'ego') { if (id === egoId) card(id); else radial(id); return; }
+    if (mode === 'ego') { if (id !== egoId) radial(id); else if (Drawer.cur === id) Drawer.close(); else card(id); return; }
     if (mode === 'chain') { if (state.focus.has(id)) { card(id); return; } exitModes(true); }
     if (!n.vis) resetFilters(true);
     selected = id;
@@ -479,8 +531,8 @@ const Graph = (() => {
   const hideTip = () => { tip.hidden = true; tipPinned = false; };
   function nodeTip(id) {
     const p = byId.get(id), deg = adj.get(id).length;
-    const how = mode === 'ego' ? (id === egoId ? '点击看详情' : '点击换到这个人的命盘')
-      : id === selected ? '再点一次，以这个人为中心排开' : '点击看关系 · 再点一次进入命盘';
+    const how = mode === 'ego' ? (id === egoId ? '点击看详情，再点收起' : '点击换到这个人的命盘')
+      : id === selected ? '再点一次收起 · 双击进命盘' : '单击看关系与介绍 · 双击进命盘';
     return `<b><i class="dot" style="--c:var(--g-${p.grp})"></i>${esc(id)}</b>${p.sub ? `<span>${esc(p.sub)}</span>` : ''}<em>${GROUPS[p.grp].name} · ${deg} 条关系${p.tag ? ' · ' + tagName(p.tag) : ''}</em><small>${how}</small>`;
   }
   function edgeTip(e) {
@@ -860,7 +912,7 @@ const Graph = (() => {
      触屏：单指平移（松手带惯性），双指缩放，点空白两下放大；点人不必点准，附近最近的人会被选中。 */
   function bindPointer() {
     const ptrs = new Map();
-    let drag = null, lastTap = { t: 0, x: 0, y: 0 };
+    let drag = null, lastTap = { t: 0, x: 0, y: 0 }, lastNode = { id: null, t: 0, x: 0, y: 0 };
     const target = el => el.closest && el.closest('.nd, .ego-lab');
     function nearest(cx, cy, tol) {
       const [wx, wy] = toWorld(cx, cy), focusOn = svg.classList.contains('focus');
@@ -883,16 +935,24 @@ const Graph = (() => {
       return null;
     }
     function tap(ev, touch) {
-      const nd = target(ev.target), id = nd ? nd.dataset.id : labelAt(ev.clientX, ev.clientY) || nearest(ev.clientX, ev.clientY, touch ? 24 : 6);
+      /* 按手指落下的时刻算，不按处理的时刻：第一下要开卡片、拉镜头，第二下常常要等一会儿才轮到处理 */
+      const now = ev.timeStamp || performance.now();
+      /* 单击开关人物卡片；两下点得又快又近就是双击，直接进命盘。
+         第一下点中后镜头会拉近，第二下落下时人已经挪了位置，所以双击认第一下的那个人 */
+      const nd = target(ev.target), hit = nd ? nd.dataset.id : labelAt(ev.clientX, ev.clientY) || nearest(ev.clientX, ev.clientY, touch ? 24 : 6);
+      const dbl = !!lastNode.id && now - lastNode.t < 420 && (hit === lastNode.id || Math.hypot(ev.clientX - lastNode.x, ev.clientY - lastNode.y) < 32);
+      const id = dbl ? lastNode.id : hit;
       if (id) {
         hideTip();
-        if (mode === 'all' && id === selected) radial(id);
+        lastNode = dbl ? { id: null, t: 0, x: 0, y: 0 } : { id, t: now, x: ev.clientX, y: ev.clientY };
+        if (dbl && mode !== 'chain') radial(id);
+        else if (mode === 'all' && id === selected) { clearSelection(); Drawer.close(); }
         else select(id, touch && mode === 'all' ? 'fit' : false);
         return;
       }
       const l = ev.target.__l;
       if (touch && l && svg.classList.contains('focus')) { showTip(edgeTip(l.e), ev.clientX, ev.clientY); tipPinned = true; return; }
-      const now = performance.now(), r = svg.getBoundingClientRect();
+      const r = svg.getBoundingClientRect();
       if (touch && now - lastTap.t < 340 && Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 36) {
         zoomAt(ev.clientX - r.left, ev.clientY - r.top, 1.8);
         lastTap.t = 0;
@@ -1004,7 +1064,7 @@ const Graph = (() => {
     resize();
     /* 竖屏（手机全屏）把家族锚点转九十度，整张图竖着摊开，能放得更大 */
     const tall = previewOnly() ? innerHeight > innerWidth : H > W * 1.05;
-    anch = tall ? Object.fromEntries(Object.entries(ANCH).map(([g, [x, y]]) => [g, [y * 1.1, x * .95]])) : ANCH;
+    anch = tall ? Object.fromEntries(Object.entries(ANCH).map(([g, [x, y]]) => [g, [y * .86, x * 1.42]])) : ANCH;
     build();
     buildControls();
     buildPath();
@@ -1013,6 +1073,8 @@ const Graph = (() => {
     for (let i = 0; i < 700; i++) step();
     alpha = .02;
     applyFilters();
+    /* 初始布局已经算好，筛选里的那次加热不要了，免得取景之后人还在往外散 */
+    alpha = 0;
     renderBar();
     fitVisible(true);
     ready = true;

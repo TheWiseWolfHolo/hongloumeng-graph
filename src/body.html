@@ -40,7 +40,7 @@
   <section class="sec" id="tab-graph">
     <div class="sec-head">
       <h2 data-no="壹">关系星图</h2>
-      <p>每个圆点是一个人，颜色是所属家族，线的颜色与样式是关系类型。点一个人，与之相连的人都会亮起来；再点一次，就以这个人为中心排成命盘。关系链能查两个人之间隔着谁。</p>
+      <p>每个圆点是一个人，颜色是所属家族，线的颜色与样式是关系类型。点一个人，与之相连的人都会亮起来，旁边出现这个人的介绍，再点一次收起；双击一个人进入命盘，以这个人为中心排开全部关系，关系链能查两个人之间隔着谁。</p>
     </div>
     <div class="stage" id="stage">
       <svg id="gsvg" role="img" aria-label="红楼梦人物关系星图"></svg>
@@ -93,7 +93,7 @@
         <button id="zFit" type="button" aria-label="适合画面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9V5h4M15 5h4v4M19 15v4h-4M9 19H5v-4"/></svg></button>
         <button id="zFull" type="button" aria-label="全屏"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-open" d="M4 10V4h6M14 4h6v6M20 14v6h-6M10 20H4v-6"/><path class="i-shut" d="M10 4v6H4M20 10h-6V4M14 20v-6h6M4 14h6v6"/></svg></button>
       </div>
-      <button class="sg-enter" id="gEnter" type="button"><span class="sge-pill"><b>进入星图</b><small>全屏查看 · 双指缩放 · 轻点人物</small></span></button>
+      <button class="sg-enter" id="gEnter" type="button"><span class="sge-pill"><b>进入星图</b><small>双指缩放 · 轻点看人 · 双击进命盘</small></span></button>
       <div class="gtip" id="gTip" hidden></div>
     </div>
   </section>

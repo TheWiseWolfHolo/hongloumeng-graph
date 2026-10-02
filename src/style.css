@@ -361,6 +361,8 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .edge-line { pointer-events: none; fill: none; stroke: var(--c); stroke-width: var(--w, 1.3); stroke-dasharray: var(--d, none); stroke-linecap: round; opacity: .4; transition: opacity .2s; vector-effect: non-scaling-stroke; }
 .edge-hit { fill: none; stroke: transparent; stroke-width: 12px; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: help; }
 #gsvg.focus .edge:not(.lit) .edge-hit { pointer-events: none; }
+/* 全景里跨家族的线压淡，同一家里的线保持清楚；点到谁，谁的线才亮 */
+#gsvg:not(.ego):not(.chain):not(.focus) .edge.x .edge-line { opacity: .13; }
 .edge-lab { font-family: var(--f-sans); font-size: calc(11px * var(--inv, 1)); fill: var(--c); paint-order: stroke; stroke: var(--halo); stroke-width: 4px; stroke-linejoin: round; text-anchor: middle; pointer-events: none; opacity: 0; font-weight: 600; }
 .nd { cursor: pointer; transition: opacity .2s; }
 .nd circle.body, .nd path.body { fill: var(--c); stroke: var(--halo); stroke-width: 1.8; vector-effect: non-scaling-stroke; }
