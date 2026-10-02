@@ -858,11 +858,12 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tl-shine { fill: #fff; opacity: .16; }
 .tl-yin { fill: var(--lac1); }
 .tl-yin-in { fill: none; stroke: var(--h-gold); stroke-width: .8; opacity: .55; }
-.tl-yt { font-family: var(--f-display); font-size: 25px; fill: var(--h-gold); text-anchor: middle; }
+.tl-yt { font-family: var(--f-display); font-size: 28px; fill: var(--h-gold); text-anchor: middle; }
 .tl-sheet { fill: var(--panel2); stroke: var(--line); stroke-width: 1; }
 .tl-sheet.late { fill: var(--sheet2); }
-.tl-rule { stroke: var(--red); stroke-width: .7; opacity: .2; }
-.tl-rule.ten { opacity: .42; }
+.tl-rule { stroke: var(--red); stroke-width: .7; opacity: .3; }
+.tl-lane { stroke: var(--ink3); stroke-width: .6; stroke-dasharray: 1 4; opacity: .5; }
+.tl-kind { font-family: var(--f-sans); font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-anchor: end; }
 .tl-frame { fill: none; stroke: var(--red); stroke-width: 1.6; opacity: .5; }
 .tl-frame.in { stroke-width: .7; }
 .tl-seam { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
@@ -872,14 +873,14 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tl-read.on { fill: var(--ink); font-size: 15px; letter-spacing: .1em; }
 .tl-seal { pointer-events: none; }
 .tl-seal rect { fill: var(--seal); }
-.tl-seal text { font-family: var(--f-serif); font-weight: 900; font-size: 11px; fill: var(--seal-ink); text-anchor: middle; }
+.tl-seal text { font-family: var(--f-serif); font-weight: 900; font-size: 9.5px; fill: var(--seal-ink); text-anchor: middle; }
 .tl-dot { cursor: pointer; outline: none; }
 .tl-tint { fill: var(--c); opacity: 0; transition: opacity .2s; }
-.tl-rib { fill: var(--c); transform-box: fill-box; transform-origin: 50% 0; transition: transform .2s, opacity .2s; }
+.tl-stamp { fill: var(--c); stroke: var(--panel2); stroke-width: .8; transition: opacity .2s; }
 .tl-dot:hover .tl-tint, .tl-dot:focus-visible .tl-tint { opacity: .22; }
-.tl-dot:hover .tl-rib, .tl-dot:focus-visible .tl-rib { transform: scaleY(1.45); }
+.tl-dot:hover .tl-stamp, .tl-dot:focus-visible .tl-stamp { stroke: var(--ink); stroke-width: 1.2; }
 .tl-dot.dim .tl-tint { opacity: 0; }
-.tl-dot.dim .tl-rib { opacity: .14; }
+.tl-dot.dim .tl-stamp { opacity: .15; }
 .tl-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
 .tl-tools .seg { margin: 0; }
 #tlWhoChip button { background: none; border: 0; color: inherit; font-size: 15px; line-height: 1; padding: 0 0 0 4px; }
