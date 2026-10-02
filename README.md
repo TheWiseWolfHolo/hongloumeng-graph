@@ -34,14 +34,23 @@ node build.mjs          # 合成 index.html，直接用浏览器打开就能看
 
 ## 上线
 
-在本机构建、本机部署，GitHub 只放源码。线上是 Cloudflare Pages 项目 `hongloumeng`，部署脚本在工作区的 `Deployments/hongloumeng/scripts/deploy.ps1`，它会调用下面的构建脚本，再用 wrangler 上传 `dist/` 并检查线上页面。
+推到 `main` 分支后，GitHub Actions 自动构建并部署到 Cloudflare Pages 项目 `hongloumeng`，最后再抓一次线上页面检查内容和字体文件。流程在 `.github/workflows/deploy.yml`，也能在 Actions 页面手动触发。
+
+部署需要仓库 Secrets 里的两项。
+
+| 名称 | 值 |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | 只有 Cloudflare Pages 编辑权限的 API token |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账号 ID |
+
+两项缺任何一项，Actions 就只构建和检查，不部署。fork 出去的仓库读不到这两项，所以别人的 fork 不会动到线上。
+
+想在本地出一份和线上一样的构建，需要 Python 3 和 `pip install fonttools brotli`。
 
 ```sh
-python tools/build-site.py          # 输出到 dist/，需要 Python 3 和 pip install fonttools brotli
+python tools/build-site.py          # 输出到 dist/
 python tools/check-html.py dist/index.html
 ```
-
-部署脚本上传的是工作区当前内容，没提交的改动也会上线，所以习惯上先提交再部署。
 
 ### 字体
 
@@ -54,3 +63,7 @@ python tools/check-html.py dist/index.html
 - 浅色、深色主题各看一眼。
 - 把视口调到 390px 宽，在控制台确认 `document.documentElement.scrollWidth === document.documentElement.clientWidth`，八个页签都点一遍，页面不能横向滚动。
 - 控制台没有报错。
+
+## 许可
+
+代码与整理的人物资料按 [MIT](LICENSE) 发布。构建时下载的三款字体各自遵循 SIL Open Font License。
