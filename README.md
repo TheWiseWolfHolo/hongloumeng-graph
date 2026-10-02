@@ -30,6 +30,7 @@ node build.mjs          # 合成 index.html，直接用浏览器打开就能看
 - 人物以名字作 id，`EDGES`、`EVENTS` 的 `ids`、大观园院落的 `who` 里出现的名字都要在 `NODES` 里有。
 - 关系称谓写成 `p/q` 时，表示甲是乙的 p、乙是甲的 q。星图悬停连线会把它念成「乙 是 甲 的 q」，所以两边都要能这样念通；双方对称的关系只写一个词，比如「兄弟」「结怨」。
 - `EVENTS` 按回目先后排，第八十回以后的情节属于续书，正文里注明。
+- 中文文字一律用全角标点，引号用“”。
 - 大观园院落的 `ev` 填的是事件标题，必须和 `EVENTS` 里的 `t` 一字不差。
 
 ## 上线
@@ -62,6 +63,7 @@ python tools/check-html.py dist/index.html
 
 - 浅色、深色主题各看一眼。
 - 把视口调到 390px 宽，在控制台确认 `document.documentElement.scrollWidth === document.documentElement.clientWidth`，八个页签都点一遍，页面不能横向滚动。
+- 星图要用触屏模拟再试一遍。手机上页面里的星图只是预览，轻点进入全屏；全屏里点人、再点进命盘、拖动人物卡片、返回键退出全屏都要走通。
 - 控制台没有报错。
 
 ## 许可

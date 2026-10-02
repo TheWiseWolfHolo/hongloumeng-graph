@@ -11,7 +11,7 @@ const js = ['data-people.js', 'data-extra.js', 'data-events.js', 'core.js', 'gra
 const css = src('style.css');
 const body = src('body.html');
 const title = '红楼梦人物关系图谱';
-const fonts = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&display=swap';
+const fonts = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300..900&family=Noto+Serif+SC:wght@300..900&display=swap';
 
 writeFileSync(join(dir, '.bundle.check.js'), js);
 execFileSync(process.execPath, ['--check', join(dir, '.bundle.check.js')], { stdio: 'inherit' });

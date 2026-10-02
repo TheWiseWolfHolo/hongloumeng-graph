@@ -1,15 +1,16 @@
 /* ============ 关系星图 ============
-   全景是力导向布局,每个家族有自己的锚点和一团底色。名字按空隙自动显示,挤不下的先藏起来,放大后会陆续出现。
-   双击某人进入"命盘":关系按类型分扇区,一人一个方位,连线都是从中心发出的直线,彼此不会压住。
-   关系速查会把两人之间的关系链拉成一条横线。 */
+   全景是力导向布局，每个家族有自己的锚点和一团底色。名字按空隙自动显示，挤不下的先藏起来，放大后会陆续出现。
+   点一个人，与之相连的人亮起来；再点一次（或选“命盘”）进入命盘：关系按类型分扇区，一人一个方位，
+   连线都是从中心发出的直线，上下两侧的名字竖排。关系链把两人之间的关系拉成一条线。
+   手机上页面里的星图只是预览，轻点进入全屏，拖动、双指缩放、点选都在全屏里做。 */
 const Graph = (() => {
   const svg = $('#gsvg');
-  const stage = $('.stage');
+  const stage = $('#stage');
   const tip = $('#gTip');
   const ALL_GROUPS = Object.keys(GROUPS);
   let W = 900, H = 600;
   let T = { x: 0, y: 0, k: 1 }, inv = 1;
-  let root, gNeb, gGuide, gE, gN, gEgo;
+  let root, gSky, gNeb, gGuide, gE, gN, gEgo;
   let nodes = [], links = [];
   const nmap = new Map(), lmap = new Map(), nebs = {};
   let alpha = 0, raf = 0, ready = false;
@@ -17,6 +18,10 @@ const Graph = (() => {
   let selected = null, hover = null, pathInfo = null;
   /* mode: all 全景 · ego 命盘 · chain 关系链 */
   let mode = 'all', egoId = null, egoInfo = null, egoTrail = [], egoChords = false;
+  let full = false, anch = null, chainPts = null, chainVert = false, tipPinned = false;
+  const coarse = matchMedia('(pointer: coarse)'), compact = matchMedia('(max-width: 900px)');
+  /* 手机与小平板：页面里只做预览，手势都留给全屏 */
+  const previewOnly = () => coarse.matches && compact.matches;
 
   const RAD = { c: 17, m: 11.5, s: 7.2, o: 10.5 };
   const FS = { c: 15.5, m: 13, s: 11, o: 12 };
@@ -31,6 +36,8 @@ const Graph = (() => {
     lin: [-720, 60], oth: [760, 240], out: [80, -600], myth: [-400, -620]
   };
   const f1 = v => v.toFixed(1);
+  /* 缩小时文字按比例放大一些，屏幕上的字号不至于小到看不清；手机屏幕小，补得更多 */
+  const invFor = k => Math.min(compact.matches ? 2.8 : 2.2, Math.max(1, Math.pow(1 / k, compact.matches ? .8 : .65)));
 
   function rng(seed) {
     return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -50,7 +57,7 @@ const Graph = (() => {
         if (d2 > 360000) continue;
         if (d2 < 1) { dx = Math.random() - .5; dy = Math.random() - .5; d2 = 1; }
         const d = Math.sqrt(d2), ady = Math.abs(dy);
-        /* 两个名字左右挨着、上下又几乎同高时,往上下错开一点 */
+        /* 两个名字左右挨着、上下又几乎同高时，往上下错开一点 */
         if (Math.abs(dx) < (p.lw + q.lw) * .62 && ady < 24) {
           const push = (24 - ady) * .07, sy = dy >= 0 ? 1 : -1;
           p.vy -= sy * push; q.vy += sy * push;
@@ -72,7 +79,7 @@ const Graph = (() => {
     }
     for (const n of vis) {
       if (n.fx != null) { n.x = n.fx; n.y = n.fy; n.vx = n.vy = 0; continue; }
-      const an = ANCH[n.p.grp], kk = n.p.grp === 'rong' ? kc * .3 : kc;
+      const an = anch[n.p.grp], kk = n.p.grp === 'rong' ? kc * .3 : kc;
       n.vx += (an[0] - n.x) * kk * a; n.vy += (an[1] - n.y) * kk * a;
       n.vx -= n.x * .0008 * a; n.vy -= n.y * .0008 * a;
       n.vx *= .76; n.vy *= .76;
@@ -83,6 +90,7 @@ const Graph = (() => {
   function paint() {
     for (const n of nodes) if (n.vis) n.el.setAttribute('transform', `translate(${f1(n.x)} ${f1(n.y)})`);
     const ego = mode === 'ego' ? nmap.get(egoId) : null;
+    const vert = mode === 'chain' && chainVert;
     for (const l of links) {
       if (!l.vis) continue;
       const x1 = l.s.x, y1 = l.s.y, x2 = l.t.x, y2 = l.t.y, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
@@ -93,8 +101,10 @@ const Graph = (() => {
       const d = `M${f1(x1)} ${f1(y1)}Q${f1(cx)} ${f1(cy)} ${f1(x2)} ${f1(y2)}`;
       l.line.setAttribute('d', d);
       l.hit.setAttribute('d', d);
-      l.lab.setAttribute('x', f1((x1 + 2 * cx + x2) / 4));
-      l.lab.setAttribute('y', f1((y1 + 2 * cy + y2) / 4 - 4));
+      /* 竖着的关系链，称谓写在线的左边 */
+      l.lab.setAttribute('x', f1((x1 + 2 * cx + x2) / 4 - (vert ? 12 : 0)));
+      l.lab.setAttribute('y', f1((y1 + 2 * cy + y2) / 4 - (vert ? -4 : 4)));
+      l.lab.style.textAnchor = vert ? 'end' : '';
     }
     if (mode === 'all') paintNebulae();
     scheduleLabels();
@@ -110,7 +120,7 @@ const Graph = (() => {
     if (!raf) raf = requestAnimationFrame(loop);
   }
 
-  /* ---------- 家族星云:每家一团淡淡的底色,上面写家名 ---------- */
+  /* ---------- 家族星云：每家一团淡淡的底色，上面写家名 ---------- */
   function paintNebulae() {
     const acc = {};
     for (const n of nodes) {
@@ -131,7 +141,7 @@ const Graph = (() => {
     });
   }
 
-  /* ---------- 名字摆放:按重要程度依次找空位,下、上、右、左都放不下就先藏起来 ---------- */
+  /* ---------- 名字摆放：按重要程度依次找空位，下、上、右、左都放不下就先藏起来 ---------- */
   let labRaf = 0;
   const scheduleLabels = () => { if (!labRaf) labRaf = requestAnimationFrame(placeLabels); };
   const pri = n => (n.id === selected ? 1e4 : 0) + (n.lit ? 1e3 : 0) + (3 - KIND_RANK[n.p.kind]) * 40 + Math.min(adj.get(n.id).length, 30);
@@ -152,6 +162,7 @@ const Graph = (() => {
     const active = n => !focusOn || n.lit || n.id === selected;
     const obst = vis.filter(active).map(n => [n.x - n.r, n.y - n.r, n.x + n.r, n.y + n.r, n]);
     const cand = vis.filter(active).sort((a, b) => pri(b) - pri(a));
+    const order = mode === 'chain' && chainVert ? [2, 3, 0, 1] : [0, 1, 2, 3];
     const placed = [];
     const clash = (b, self) => placed.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])
       || obst.some(o => o[4] !== self && b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
@@ -164,8 +175,9 @@ const Graph = (() => {
         ['r', n.x + g, n.y - h / 2, n.x + g + w, n.y + h / 2],
         ['l', n.x - g - w, n.y - h / 2, n.x - g, n.y + h / 2]
       ];
-      let pick = opts.find(o => !clash(o.slice(1), n));
-      if (!pick && (n.id === selected || (focusOn && n.lit) || mode === 'chain')) pick = opts[0];
+      const tries = order.map(i => opts[i]);
+      let pick = tries.find(o => !clash(o.slice(1), n));
+      if (!pick && (n.id === selected || (focusOn && n.lit) || mode === 'chain')) pick = tries[0];
       if (pick) { placed.push(pick.slice(1)); shown.add(n); }
       setLab(n, pick && pick[0], g, h);
     }
@@ -175,14 +187,13 @@ const Graph = (() => {
   /* ---------- 视图变换 ---------- */
   function applyT() {
     root.setAttribute('transform', `translate(${f1(T.x)} ${f1(T.y)}) scale(${T.k.toFixed(3)})`);
-    /* 缩小时文字按比例放大一些,屏幕上的字号不至于小到看不清 */
-    const ni = Math.min(2.2, Math.max(1, Math.pow(1 / T.k, .65)));
+    const ni = invFor(T.k);
     svg.style.setProperty('--inv', ni.toFixed(3));
     if (Math.abs(ni - inv) > .01) { inv = ni; scheduleLabels(); }
   }
-  let anim = 0;
-  function animateTo(to, dur = 480) {
-    cancelAnimationFrame(anim);
+  let anim = 0, glide = 0;
+  function animateTo(to, dur = 520) {
+    cancelAnimationFrame(anim); cancelAnimationFrame(glide);
     const from = { ...T }, t0 = performance.now();
     const tick = now => {
       const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 3);
@@ -192,28 +203,67 @@ const Graph = (() => {
     };
     anim = requestAnimationFrame(tick);
   }
-  function fitTo(pts, instant, top = 0) {
+  function setT(to, instant) {
+    if (instant) { cancelAnimationFrame(anim); T = to; applyT(); } else animateTo(to);
+  }
+  /* 画面上被浮层和人物卡片挡住的部分，摆放时要让开 */
+  function insets() {
+    const sr = stage.getBoundingClientRect();
+    const ins = { t: 10, b: 10, l: 10, r: 10 };
+    ['.sg-top', '.sg-sub', '#gPath', '#gModes'].forEach(s => {
+      const el = $(s, stage);
+      if (!el || el.hidden || !el.offsetWidth) return;
+      const er = el.getBoundingClientRect();
+      /* 手机上模式切换浮在人物卡片上方，它正在随卡片移动，按卡片的最终高度来算 */
+      if (s === '#gModes' && Drawer.sheet.matches) { ins.b = Math.max(ins.b, Drawer.coverBottom() - (innerHeight - sr.bottom) + er.height + 24); return; }
+      if (er.top - sr.top < sr.height / 2) ins.t = Math.max(ins.t, er.bottom - sr.top + 8);
+      else ins.b = Math.max(ins.b, sr.bottom - er.top + 8);
+    });
+    const cb = Drawer.coverBottom(), cr = Drawer.coverRight();
+    if (cb) ins.b = Math.max(ins.b, cb - (innerHeight - sr.bottom) + 8);
+    if (cr) ins.r = Math.max(ins.r, sr.right - (innerWidth - cr) + 8);
+    return ins;
+  }
+  function fitBox(x0, y0, x1, y1, instant, pad = 50) {
+    const ins = insets(), w = Math.max(80, W - ins.l - ins.r), h = Math.max(80, H - ins.t - ins.b);
+    const bw = Math.max(x1 - x0, 120) + pad * 2, bh = Math.max(y1 - y0, 120) + pad * 2;
+    const k = Math.max(.2, Math.min(1.5, w / bw, h / bh));
+    setT({ k, x: ins.l + w / 2 - (x0 + x1) / 2 * k, y: ins.t + h / 2 - (y0 + y1) / 2 * k }, instant);
+  }
+  function fitPts(pts, instant, pad) {
     if (!pts.length) return;
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
-    const pad = 60, side = innerWidth > 900 && Drawer.cur ? 380 : 0;
-    const bw = Math.max(x1 - x0, 120) + pad * 2, bh = Math.max(y1 - y0, 120) + pad * 2, w = W - side;
-    const h = H - top, k = Math.max(.28, Math.min(1.5, w / bw, h / bh));
-    const to = { k, x: w / 2 - (x0 + x1) / 2 * k, y: top + h / 2 - (y0 + y1) / 2 * k };
-    if (instant) { T = to; applyT(); } else animateTo(to);
+    fitBox(x0, y0, x1, y1, instant, pad);
   }
-  const fitVisible = instant => fitTo(nodes.filter(n => n.vis), instant);
-  function centerOn(n) {
-    const k = Math.max(T.k, 1.1);
-    let cx = W / 2, cy = H / 2;
-    if (innerWidth > 900) cx = (W - 360) / 2;
-    else if (innerWidth <= 640) {
-      /* 手机上抽屉从下方弹出,把人物放到抽屉上方露出的那一截里 */
-      const bar = $('.tabs').offsetHeight;
-      window.scrollTo({ top: stage.getBoundingClientRect().top + window.scrollY - bar - 4, behavior: 'smooth' });
-      cy = Math.max(70, (innerHeight * .34 - bar) / 2);
+  const fitVisible = instant => fitPts(nodes.filter(n => n.vis), instant, 60);
+  /* 命盘的外框取决于字号，字号又取决于缩放，来回算两三次就稳了 */
+  function fitEgo(instant) {
+    const { cx, cy, R } = egoInfo, ins = insets();
+    const w = Math.max(80, W - ins.l - ins.r), h = Math.max(80, H - ins.t - ins.b);
+    let k = T.k, box = null;
+    for (let i = 0; i < 3; i++) {
+      svg.style.setProperty('--inv', invFor(k).toFixed(3));
+      const b = gEgo.getBBox(), o = R + 34;
+      box = [Math.min(b.x, cx - o), Math.min(b.y, cy - o), Math.max(b.x + b.width, cx + o), Math.max(b.y + b.height, cy + o)];
+      k = Math.max(.2, Math.min(1.4, w / (box[2] - box[0] + 36), h / (box[3] - box[1] + 36)));
     }
+    svg.style.setProperty('--inv', inv.toFixed(3));
+    setT({ k, x: ins.l + w / 2 - (box[0] + box[2]) / 2 * k, y: ins.t + h / 2 - (box[1] + box[3]) / 2 * k }, instant);
+  }
+  function refit(instant) {
+    if (mode === 'ego' && egoInfo) fitEgo(instant);
+    else if (mode === 'chain' && chainPts) fitPts(chainPts, instant, 70);
+    else fitVisible(instant);
+  }
+  function centerOn(n) {
+    const ins = insets(), k = Math.max(T.k, compact.matches ? .72 : 1.1);
+    const cx = ins.l + (W - ins.l - ins.r) / 2, cy = ins.t + (H - ins.t - ins.b) / 2;
     animateTo({ k, x: cx - n.x * k, y: cy - n.y * k });
+  }
+  function zoomAt(px, py, f) {
+    const k = Math.max(.2, Math.min(4, T.k * f));
+    animateTo({ k, x: px - (px - T.x) / T.k * k, y: py - (py - T.y) / T.k * k }, 260);
   }
   function resize() {
     const w = stage.clientWidth, h = stage.clientHeight;
@@ -224,17 +274,49 @@ const Graph = (() => {
     return [(cx - r.left - T.x) / T.k, (cy - r.top - T.y) / T.k];
   }
 
+  /* ---------- 全屏 ---------- */
+  function setFull(on, fromPop, noFit) {
+    if (on === full) return;
+    full = on;
+    stage.classList.toggle('full', on);
+    document.documentElement.classList.toggle('stage-full', on);
+    $('#zFull').setAttribute('aria-label', on ? '退出全屏' : '全屏');
+    /* 手机的返回键用来退出全屏 */
+    if (on) { try { history.pushState({ hlmStage: 1 }, ''); } catch (e) { /* 沙箱里改不了历史时忽略 */ } }
+    else if (!fromPop && history.state && history.state.hlmStage) { try { history.back(); } catch (e) { /* 同上 */ } }
+    hideTip();
+    toggleFilter(false);
+    if (!on && Drawer.sheet.matches) Drawer.close();
+    resize();
+    if (!noFit) refit(true);
+  }
+
   /* ---------- 构建 DOM ---------- */
   function build() {
     svg.innerHTML = '';
     const defs = svgEl('defs', {}, svg);
     defs.innerHTML = ALL_GROUPS.map(g => `<radialGradient id="neb-${g}"><stop offset="0" style="stop-color:var(--g-${g});stop-opacity:.2"/><stop offset=".55" style="stop-color:var(--g-${g});stop-opacity:.08"/><stop offset="1" style="stop-color:var(--g-${g});stop-opacity:0"/></radialGradient>`).join('');
     root = svgEl('g', {}, svg);
+    gSky = svgEl('g', { class: 'sky' }, root);
     gNeb = svgEl('g', { class: 'nebulae' }, root);
     gGuide = svgEl('g', { class: 'guides' }, root);
     gE = svgEl('g', {}, root);
     gN = svgEl('g', {}, root);
     gEgo = svgEl('g', { class: 'ego-layer' }, root);
+    /* 星图底下一层同心圆与经线，像旧星图上的刻度 */
+    const av = Object.values(anch), sx = av.reduce((s, a) => s + a[0], 0) / av.length, sy = av.reduce((s, a) => s + a[1], 0) / av.length;
+    for (let r = 240; r <= 1440; r += 240) svgEl('circle', { class: r === 1200 ? 'sky-ring main' : 'sky-ring', cx: f1(sx), cy: f1(sy), r }, gSky);
+    let rays = '', ticks = '';
+    for (let i = 0; i < 24; i++) {
+      const a = i / 24 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      rays += `M${f1(sx + c * 240)} ${f1(sy + s * 240)}L${f1(sx + c * 1440)} ${f1(sy + s * 1440)}`;
+    }
+    for (let i = 0; i < 120; i++) {
+      const a = i / 120 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), r0 = i % 5 ? 1186 : 1172;
+      ticks += `M${f1(sx + c * r0)} ${f1(sy + s * r0)}L${f1(sx + c * 1200)} ${f1(sy + s * 1200)}`;
+    }
+    svgEl('path', { class: 'sky-ray', d: rays }, gSky);
+    svgEl('path', { class: 'sky-tick', d: ticks }, gSky);
     ALL_GROUPS.forEach(g => {
       const wrap = svgEl('g', { class: 'neb' }, gNeb);
       wrap.style.setProperty('--c', `var(--g-${g})`);
@@ -245,7 +327,7 @@ const Graph = (() => {
     });
     const rand = rng(20261003);
     nodes = PEOPLE.map(p => {
-      const an = ANCH[p.grp], ang = rand() * Math.PI * 2, rad = 40 + rand() * 110;
+      const an = anch[p.grp], ang = rand() * Math.PI * 2, rad = 40 + rand() * 110;
       const n = { id: p.id, p, r: RAD[p.kind], lw: p.id.length * FS[p.kind], x: an[0] + Math.cos(ang) * rad, y: an[1] + Math.sin(ang) * rad, vx: 0, vy: 0, vis: true, fx: null, fy: null, lit: false };
       nmap.set(p.id, n);
       return n;
@@ -304,9 +386,11 @@ const Graph = (() => {
     }
     nodes.forEach(n => { n.el.style.display = n.vis ? '' : 'none'; });
     links.forEach(l => { l.g.style.display = l.vis ? '' : 'none'; });
-    gNeb.style.display = mode === 'all' ? '' : 'none';
+    gNeb.style.display = gSky.style.display = mode === 'all' ? '' : 'none';
     if (selected && !nmap.get(selected).vis) selected = null;
-    $('#gStat').textContent = `${nodes.filter(n => n.vis).length} 人 · ${links.filter(l => l.vis).length} 条关系`;
+    const stat = `${nodes.filter(n => n.vis).length} 人 · ${links.filter(l => l.vis).length} 条关系`;
+    $('#gStat').textContent = stat;
+    $('#gStat2').textContent = stat;
     applyFocus();
     paint();
     reheat(.45);
@@ -352,16 +436,19 @@ const Graph = (() => {
     if (mode === 'ego') $$('.ego-lab', gEgo).forEach(g => g.classList.toggle('hot', nmap.get(g.dataset.id).lit));
     scheduleLabels();
   }
+  const card = id => Drawer.open(id, { snap: full ? 'peek' : undefined, ego: mode === 'ego' && id === egoId });
   function select(id, center) {
     const n = nmap.get(id);
     if (!n) return;
-    if (mode === 'ego') { if (id === egoId) Drawer.open(id); else radial(id); return; }
-    if (mode === 'chain') { if (state.focus.has(id)) { Drawer.open(id); return; } exitModes(true); }
+    if (mode === 'ego') { if (id === egoId) card(id); else radial(id); return; }
+    if (mode === 'chain') { if (state.focus.has(id)) { card(id); return; } exitModes(true); }
     if (!n.vis) resetFilters(true);
     selected = id;
     applyFocus();
-    Drawer.open(id);
-    if (center) centerOn(n);
+    card(id);
+    /* 'fit'：把这个人连同亮起来的亲友一起框进画面，手机上点人就能看清 */
+    if (center === 'fit') fitPts(nodes.filter(m => m.lit || m === n), false, 34);
+    else if (center) centerOn(n);
   }
   function clearSelection() {
     if (mode !== 'all') return;
@@ -372,6 +459,11 @@ const Graph = (() => {
     if (hover === id) return;
     hover = id;
     if (mode === 'ego' || (!selected && !pathInfo)) applyFocus();
+  }
+  /* 从页面别处（抽屉、人物谱）跳进星图：手机上先进全屏 */
+  function focus(id, how) {
+    if (previewOnly() && !full) setFull(true, false, true);
+    if (how === 'ego') radial(id); else select(id, true);
   }
 
   /* ---------- 浮动提示 ---------- */
@@ -384,10 +476,11 @@ const Graph = (() => {
     if (ty + th > r.height - 8) ty = y - r.top - th - 14;
     tip.style.transform = `translate(${Math.round(Math.max(8, tx))}px, ${Math.round(Math.max(8, ty))}px)`;
   }
-  const hideTip = () => { tip.hidden = true; };
+  const hideTip = () => { tip.hidden = true; tipPinned = false; };
   function nodeTip(id) {
     const p = byId.get(id), deg = adj.get(id).length;
-    const how = mode === 'ego' ? (id === egoId ? '单击看详情' : '单击换到这个人的命盘') : '单击看详情 · 双击进入命盘';
+    const how = mode === 'ego' ? (id === egoId ? '点击看详情' : '点击换到这个人的命盘')
+      : id === selected ? '再点一次，以这个人为中心排开' : '点击看关系 · 再点一次进入命盘';
     return `<b><i class="dot" style="--c:var(--g-${p.grp})"></i>${esc(id)}</b>${p.sub ? `<span>${esc(p.sub)}</span>` : ''}<em>${GROUPS[p.grp].name} · ${deg} 条关系${p.tag ? ' · ' + tagName(p.tag) : ''}</em><small>${how}</small>`;
   }
   function edgeTip(e) {
@@ -428,16 +521,17 @@ const Graph = (() => {
     const [x0, y0] = pt(cx, cy, r1, a1), big = a1 - a0 > Math.PI ? 1 : 0;
     return `${arcD(cx, cy, r0, a0, a1)}L${f1(x0)} ${f1(y0)}A${f1(r1)} ${f1(r1)} 0 ${big} 0 ${f1(pt(cx, cy, r1, a0)[0])} ${f1(pt(cx, cy, r1, a0)[1])}Z`;
   }
-  function radial(id, viaCrumb) {
+  function radial(id) {
     const c = nmap.get(id);
     if (!c) return;
+    toggleFilter(false);
     if (mode === 'chain') exitModes(true);
+    $('#gPath').hidden = true;
     if (mode !== 'ego') egoTrail = [];
     const at = egoTrail.indexOf(id);
     egoTrail = at >= 0 ? egoTrail.slice(0, at + 1) : [...egoTrail, id].slice(-6);
-    void viaCrumb;
     nodes.forEach(n => { n.fx = n.fy = null; });
-    /* 同一个人和中心可能有几条关系,取排在前面的类型定扇区,称谓合在一起 */
+    /* 同一个人和中心可能有几条关系，取排在前面的类型定扇区，称谓合在一起 */
     const byN = new Map();
     adj.get(id).forEach(e => { const o = e.a === id ? e.b : e.a; if (!byN.has(o)) byN.set(o, []); byN.get(o).push(e); });
     const items = [...byN].map(([o, es]) => {
@@ -445,8 +539,9 @@ const Graph = (() => {
       return { n: nmap.get(o), type: es[0].type, role: [...new Set(es.map(e => relFor(e, id).role))].join('·') };
     });
     const sectors = TYPE_ORDER.map(t => ({ t, list: items.filter(x => x.type === t).sort((a, b) => KIND_RANK[a.n.p.kind] - KIND_RANK[b.n.p.kind] || adj.get(b.n.id).length - adj.get(a.n.id).length) })).filter(s => s.list.length);
+    /* 上下两侧竖排以后，相邻两人只要隔开一个字宽，圈可以收得比横排紧 */
     const GAP = .8, slots = Math.max(items.length + sectors.length * GAP, 6), stepA = 2 * Math.PI / slots;
-    const R = Math.max(190, slots * 66 / (2 * Math.PI));
+    const R = Math.max(170, slots * 48 / (2 * Math.PI));
     const cx = c.x, cy = c.y, targets = new Map([[c, [cx, cy]]]);
     const ang = s => -Math.PI / 2 + s * stepA;
     let pos = sectors.length ? -sectors[0].list.length / 2 : 0;
@@ -455,7 +550,7 @@ const Graph = (() => {
       s.list.forEach((x, i) => { x.a = ang(pos + i + .5); targets.set(x.n, pt(cx, cy, R, x.a)); });
       pos += s.list.length + GAP;
     });
-    mode = 'ego'; egoId = id; selected = id; hover = null; pathInfo = null;
+    mode = 'ego'; egoId = id; selected = id; hover = null; pathInfo = null; chainPts = null;
     egoInfo = { cx, cy, R, items, sectors };
     state.focus = new Set([...targets.keys()].map(n => n.id));
     state.types = new Set(TYPE_ORDER); state.groups = new Set(ALL_GROUPS); state.servants = true; state.preset = '';
@@ -465,10 +560,8 @@ const Graph = (() => {
     pinAnimate(targets);
     drawEgo();
     renderBar();
-    /* 手机上抽屉会盖住大半个画面,命盘里先不弹,点上方的"详情"再看 */
-    if (innerWidth > 640) Drawer.open(id); else Drawer.close();
-    const m = 110;
-    fitTo([{ x: cx - R - m, y: cy - R - 50 }, { x: cx + R + m, y: cy + R + 50 }], false, $('#radialBar').offsetHeight + 12);
+    card(id);
+    fitEgo(false);
   }
   function drawEgo() {
     const { cx, cy, R, items, sectors } = egoInfo;
@@ -476,6 +569,7 @@ const Graph = (() => {
     gGuide.style.display = '';
     const Rs = Math.max(92, R * .4);
     svgEl('circle', { class: 'guide', cx, cy, r: R }, gGuide);
+    svgEl('circle', { class: 'guide outer', cx, cy, r: R + 30 }, gGuide);
     svgEl('circle', { class: 'ego-inner', cx, cy, r: Rs - 12 }, gGuide);
     let ticks = '';
     for (let i = 0; i < 144; i++) {
@@ -513,54 +607,63 @@ const Graph = (() => {
       const g = svgEl('g', { class: 'ego-lab', 'data-id': x.n.id }, gEgo);
       g.style.setProperty('--c', `var(--e-${x.type})`);
       g.style.setProperty('--fs', FS[x.n.p.kind] + 'px');
-      let t;
-      if (Math.abs(ca) > .34) {
-        t = svgEl('text', { x: f1(px), y: f1(py), class: 'side', 'text-anchor': ca > 0 ? 'start' : 'end' }, g);
+      if (Math.abs(ca) > .5) {
+        const t = svgEl('text', { x: f1(px), y: f1(py), class: 'side', 'text-anchor': ca > 0 ? 'start' : 'end' }, g);
         svgEl('tspan', { class: 'en' }, t).textContent = x.n.id;
         svgEl('tspan', { class: 'er', dx: '.4em' }, t).textContent = x.role;
-      } else if (sa < 0) {
-        t = svgEl('text', { x: f1(px), y: f1(py), 'text-anchor': 'middle' }, g);
-        svgEl('tspan', { class: 'en', x: f1(px), dy: '-1.15em' }, t).textContent = x.n.id;
-        svgEl('tspan', { class: 'er', x: f1(px), dy: '1.3em' }, t).textContent = x.role;
-      } else {
-        t = svgEl('text', { x: f1(px), y: f1(py), class: 'below', 'text-anchor': 'middle' }, g);
-        svgEl('tspan', { class: 'en', x: f1(px) }, t).textContent = x.n.id;
-        svgEl('tspan', { class: 'er', x: f1(px), dy: '1.35em' }, t).textContent = x.role;
+        return;
       }
+      /* 竖排一列：名字在前，称谓小一号接在后面。上半圈整列压在人物上方，下半圈从人物下方往下写 */
+      const t = svgEl('text', { x: f1(px), y: f1(py), class: 'vert', 'text-anchor': 'middle' }, g);
+      const nm = [...x.n.id], rl = [...x.role], RS = .78, GP = .45;
+      const total = nm.length + (rl.length ? GP + rl.length * RS : 0);
+      nm.forEach((ch, i) => {
+        const dy = i ? 1 : (sa < 0 ? .5 - total : .5);
+        svgEl('tspan', { class: 'en', x: f1(px), dy: dy.toFixed(3) + 'em' }, t).textContent = ch;
+      });
+      rl.forEach((ch, i) => {
+        const dy = i ? 1 : (.5 + GP + RS / 2) / RS;
+        svgEl('tspan', { class: 'er', x: f1(px), dy: dy.toFixed(3) + 'em' }, t).textContent = ch;
+      });
     });
   }
   function renderBar() {
     const bar = $('#radialBar');
     if (mode === 'ego') {
       bar.innerHTML = `<span class="rb-k">命盘</span><span class="crumbs">${egoTrail.map((t, i) => i === egoTrail.length - 1 ? `<b>${esc(t)}</b>` : `<button type="button" data-crumb="${esc(t)}">${esc(t)}</button><i>›</i>`).join('')}</span>`
-        + `<button class="btn" type="button" data-bar="info">详情</button><button class="btn" type="button" data-bar="chords" aria-pressed="${egoChords}">${egoChords ? '隐去' : '显示'}圈内彼此的关系</button><button class="btn" type="button" data-bar="exit">回到全景</button>`;
-    } else if (mode === 'chain') {
-      const ids = pathInfo.ids;
-      bar.innerHTML = `<span class="rb-k">关系链</span><span><b>${esc(ids[0])}</b> 到 <b>${esc(ids[ids.length - 1])}</b> · ${pathInfo.steps.length} 步</span><button class="btn" type="button" data-bar="exit">回到全景</button>`;
+        + `<button class="rb-btn" type="button" data-bar="chords" aria-pressed="${egoChords}">圈内关系</button>`;
     }
-    bar.hidden = mode === 'all';
+    bar.hidden = mode !== 'ego';
+    $('#gPresets').hidden = mode !== 'all' || !$('#gPath').hidden;
+    syncModes();
+  }
+  function syncModes() {
+    const m = mode === 'chain' || !$('#gPath').hidden ? 'chain' : mode;
+    $$('#gModes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
   }
   function exitModes(silent) {
     if (mode === 'all') return;
     const was = mode;
-    mode = 'all'; egoId = null; egoInfo = null; hover = null;
+    mode = 'all'; egoId = null; egoInfo = null; hover = null; chainPts = null;
     cancelAnimationFrame(pinRaf);
     nodes.forEach(n => { n.fx = n.fy = null; });
     gGuide.innerHTML = ''; gEgo.innerHTML = '';
     svg.classList.remove('ego', 'chain', 'chords');
-    $('#radialBar').hidden = true;
     hideTip();
-    if (was === 'chain') { pathInfo = null; $('#pathOut').innerHTML = ''; }
+    if (was === 'chain') { pathInfo = null; $('#pathOut').innerHTML = ''; $('#gPath').hidden = true; }
+    renderBar();
     if (!silent) { const keep = was === 'ego' ? selected : null; resetFilters(); if (keep) { selected = keep; applyFocus(); } }
   }
 
-  /* ---------- 筛选控件 ---------- */
+  /* ---------- 筛选与视角 ---------- */
   function syncChips() {
     $$('#gTypes .chip').forEach(c => c.classList.toggle('off', !state.types.has(c.dataset.k)));
     $$('#gGroups .chip[data-k]').forEach(c => c.classList.toggle('off', !state.groups.has(c.dataset.k)));
     $('#gServ').classList.toggle('off', !state.servants);
     $$('#gPresets .chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.k === state.preset)));
     $('#gLayout').textContent = state.layout === 'family' ? '布局 按家族聚拢' : '布局 自由漂浮';
+    const dirty = state.types.size < TYPE_ORDER.length || state.groups.size < ALL_GROUPS.length || !state.servants;
+    $('#gFilterBtn').classList.toggle('dirty', dirty);
   }
   function resetFilters(keepFit) {
     state.types = new Set(TYPE_ORDER); state.groups = new Set(ALL_GROUPS);
@@ -568,9 +671,15 @@ const Graph = (() => {
     syncChips(); applyFilters();
     if (!keepFit) fitVisible();
   }
+  function toggleFilter(on) {
+    const p = $('#gFilter');
+    on = on == null ? p.hidden : on;
+    p.hidden = !on;
+    $('#gFilterBtn').setAttribute('aria-expanded', String(on));
+  }
   const nb = id => new Set([id, ...adj.get(id).map(e => e.a === id ? e.b : e.a)]);
   const PRESETS = [
-    { k: 'all', label: '全景' },
+    { k: 'all', label: '全部人物' },
     { k: 'baoyu', label: '宝玉的世界', nodes: () => nb('贾宝玉') },
     { k: 'trio', label: '钗黛与金玉木石', nodes: () => new Set(['贾宝玉', '林黛玉', '薛宝钗', '史湘云', '袭人', '晴雯', '紫鹃', '莺儿', '雪雁', '贾母', '王夫人', '薛姨妈', '贾政', '通灵宝玉', '金锁', '神瑛侍者', '绛珠仙草', '警幻仙子', '茫茫大士', '渺渺真人', '妙玉', '贾探春', '甄宝玉']) },
     { k: 'twelve', label: '十二钗与亲人', nodes: () => { const s = new Set(); PEOPLE.filter(p => p.tag).forEach(p => nb(p.id).forEach(o => { if (o === p.id || byId.get(o).kind !== 's') s.add(o); })); return s; } },
@@ -595,12 +704,12 @@ const Graph = (() => {
     setTimeout(() => fitVisible(), 60);
   }
   function buildControls() {
-    $('#gTypes').innerHTML = '<span class="lab">关系</span>' + TYPE_ORDER.map(k =>
-      `<button class="chip" type="button" data-k="${k}" style="--c:var(--e-${k})" title="点击显示或隐藏"><i class="line-sample" ${TYPES[k].dash ? 'style="border-top-style:dashed"' : ''}></i>${TYPES[k].name}</button>`).join('');
+    $('#gTypes').innerHTML = TYPE_ORDER.map(k =>
+      `<button class="chip" type="button" data-k="${k}" style="--c:var(--e-${k})"><i class="line-sample" ${TYPES[k].dash ? 'style="border-top-style:dashed"' : ''}></i>${TYPES[k].name}</button>`).join('');
     const cnt = {};
     PEOPLE.forEach(p => { cnt[p.grp] = (cnt[p.grp] || 0) + 1; });
-    $('#gGroups').innerHTML = '<span class="lab">家族</span>' + ALL_GROUPS.map(k =>
-      `<button class="chip" type="button" data-k="${k}" title="${GROUPS[k].hint}"><i class="dot" style="--c:var(--g-${k})"></i>${GROUPS[k].name} ${cnt[k]}</button>`).join('')
+    $('#gGroups').innerHTML = ALL_GROUPS.map(k =>
+      `<button class="chip" type="button" data-k="${k}" title="${GROUPS[k].hint}"><i class="dot" style="--c:var(--g-${k})"></i>${GROUPS[k].name}<small>${cnt[k]}</small></button>`).join('')
       + '<button class="chip" type="button" id="gServ" title="隐藏次要的仆役与小人物">含仆役与小角色</button>';
     $('#gPresets').innerHTML = PRESETS.map(p => `<button class="chip" type="button" data-k="${p.k}" aria-pressed="${p.k === 'all'}">${p.label}</button>`).join('');
     const leave = () => { if (mode !== 'all') exitModes(true); };
@@ -621,17 +730,32 @@ const Graph = (() => {
       const c = ev.target.closest('.chip'); if (!c) return;
       applyPreset(PRESETS.find(x => x.k === c.dataset.k));
     });
+    $('#gModes').addEventListener('click', ev => {
+      const b = ev.target.closest('button'); if (!b) return;
+      const m = b.dataset.m;
+      toggleFilter(false);
+      if (m === 'all') {
+        if (mode !== 'all') exitModes();
+        else if (!$('#gPath').hidden) { $('#gPath').hidden = true; renderBar(); }
+        else applyPreset(PRESETS[0]);
+      } else if (m === 'ego') {
+        if (mode !== 'ego') radial(selected || egoTrail[egoTrail.length - 1] || '贾宝玉');
+      } else if ($('#gPath').hidden) openPath();
+    });
+    $('#gFilterBtn').addEventListener('click', () => toggleFilter());
+    $('#gFilter').addEventListener('click', ev => { if (ev.target.closest('[data-close]')) toggleFilter(false); });
     $('#gLayout').addEventListener('click', () => { leave(); state.layout = state.layout === 'family' ? 'free' : 'family'; syncChips(); reheat(.8); });
-    $('#gFit').addEventListener('click', () => fitVisible());
-    $('#zIn').addEventListener('click', () => zoomBy(1.35));
-    $('#zOut').addEventListener('click', () => zoomBy(1 / 1.35));
-    $('#zFit').addEventListener('click', () => (mode === 'ego' ? fitTo([{ x: egoInfo.cx - egoInfo.R - 110, y: egoInfo.cy - egoInfo.R - 50 }, { x: egoInfo.cx + egoInfo.R + 110, y: egoInfo.cy + egoInfo.R + 50 }], false, $('#radialBar').offsetHeight + 12) : fitVisible()));
+    $('#gReset').addEventListener('click', () => applyPreset(PRESETS[0]));
+    $('#zIn').addEventListener('click', () => zoomAt(W / 2, H / 2, 1.4));
+    $('#zOut').addEventListener('click', () => zoomAt(W / 2, H / 2, 1 / 1.4));
+    $('#zFit').addEventListener('click', () => refit(false));
+    $('#zFull').addEventListener('click', () => setFull(!full));
+    $('#gClose').addEventListener('click', () => setFull(false));
+    $('#gEnter').addEventListener('click', () => setFull(true));
     $('#radialBar').addEventListener('click', ev => {
       const b = ev.target.closest('[data-crumb],[data-bar]');
       if (!b) return;
-      if (b.dataset.crumb) radial(b.dataset.crumb, true);
-      else if (b.dataset.bar === 'exit') exitModes();
-      else if (b.dataset.bar === 'info') Drawer.open(egoId);
+      if (b.dataset.crumb) radial(b.dataset.crumb);
       else if (b.dataset.bar === 'chords') {
         egoChords = !egoChords;
         svg.classList.toggle('chords', egoChords);
@@ -639,15 +763,11 @@ const Graph = (() => {
         renderBar();
       }
     });
-    bindSearch($('#gSearch'), $('#gSuggest'), id => select(id, true));
+    bindSearch($('#gSearch'), $('#gSuggest'), id => { $('#gSearch').blur(); select(id, compact.matches ? 'fit' : true); });
     syncChips();
   }
-  function zoomBy(f) {
-    const k = Math.max(.25, Math.min(4, T.k * f)), cx = W / 2, cy = H / 2;
-    animateTo({ k, x: cx - (cx - T.x) / T.k * k, y: cy - (cy - T.y) / T.k * k }, 220);
-  }
 
-  /* ---------- 关系速查:亲缘关系代价更低,优先走家人这条线 ---------- */
+  /* ---------- 关系链：亲缘关系代价更低，优先走家人这条线 ---------- */
   function findPath(a, b) {
     const dist = new Map([[a, 0]]), prev = new Map(), done = new Set();
     while (true) {
@@ -665,13 +785,26 @@ const Graph = (() => {
     for (let cur = b; prev.has(cur); cur = prev.get(cur).from) { const p = prev.get(cur); steps.unshift({ from: p.from, to: cur, e: p.e }); }
     return steps;
   }
+  function openPath(a) {
+    if (previewOnly() && !full) setFull(true, false, true);
+    toggleFilter(false);
+    if (mode === 'ego') exitModes();
+    if (Drawer.sheet.matches) Drawer.close();
+    $('#gPath').hidden = false;
+    if (a) { $('#pathA').value = a; $('#pathB').value = ''; }
+    else if (!$('#pathA').value && selected) $('#pathA').value = selected;
+    renderBar();
+    /* 手机上不主动弹键盘 */
+    if (!coarse.matches) ($('#pathA').value ? $('#pathB') : $('#pathA')).focus();
+  }
   function showPath(a, b) {
     const out = $('#pathOut');
-    if (!byId.has(a) || !byId.has(b)) { out.textContent = '请从联想列表里选择两位人物。'; return; }
-    if (a === b) { out.textContent = '这是同一个人。'; return; }
+    if (!byId.has(a) || !byId.has(b)) { out.innerHTML = '<span class="pnote">请从联想列表里选两位人物。</span>'; return; }
+    if (a === b) { out.innerHTML = '<span class="pnote">这是同一个人。</span>'; return; }
     const steps = findPath(a, b);
-    if (!steps) { out.textContent = '这两位人物之间没有找到关系链。'; return; }
+    if (!steps) { out.innerHTML = '<span class="pnote">这两位之间没有找到关系链。</span>'; return; }
     exitModes(true);
+    $('#gPath').hidden = false;
     resetFilters(true);
     selected = null; hover = null;
     Drawer.close();
@@ -681,22 +814,23 @@ const Graph = (() => {
     state.focus = new Set(pathInfo.ids);
     state.preset = '';
     syncChips();
+    out.innerHTML = `<span class="who" data-pick="${esc(a)}">${esc(a)}</span>` + steps.map(s =>
+      `<span class="arrow" style="--c:var(--e-${s.e.type})">${esc(relFor(s.e, s.from).role)}</span><span class="who" data-pick="${esc(s.to)}">${esc(s.to)}</span>`).join('')
+      + `<span class="pnote">共 ${steps.length} 步。每个称谓说的是它后面那位是前面那位的什么人。</span>`;
+    renderBar();
     applyFilters();
-    /* 把链上的人从左到右排成一行,间距按称谓长短留够 */
+    /* 链上的人排成一条线：竖屏竖着排，横屏横着排，间距按称谓长短留够 */
     const ns = pathInfo.ids.map(id => nmap.get(id));
     const cx = ns.reduce((s, n) => s + n.x, 0) / ns.length, cy = ns.reduce((s, n) => s + n.y, 0) / ns.length;
-    const gaps = steps.map(st => Math.max(170, relFor(st.e, st.from).role.length * 16 + 120));
+    chainVert = H > W * 1.05;
+    const gaps = steps.map(st => chainVert ? 118 : Math.max(170, relFor(st.e, st.from).role.length * 16 + 120));
     const total = gaps.reduce((s, g) => s + g, 0);
-    let x = cx - total / 2;
+    let d = -total / 2;
     const targets = new Map();
-    ns.forEach((n, i) => { targets.set(n, [x, cy]); x += gaps[i] || 0; });
+    ns.forEach((n, i) => { targets.set(n, chainVert ? [cx, cy + d] : [cx + d, cy]); d += gaps[i] || 0; });
     pinAnimate(targets);
-    renderBar();
-    out.innerHTML = `<span class="who" data-pick="${esc(a)}">${esc(a)}</span>` + steps.map(s =>
-      `<span class="arrow" style="--c:var(--e-${s.e.type})">${esc(relFor(s.e, s.from).role)} →</span><span class="who" data-pick="${esc(s.to)}">${esc(s.to)}</span>`).join('')
-      + `<span class="pnote">共 ${steps.length} 步。箭头上的称谓,指右边的人是左边那位的什么人。</span>`;
-    fitTo([...targets.values()].map(([px, py]) => ({ x: px, y: py })), false, $('#radialBar').offsetHeight + 12);
-    stage.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    chainPts = [...targets.values()].map(([px, py]) => ({ x: px, y: py }));
+    fitPts(chainPts, false, 70);
   }
   function clearPath(silent) {
     if (mode === 'chain') { exitModes(silent); return; }
@@ -706,36 +840,100 @@ const Graph = (() => {
     if (!silent) applyFocus();
   }
   function buildPath() {
-    bindSearch($('#pathA'), $('#pathASug'), () => {});
-    bindSearch($('#pathB'), $('#pathBSug'), () => {});
+    bindSearch($('#pathA'), $('#pathASug'), () => { if (!coarse.matches) $('#pathB').focus(); });
+    bindSearch($('#pathB'), $('#pathBSug'), () => { $('#pathB').blur(); showPath($('#pathA').value.trim(), $('#pathB').value.trim()); });
     $('#pathGo').addEventListener('click', () => showPath($('#pathA').value.trim(), $('#pathB').value.trim()));
-    $('#pathClear').addEventListener('click', () => { clearPath(); $('#pathA').value = ''; $('#pathB').value = ''; });
+    $('#pathClear').addEventListener('click', () => { clearPath(); $('#pathA').value = ''; $('#pathB').value = ''; $('#pathOut').innerHTML = ''; });
     $('#pathEx').addEventListener('click', () => {
       const ex = [['贾宝玉', '刘姥姥'], ['林黛玉', '夏金桂'], ['妙玉', '焦大'], ['香菱', '贾雨村'], ['史湘云', '秦钟']];
       const [a, b] = ex[Math.floor(Math.random() * ex.length)];
       $('#pathA').value = a; $('#pathB').value = b; showPath(a, b);
     });
+    $('#gPath').addEventListener('click', ev => {
+      if (!ev.target.closest('[data-close]')) return;
+      if (mode === 'chain') exitModes(); else { $('#gPath').hidden = true; renderBar(); }
+    });
   }
 
-  /* ---------- 指针交互 ---------- */
+  /* ---------- 指针交互 ----------
+     鼠标：拖空白平移，拖人物挪位置，滚轮缩放，悬停看提示。
+     触屏：单指平移（松手带惯性），双指缩放，点空白两下放大；点人不必点准，附近最近的人会被选中。 */
   function bindPointer() {
     const ptrs = new Map();
-    let drag = null, lastTap = { id: null, t: 0 };
-    const target = el => el.closest('.nd, .ego-lab');
-    svg.addEventListener('pointerdown', ev => {
-      try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* 合成事件无法捕获指针 */ }
-      hideTip();
-      ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-      cancelAnimationFrame(anim);
-      if (ptrs.size === 2) {
-        const [a, b] = [...ptrs.values()];
-        drag = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y), k0: T.k, tx: T.x, ty: T.y, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, moved: true };
+    let drag = null, lastTap = { t: 0, x: 0, y: 0 };
+    const target = el => el.closest && el.closest('.nd, .ego-lab');
+    function nearest(cx, cy, tol) {
+      const [wx, wy] = toWorld(cx, cy), focusOn = svg.classList.contains('focus');
+      let best = null, bd = tol;
+      for (const n of nodes) {
+        if (!n.vis) continue;
+        let d = (Math.hypot(n.x - wx, n.y - wy) - n.r) * T.k;
+        if (focusOn && !n.lit && n.id !== selected) d += 8;
+        if (d < bd) { bd = d; best = n.id; }
+      }
+      return best;
+    }
+    /* 命盘里的名字是一列字,手指常落在字缝里,按整块名字的外框来认 */
+    function labelAt(x, y) {
+      if (mode !== 'ego') return null;
+      for (const g of $$('.ego-lab', gEgo)) {
+        const r = g.getBoundingClientRect();
+        if (x > r.left - 6 && x < r.right + 6 && y > r.top - 6 && y < r.bottom + 6) return g.dataset.id;
+      }
+      return null;
+    }
+    function tap(ev, touch) {
+      const nd = target(ev.target), id = nd ? nd.dataset.id : labelAt(ev.clientX, ev.clientY) || nearest(ev.clientX, ev.clientY, touch ? 24 : 6);
+      if (id) {
+        hideTip();
+        if (mode === 'all' && id === selected) radial(id);
+        else select(id, touch && mode === 'all' ? 'fit' : false);
         return;
       }
-      const nd = target(ev.target);
+      const l = ev.target.__l;
+      if (touch && l && svg.classList.contains('focus')) { showTip(edgeTip(l.e), ev.clientX, ev.clientY); tipPinned = true; return; }
+      const now = performance.now(), r = svg.getBoundingClientRect();
+      if (touch && now - lastTap.t < 340 && Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 36) {
+        zoomAt(ev.clientX - r.left, ev.clientY - r.top, 1.8);
+        lastTap.t = 0;
+        return;
+      }
+      lastTap = { t: now, x: ev.clientX, y: ev.clientY };
+      if (mode === 'all') { clearSelection(); Drawer.close(); }
+    }
+    function fling(hist) {
+      if (hist.length < 2) return;
+      const a = hist[0], b = hist[hist.length - 1], dt = b.t - a.t;
+      if (dt <= 0 || performance.now() - b.t > 80) return;
+      let vx = (b.x - a.x) / dt, vy = (b.y - a.y) / dt, last = performance.now();
+      if (Math.hypot(vx, vy) < .25) return;
+      const tick = now => {
+        const d = Math.min(40, now - last); last = now;
+        T.x += vx * d; T.y += vy * d;
+        const f = Math.pow(.93, d / 16); vx *= f; vy *= f;
+        applyT();
+        if (Math.hypot(vx, vy) > .02) glide = requestAnimationFrame(tick);
+      };
+      glide = requestAnimationFrame(tick);
+    }
+    svg.addEventListener('pointerdown', ev => {
+      if (ev.button > 0) return;
+      try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* 合成事件无法捕获指针 */ }
+      if (!tipPinned) hideTip();
+      toggleFilter(false);
+      cancelAnimationFrame(anim); cancelAnimationFrame(glide);
+      ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (ptrs.size === 2) {
+        const [a, b] = [...ptrs.values()];
+        drag = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, k0: T.k, tx: T.x, ty: T.y, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, moved: true };
+        return;
+      }
+      if (ptrs.size > 2) return;
+      const touch = ev.pointerType !== 'mouse';
+      const nd = !touch && mode === 'all' ? target(ev.target) : null;
       drag = nd
-        ? { type: 'node', id: nd.dataset.id, sx: ev.clientX, sy: ev.clientY, moved: false }
-        : { type: 'pan', sx: ev.clientX, sy: ev.clientY, tx: T.x, ty: T.y, moved: false };
+        ? { type: 'node', id: nd.dataset.id, sx: ev.clientX, sy: ev.clientY, moved: false, touch }
+        : { type: 'pan', sx: ev.clientX, sy: ev.clientY, tx: T.x, ty: T.y, moved: false, touch, hist: [] };
     });
     svg.addEventListener('pointermove', ev => {
       if (ptrs.has(ev.pointerId)) ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
@@ -751,39 +949,41 @@ const Graph = (() => {
       if (drag.type === 'pinch') {
         if (ptrs.size < 2) return;
         const [a, b] = [...ptrs.values()];
-        const k = Math.max(.25, Math.min(4, drag.k0 * Math.hypot(a.x - b.x, a.y - b.y) / drag.d0));
-        const r = svg.getBoundingClientRect(), cx = drag.mx - r.left, cy = drag.my - r.top;
-        T.k = k; T.x = cx - (cx - drag.tx) / drag.k0 * k; T.y = cy - (cy - drag.ty) / drag.k0 * k;
+        const k = Math.max(.2, Math.min(4, drag.k0 * Math.hypot(a.x - b.x, a.y - b.y) / drag.d0));
+        const r = svg.getBoundingClientRect(), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const cx = drag.mx - r.left, cy = drag.my - r.top;
+        /* 双指中点跟着手指走，缩放也以它为中心 */
+        T.k = k; T.x = cx - (cx - drag.tx) / drag.k0 * k + (mx - drag.mx); T.y = cy - (cy - drag.ty) / drag.k0 * k + (my - drag.my);
         applyT(); return;
       }
+      if (drag.type === 'none') return;
       const dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
-      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+      if (!drag.moved && Math.hypot(dx, dy) < (drag.touch ? 8 : 4)) return;
       drag.moved = true;
-      if (drag.type === 'pan') { T.x = drag.tx + dx; T.y = drag.ty + dy; svg.classList.add('panning'); applyT(); }
-      else if (mode === 'all') {
+      if (drag.type === 'pan') {
+        T.x = drag.tx + dx; T.y = drag.ty + dy; svg.classList.add('panning'); applyT();
+        drag.hist.push({ x: ev.clientX, y: ev.clientY, t: performance.now() });
+        if (drag.hist.length > 5) drag.hist.shift();
+      } else {
         const n = nmap.get(drag.id), [wx, wy] = toWorld(ev.clientX, ev.clientY);
         n.fx = n.x = wx; n.fy = n.y = wy;
         reheat(.3); paint();
       }
     });
     const up = ev => {
+      if (!ptrs.has(ev.pointerId)) return;
       ptrs.delete(ev.pointerId);
       svg.classList.remove('panning');
       if (!drag) return;
       const d = drag;
-      if (ptrs.size === 0 || d.type === 'pinch') drag = null;
-      if (d.type === 'node') {
-        const n = nmap.get(d.id);
-        if (mode === 'all') { n.fx = null; n.fy = null; }
-        if (!d.moved) {
-          const now = performance.now();
-          if (mode !== 'all') select(d.id, false);
-          else if (lastTap.id === d.id && now - lastTap.t < 380) { radial(d.id); lastTap = { id: null, t: 0 }; }
-          else { select(d.id, false); lastTap = { id: d.id, t: now }; }
-        }
-      } else if (d.type === 'pan' && !d.moved && mode === 'all') {
-        clearSelection(); Drawer.close();
-      }
+      /* 双指松开一只后，剩下那只不再接着平移，免得画面跳一下 */
+      if (d.type === 'pinch') { drag = ptrs.size ? { type: 'none' } : null; return; }
+      if (ptrs.size) return;
+      drag = null;
+      if (d.type === 'none') return;
+      if (d.type === 'node' && mode === 'all') { const n = nmap.get(d.id); n.fx = null; n.fy = null; }
+      if (!d.moved) { if (ev.type === 'pointerup') tap(ev, d.touch); }
+      else if (d.type === 'pan' && d.touch) fling(d.hist);
     };
     svg.addEventListener('pointerup', up);
     svg.addEventListener('pointercancel', up);
@@ -792,17 +992,19 @@ const Graph = (() => {
       ev.preventDefault();
       hideTip();
       const r = svg.getBoundingClientRect();
-      const k = Math.max(.25, Math.min(4, T.k * Math.exp(-ev.deltaY * (ev.ctrlKey ? .01 : .0014))));
+      const k = Math.max(.2, Math.min(4, T.k * Math.exp(-ev.deltaY * (ev.ctrlKey ? .01 : .0014))));
       const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
-      cancelAnimationFrame(anim);
+      cancelAnimationFrame(anim); cancelAnimationFrame(glide);
       T.x = cx - (cx - T.x) / T.k * k; T.y = cy - (cy - T.y) / T.k * k; T.k = k;
       applyT();
     }, { passive: false });
   }
 
   function init() {
-    if (innerWidth <= 640) $('#gFold').open = false;
     resize();
+    /* 竖屏（手机全屏）把家族锚点转九十度，整张图竖着摊开，能放得更大 */
+    const tall = previewOnly() ? innerHeight > innerWidth : H > W * 1.05;
+    anch = tall ? Object.fromEntries(Object.entries(ANCH).map(([g, [x, y]]) => [g, [y * 1.1, x * .95]])) : ANCH;
     build();
     buildControls();
     buildPath();
@@ -811,9 +1013,17 @@ const Graph = (() => {
     for (let i = 0; i < 700; i++) step();
     alpha = .02;
     applyFilters();
+    renderBar();
     fitVisible(true);
     ready = true;
-    new ResizeObserver(() => { const ow = W, oh = H; resize(); if (ready && mode === 'all' && (Math.abs(ow - W) > 40 || Math.abs(oh - H) > 40)) fitVisible(true); }).observe(stage);
+    new ResizeObserver(() => { const ow = W, oh = H; resize(); if (ready && (Math.abs(ow - W) > 40 || Math.abs(oh - H) > 140)) refit(true); }).observe(stage);
+    addEventListener('popstate', () => { if (full) setFull(false, true); });
+    document.addEventListener('keydown', ev => {
+      if (ev.key !== 'Escape' || ev.defaultPrevented || Tabs.cur !== 'graph') return;
+      if (!$('#gFilter').hidden) toggleFilter(false);
+      else if (full) setFull(false);
+      else if (mode !== 'all') exitModes();
+    });
   }
-  return { init, resize, select, clearSelection, radial };
+  return { init, resize, select, clearSelection, radial, focus, openPath, exitFull: () => setFull(false), home: () => exitModes() };
 })();
