@@ -19,7 +19,7 @@ execFileSync(process.execPath, ['--check', join(dir, '.bundle.check.js')], { std
 /* 独立网页用的描述、分享卡片和图标;人数与关系数直接从数据里数 */
 const [nPeople, nRel] = new Function(src('data-people.js') + '\nreturn [NODES.length, EDGES.length];')();
 const desc = `《红楼梦》人物关系图谱:${nPeople} 位人物、${nRel} 条关系。可拖动的关系星图与命盘、贾府世系、四大家族、金陵十二钗判词、大观园地图与百二十回大事。`;
-const icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#9e1f19"/><rect x="5" y="5" width="54" height="54" rx="10" fill="none" stroke="#ecc872" stroke-width="2.5"/><text x="32" y="44" font-size="34" text-anchor="middle" fill="#f7e9d2" font-family="serif" font-weight="700">红</text></svg>';
+const icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="9" fill="#a8271d"/><rect x="6.5" y="6.5" width="51" height="51" rx="3" fill="none" stroke="#f6e7cf" stroke-width="2.6"/><text x="32" y="45" font-size="34" text-anchor="middle" fill="#f6e7cf" font-family="serif" font-weight="700">红</text></svg>';
 const meta = [
   `<meta name="description" content="${desc}">`,
   '<meta name="theme-color" content="#7f1b17">',

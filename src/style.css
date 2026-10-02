@@ -24,7 +24,7 @@
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .24 0 0 0 0 .14 0 0 0 .5 -.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   /* 封面 */
   --cv1: #8a2119; --cv2: #5b130f; --cv-ink: #f6e9d3; --cv-ink2: rgba(246, 233, 211, .78); --cv-gold: #e8c47c; --cv-pat: #f0c87a;
-  --sl-bg: #efe5cf; --sl-ink: #221a14; --sl-line: #b0945f; --sl-sub: #6c5a44; --stitch: #efe1c1; --corner: #3e0d0a; --hole: #2a0705;
+  --sl-bg: #efe5cf; --sl-ink: #221a14; --sl-line: #b0945f; --sl-sub: #6c5a44; --sl-frame: rgba(128, 50, 32, .72); --stitch: #efe1c1; --corner: #3e0d0a; --hole: #2a0705;
   --lac1: #7f1b17; --lac2: #451010; --h-gold: #ecc872; --h-ink: #f7e9d2;
 
   /* 情缘页的白描小画与印章 */
@@ -62,7 +62,7 @@
     --glass: rgba(29, 25, 23, .82); --stage1: #1a1715; --stage2: #0e0c0b;
     --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .88 0 0 0 0 .75 0 0 0 .22 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
-    --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
+    --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --sl-frame: rgba(214, 178, 104, .7); --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
     --lac1: #6a1613; --lac2: #2d0909;
     --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
     --k-my: #a2abbd; --k-fam: #cfa866; --k-lv: #c98790; --k-poem: #8aa8bd; --k-storm: #db7a64; --k-death: #cfc5b8;
@@ -91,7 +91,7 @@
   --glass: rgba(29, 25, 23, .82); --stage1: #1a1715; --stage2: #0e0c0b;
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .88 0 0 0 0 .75 0 0 0 .22 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --cv1: #18233a; --cv2: #0b1220; --cv-ink: #ece0c6; --cv-ink2: rgba(236, 224, 198, .74); --cv-gold: #dcb867; --cv-pat: #d9b56a;
-  --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
+  --sl-bg: #1c2944; --sl-ink: #e3c071; --sl-line: #9c814b; --sl-sub: #b49e74; --sl-frame: rgba(214, 178, 104, .7); --stitch: #cbb68a; --corner: #060a13; --hole: #03060c;
   --lac1: #6a1613; --lac2: #2d0909;
   --zhu1: #3b2326; --zhu2: #2a181b; --ying1: #2e2c28; --ying2: #22201d; --jade1: #2c3b31; --jade2: #1d2821; --lock1: #43381f; --lock2: #2e2615; --seal-on: #16110e; --rule: rgba(225, 99, 79, .26); --sheet2: #1b1815;
   --k-my: #a2abbd; --k-fam: #cfa866; --k-lv: #c98790; --k-poem: #8aa8bd; --k-storm: #db7a64; --k-death: #cfc5b8;
@@ -146,19 +146,23 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23000' stroke-width='1'%3E%3Cpath d='M22 2L42 22L22 42L2 22Z'/%3E%3Cpath d='M22 12L32 22L22 32L12 22Z'/%3E%3C/g%3E%3Ccircle cx='22' cy='22' r='2.2'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='44' cy='0' r='1.6'/%3E%3Ccircle cx='0' cy='44' r='1.6'/%3E%3Ccircle cx='44' cy='44' r='1.6'/%3E%3C/svg%3E") 0 0 / 44px 44px;
 }
 .hero-in { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 clamp(28px, 5vw, 64px); padding-block: 52px 56px; padding-right: 92px; align-items: stretch; }
-/* 题签:贴在封面左上的一条纸 */
+/* 题签：贴在封面左上的一条洒金笺，四周印一道外粗内细的文武线，下端钤一方“石头记”朱文长方印 */
 .slip {
-  position: relative; width: 112px; min-height: 380px; padding: 26px 0 18px; display: flex; flex-direction: column; align-items: center; gap: 18px;
-  background: var(--sl-bg) var(--grain); color: var(--sl-ink);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .25), 0 18px 30px -16px rgba(0, 0, 0, .7), inset 0 0 22px rgba(120, 90, 40, .14);
+  position: relative; width: 98px; min-height: 400px; padding: 32px 0 22px; display: flex; flex-direction: column; align-items: center; gap: 20px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27180%27 height=%27240%27%3E%3Cg fill=%27%23c9a04e%27%3E%3Cpath d=%27M146.8 86.5L144.0 86.0L143.8 84.6L145.6 83.7L146.9 85.3Z%27 opacity=%270.79%27/%3E%3Cpath d=%27M152.8 70.8L151.9 70.6L151.6 69.9L152.2 69.4L153.4 70.0Z%27 opacity=%270.70%27/%3E%3Cpath d=%27M38.9 66.5L40.1 66.2L39.7 67.1Z%27 opacity=%270.77%27/%3E%3Cpath d=%27M134.4 144.4L133.8 144.7L133.0 144.1L133.5 143.8Z%27 opacity=%270.56%27/%3E%3Cpath d=%27M178.4 56.8L179.0 57.4L177.8 57.7Z%27 opacity=%270.80%27/%3E%3Cpath d=%27M83.0 114.6L84.2 114.1L83.8 114.9Z%27 opacity=%270.83%27/%3E%3Cpath d=%27M135.6 54.7L135.4 56.2L133.5 56.7L133.0 54.7L133.9 54.4Z%27 opacity=%270.56%27/%3E%3Cpath d=%27M75.8 79.2L75.0 79.9L74.1 79.1L75.0 78.6Z%27 opacity=%270.59%27/%3E%3Cpath d=%27M23.0 233.9L21.4 234.2L20.7 233.4L21.8 232.4L23.0 232.8Z%27 opacity=%270.52%27/%3E%3Cpath d=%27M51.1 3.9L52.5 4.8L50.9 5.0Z%27 opacity=%270.60%27/%3E%3Cpath d=%27M167.4 46.9L168.0 47.2L167.0 47.4Z%27 opacity=%270.45%27/%3E%3Cpath d=%27M117.3 135.7L117.9 137.0L116.7 137.2L116.4 136.4Z%27 opacity=%270.90%27/%3E%3Cpath d=%27M96.0 56.0L100.6 54.7L102.9 56.8L102.6 59.8L99.2 58.7Z%27 opacity=%270.95%27/%3E%3Cpath d=%27M43.2 106.5L43.0 105.9L43.9 105.8L44.8 106.3L44.6 106.6Z%27 opacity=%270.77%27/%3E%3Cpath d=%27M74.9 169.4L74.6 167.8L77.1 167.4L77.3 168.4L77.1 170.6Z%27 opacity=%270.68%27/%3E%3Cpath d=%27M54.0 66.9L54.0 66.5L54.5 66.3L54.6 66.7L54.6 66.9Z%27 opacity=%270.71%27/%3E%3Cpath d=%27M39.0 206.6L41.0 206.6L41.6 207.3L40.0 208.0L38.3 208.2Z%27 opacity=%270.72%27/%3E%3Cpath d=%27M107.7 7.3L105.0 8.3L104.2 5.8L107.1 6.2Z%27 opacity=%270.79%27/%3E%3Cpath d=%27M146.8 133.0L145.1 131.6L144.9 130.7L147.7 130.5L148.6 131.9Z%27 opacity=%270.72%27/%3E%3Cpath d=%27M16.2 162.9L16.1 163.3L15.7 163.0Z%27 opacity=%270.74%27/%3E%3Cpath d=%27M161.1 207.6L162.3 207.7L161.4 208.6Z%27 opacity=%270.93%27/%3E%3Cpath d=%27M116.2 87.9L113.5 87.7L115.6 86.1Z%27 opacity=%270.79%27/%3E%3Cpath d=%27M125.9 225.4L126.0 224.7L126.9 225.4Z%27 opacity=%270.82%27/%3E%3Cpath d=%27M94.5 83.3L95.9 83.9L95.4 84.5L94.0 84.1Z%27 opacity=%270.63%27/%3E%3Cpath d=%27M122.7 209.9L120.6 207.9L124.0 207.6L124.7 208.5Z%27 opacity=%270.48%27/%3E%3Cpath d=%27M10.6 35.8L10.1 34.7L11.1 34.7L11.9 35.2Z%27 opacity=%270.88%27/%3E%3Cpath d=%27M104.1 46.1L103.5 46.6L103.0 45.8L103.6 45.7Z%27 opacity=%270.87%27/%3E%3Cpath d=%27M28.7 175.3L28.9 175.7L28.0 175.8L28.0 175.1Z%27 opacity=%270.87%27/%3E%3Cpath d=%27M138.3 30.9L137.8 30.7L138.2 30.3L139.1 30.7Z%27 opacity=%270.66%27/%3E%3Cpath d=%27M80.2 163.3L81.1 163.2L80.5 164.1Z%27 opacity=%270.85%27/%3E%3Cpath d=%27M33.2 23.8L34.5 24.9L31.4 24.7Z%27 opacity=%270.89%27/%3E%3Cpath d=%27M155.1 123.2L154.9 123.4L154.4 123.4L154.5 123.0L154.8 122.9Z%27 opacity=%270.47%27/%3E%3Cpath d=%27M61.0 137.4L58.6 138.0L58.6 136.5L60.6 136.3Z%27 opacity=%270.53%27/%3E%3Cpath d=%27M72.5 189.8L72.0 188.6L73.7 189.2Z%27 opacity=%270.66%27/%3E%3Cpath d=%27M95.2 96.0L96.6 96.0L96.4 96.8L95.3 97.0Z%27 opacity=%270.48%27/%3E%3Cpath d=%27M15.3 140.0L14.0 139.4L13.2 138.6L15.8 138.5L16.2 139.7Z%27 opacity=%270.80%27/%3E%3Cpath d=%27M52.4 186.8L51.6 187.2L50.5 186.5L51.6 185.9Z%27 opacity=%270.75%27/%3E%3Cpath d=%27M5.3 175.3L5.6 176.2L4.5 176.6L4.6 175.8Z%27 opacity=%270.60%27/%3E%3Cpath d=%27M97.6 189.4L98.7 189.2L99.1 190.2L97.8 190.3Z%27 opacity=%270.54%27/%3E%3Cpath d=%27M84.6 217.1L84.0 217.9L83.3 217.0Z%27 opacity=%270.64%27/%3E%3Cpath d=%27M42.7 193.4L43.8 192.2L45.3 192.5L44.5 194.1Z%27 opacity=%270.91%27/%3E%3Cpath d=%27M140.7 101.2L138.8 102.0L138.0 101.0L140.0 100.1Z%27 opacity=%270.83%27/%3E%3Cpath d=%27M119.1 226.0L117.6 224.3L120.2 224.3Z%27 opacity=%270.75%27/%3E%3Cpath d=%27M16.9 53.7L16.3 54.9L15.2 54.3L15.6 53.4Z%27 opacity=%270.59%27/%3E%3Cpath d=%27M172.0 192.9L170.9 192.8L171.5 192.3Z%27 opacity=%270.64%27/%3E%3Cpath d=%27M102.2 40.3L101.8 39.7L102.0 39.1L103.4 38.1L104.0 40.0Z%27 opacity=%270.76%27/%3E%3C/g%3E%3C/svg%3E") 0 0 / 180px 240px,
+    var(--grain), var(--sl-bg);
+  color: var(--sl-ink);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 18px 30px -16px rgba(0, 0, 0, .7), inset 0 0 20px rgba(120, 90, 40, .12);
 }
-.slip::before { content: ""; position: absolute; inset: 6px; border: 1px solid var(--sl-line); outline: 1px solid var(--sl-line); outline-offset: -4px; pointer-events: none; }
-.slip-t { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-size: 70px; line-height: 1; letter-spacing: .14em; }
-.slip-s { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-serif); font-weight: 600; font-size: 13px; letter-spacing: .55em; color: var(--sl-sub); }
+.slip::before, .slip::after { content: ""; position: absolute; pointer-events: none; }
+.slip::before { inset: 7px; border: 2px solid var(--sl-frame); }
+.slip::after { inset: 11.5px; border: .8px solid var(--sl-frame); }
+.slip-t { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-display); font-size: 64px; line-height: 1; letter-spacing: .16em; text-shadow: 0 0 .6px currentColor; }
+.slip-s { writing-mode: vertical-rl; text-orientation: upright; font-family: var(--f-serif); font-weight: 500; font-size: 12px; letter-spacing: .62em; color: var(--sl-sub); }
 .slip-seal {
-  margin-top: auto; width: 36px; height: 36px; display: grid; place-items: center; text-align: center;
-  background: #b5302a; color: #fbeee0; font-family: var(--f-serif); font-weight: 900; font-size: 11px; line-height: 1.12;
-  border-radius: 3px; box-shadow: inset 0 0 0 1.5px rgba(251, 238, 224, .7); transform: rotate(-3deg);
+  margin-top: auto; writing-mode: vertical-rl; text-orientation: upright; padding: 6px 3px 3px; border: 1.6px solid var(--seal); border-radius: 2px;
+  font-family: var(--f-serif); font-weight: 900; font-size: 12px; line-height: 1; letter-spacing: .14em; color: var(--seal); opacity: .92; transform: rotate(-2deg);
 }
 .hero-side { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding-block: 6px; }
 .hero-kicker { font-family: var(--f-sans); font-size: 12px; letter-spacing: .42em; color: var(--cv-gold); }
@@ -967,10 +971,12 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 @media (max-width: 640px) {
   .wrap { padding-inline: 16px; }
   .hero-in { gap: 0 18px; padding-block: 30px 32px; padding-right: 46px; }
-  .slip { width: 74px; min-height: 0; padding: 18px 0 12px; gap: 12px; }
-  .slip-t { font-size: 46px; }
-  .slip-s { font-size: 11px; letter-spacing: .4em; }
-  .slip-seal { width: 28px; height: 28px; font-size: 9px; }
+  .slip { width: 70px; min-height: 0; padding: 22px 0 16px; gap: 14px; }
+  .slip::before { inset: 5px; border-width: 1.6px; }
+  .slip::after { inset: 8.5px; }
+  .slip-t { font-size: 44px; }
+  .slip-s { font-size: 10.5px; letter-spacing: .45em; }
+  .slip-seal { font-size: 10px; padding: 5px 2px 2px; }
   .hero-side { gap: 14px; }
   .hero-kicker { font-size: 11px; letter-spacing: .26em; }
   .hero-h1 { font-size: 30px; }
