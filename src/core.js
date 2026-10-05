@@ -52,7 +52,7 @@ function cnNum(n) {
 const PORTRAITS = {
   林黛玉: 'daiyu.webp', 薛宝钗: 'baochai.webp', 贾元春: 'yuanchun.webp', 贾探春: 'tanchun.webp', 史湘云: 'xiangyun.webp', 妙玉: 'miaoyu.webp',
   贾迎春: 'yingchun.webp', 贾惜春: 'xichun.webp', 王熙凤: 'xifeng.webp', 巧姐: 'qiaojie.webp', 李纨: 'liwan.webp', 秦可卿: 'keqing.webp',
-  香菱: 'xiangling.png', 晴雯: 'qingwen.png', 袭人: 'xiren.png'
+  香菱: 'xiangling.png', 晴雯: 'qingwen-v2.png', 袭人: 'xiren.png'
 };
 const portrait = id => PORTRAITS[id] ? `img/12/${PORTRAITS[id]}` : '';
 /* 看大图：点画像铺满屏幕，再点一下或按 Esc 收起 */
