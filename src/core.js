@@ -14,9 +14,9 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 存储不可用时忽略 */ } }
 };
 
-const PEOPLE = NODES.map(a => ({ id: a[0], grp: a[1], kind: a[2], tag: a[3], sub: a[4], bio: a[5], fate: a[6] }));
+const PEOPLE = Catalog.people;
 const byId = new Map(PEOPLE.map(n => [n.id, n]));
-const REL = EDGES.map(a => ({ a: a[0], b: a[1], type: a[2], label: a[3], note: a[4] || '' }));
+const REL = Catalog.relations;
 const adj = new Map(PEOPLE.map(n => [n.id, []]));
 REL.forEach(e => { adj.get(e.a).push(e); adj.get(e.b).push(e); });
 const TYPE_ORDER = ['b', 'm', 'in', 'sv', 'lv', 'fr', 'ri', 'my'];
@@ -48,25 +48,28 @@ function cnNum(n) {
   const r = n - 100;
   return '一百' + (r === 0 ? '' : r < 10 ? '零' + d[r] : (r < 20 ? '一' : '') + cnNum(r));
 }
-/* 正册十二钗的画像：AI 生成的工笔设色，衣饰与场景依书中描写补足，不作考证 */
+/* 册页人物画像，作为阅读配图，不作服饰与场景考证。 */
 const PORTRAITS = {
-  林黛玉: 'daiyu', 薛宝钗: 'baochai', 贾元春: 'yuanchun', 贾探春: 'tanchun', 史湘云: 'xiangyun', 妙玉: 'miaoyu',
-  贾迎春: 'yingchun', 贾惜春: 'xichun', 王熙凤: 'xifeng', 巧姐: 'qiaojie', 李纨: 'liwan', 秦可卿: 'keqing'
+  林黛玉: 'daiyu.webp', 薛宝钗: 'baochai.webp', 贾元春: 'yuanchun.webp', 贾探春: 'tanchun.webp', 史湘云: 'xiangyun.webp', 妙玉: 'miaoyu.webp',
+  贾迎春: 'yingchun.webp', 贾惜春: 'xichun.webp', 王熙凤: 'xifeng.webp', 巧姐: 'qiaojie.webp', 李纨: 'liwan.webp', 秦可卿: 'keqing.webp',
+  香菱: 'xiangling.png', 晴雯: 'qingwen.png', 袭人: 'xiren.png'
 };
-const portrait = id => PORTRAITS[id] ? `img/12/${PORTRAITS[id]}.webp` : '';
+const portrait = id => PORTRAITS[id] ? `img/12/${PORTRAITS[id]}` : '';
 /* 看大图：点画像铺满屏幕，再点一下或按 Esc 收起 */
 const Zoom = {
   open(src, label) {
-    const o = document.createElement('div');
+    const trigger = document.activeElement;
+    const o = document.createElement('dialog');
     o.className = 'zoom';
     o.setAttribute('role', 'dialog');
     o.setAttribute('aria-label', label);
-    o.innerHTML = `<img src="${src}" alt="${esc(label)}">`;
-    const key = ev => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); close(); } };
-    const close = () => { o.remove(); document.removeEventListener('keydown', key, true); };
+    o.innerHTML = `<button class="zoom-close" type="button" aria-label="关闭画像">关闭</button><img src="${src}" alt="${esc(label)}">`;
+    const close = () => o.close();
     o.addEventListener('click', close);
-    document.addEventListener('keydown', key, true);
+    o.addEventListener('close', () => { o.remove(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); });
+    o.addEventListener('cancel', ev => ev.stopPropagation());
     document.body.appendChild(o);
+    o.showModal();
   }
 };
 const chName = c => c.length > 1 ? `第${cnNum(c[0])}至${cnNum(c[c.length - 1])}回` : `第${cnNum(c[0])}回`;
@@ -104,6 +107,7 @@ const Drawer = {
   sheet: matchMedia('(max-width: 640px)'),
   init() {
     this.el = $('#drawer');
+    this.el.inert = true;
     this.el.innerHTML = '<div class="d-grip" aria-hidden="true"><i></i></div><div class="d-head"></div><div class="d-body"></div>';
     this.head = $('.d-head', this.el);
     this.body = $('.d-body', this.el);
@@ -119,13 +123,17 @@ const Drawer = {
         if (act.dataset.act === 'chain') Graph.openPath(id);
         if (act.dataset.act === 'home') Graph.home();
         if (act.dataset.act === 'verse') { this.close(); Tabs.show('twelve', true); Twelve.focus(id); }
+        if (act.dataset.act === 'share') Reading.share(id, act);
+        if (act.dataset.act === 'events') { Tabs.show('timeline', true); Timeline.setPerson(id); }
         return;
       }
+      const jump = ev.target.closest('[data-profile-target]');
+      if (jump) { const target = $('#' + jump.dataset.profileTarget, this.body); if (target) { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); target.focus({ preventScroll: true }); } return; }
       const evb = ev.target.closest('[data-ev]');
       if (evb) { this.close(); Tabs.show('timeline', true); Timeline.focus(+evb.dataset.ev); }
     });
     $('.d-grip', this.el).addEventListener('click', () => this.setSnap(this.snap === 'full' ? 'peek' : 'full'));
-    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && this.cur) { ev.preventDefault(); Tabs.closeDrawerAndClear(); } });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !ev.defaultPrevented && this.cur) { ev.preventDefault(); Tabs.closeDrawerAndClear(); } });
     this.bindSheet();
     this.sheet.addEventListener('change', () => this.place());
     addEventListener('resize', () => this.place());
@@ -188,6 +196,8 @@ const Drawer = {
   open(id, opt = {}) {
     const n = byId.get(id);
     if (!n) return;
+    const wasOpen = !!this.cur;
+    if (!wasOpen) this.trigger = document.activeElement;
     if (this.el.classList.contains('open') && this.cur && this.cur !== id) {
       const i = this.trail.indexOf(id);
       if (i >= 0) this.trail = this.trail.slice(0, i);
@@ -200,11 +210,12 @@ const Drawer = {
     const v = verseOf(id), evs = evOf.get(id);
     let hd = `<button class="dclose" type="button" data-act="close" aria-label="关闭"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
     if (this.trail.length) hd += `<nav class="d-trail" aria-label="浏览足迹"><span>足迹</span>${this.trail.map(t => `<button type="button" data-pick="${esc(t)}">${esc(t)}</button><i>›</i>`).join('')}<b>${esc(id)}</b></nav>`;
-    hd += `<div class="d-id"><div class="d-name">${esc(n.id)}</div><div class="d-sub">${esc(n.sub)}</div></div>`;
+    hd += `<div class="d-id"><h2 class="d-name" tabindex="-1">${esc(n.id)}</h2><div class="d-sub">${esc(n.sub)}</div></div>`;
     hd += `<div class="d-actions">`;
-    hd += opt.ego ? `<button class="btn" type="button" data-act="home">回到全景</button>` : `<button class="btn primary" type="button" data-act="radial">看命盘</button>`;
+    hd += opt.ego ? `<button class="btn" type="button" data-act="home">回到全景</button>` : `<button class="btn primary" type="button" data-act="radial">看人物关系</button>`;
     hd += Tabs.cur === 'graph' ? `<button class="btn" type="button" data-act="chain">查关系链</button>` : `<button class="btn" type="button" data-act="locate">在星图中看</button>`;
     if (v) hd += `<button class="btn" type="button" data-act="verse">判词</button>`;
+    hd += `<button class="btn" type="button" data-act="share">复制链接</button>`;
     hd += `</div>`;
     let h = `<div class="d-tags"><span class="tag"><i class="dot" style="--c:${gColor(n.grp)}"></i>${GROUPS[n.grp].name}</span>`;
     if (n.tag) h += `<span class="tag red">${tagName(n.tag)}</span>`;
@@ -214,9 +225,12 @@ const Drawer = {
     h += `</div>`;
     if (PORTRAITS[id]) h += `<button class="d-pic" type="button" data-zoom="${portrait(id)}" aria-label="${esc(id)}画像"><img src="${portrait(id)}" alt="" loading="lazy" decoding="async" width="640" height="960"></button>`;
     h += `<p class="d-bio">${esc(n.bio)}</p>`;
-    if (n.fate) h += `<div class="d-fate"><b>结局</b>${esc(n.fate)}</div>`;
+    if (n.aliases.length) h += `<p class="d-alias"><b>也叫</b>${n.aliases.map(esc).join('、')}</p>`;
+    const places = GARDEN.filter(p => p.kind === 'home' && p.who?.includes(id));
+    if (places.length) h += `<div class="d-homes"><span>园中住处</span>${places.map(p => `<button class="text-link" type="button" data-place="${p.id}">${esc(p.name)}</button>`).join('')}</div>`;
+    h += `<nav class="profile-jumps" aria-label="人物详情目录"><button type="button" data-profile-target="profileRelations">亲友关系</button>${evs.length ? '<button type="button" data-profile-target="profileEvents">书中经历</button>' : ''}</nav>`;
     /* 判词两句一行，像诗那样断开 */
-    if (v) h += `<div class="d-verse"><b>判词</b>${v.verse.map((l, i) => esc(l) + (i % 2 || i === v.verse.length - 1 ? '。' : '，')).map((l, i) => i % 2 ? l + '<br>' : l).join('').replace(/<br>$/, '')}</div>`;
+    h += '<div id="profileRelations" tabindex="-1">';
     TYPE_ORDER.forEach(t => {
       const list = groups[t];
       if (!list) return;
@@ -229,24 +243,43 @@ const Drawer = {
         h += `</span></button>`;
       });
     });
+    h += '</div>';
     if (evs.length) {
-      h += `<div class="d-sec" style="--c:var(--gold2)">书中经历 ${evs.length}</div>`;
+      h += `<div class="d-sec" id="profileEvents" tabindex="-1" style="--c:var(--gold2)">书中经历 ${evs.length}<button class="text-link" type="button" data-act="events">在回目中读</button></div>`;
       h += evs.map(e => `<button class="rel" type="button" data-ev="${e.i}"><span class="role">${chShort(e.c)}</span><span class="main"><span class="nm">${esc(e.t)}</span>${e.late ? '<span class="note">续书</span>' : ''}</span></button>`).join('');
     }
+    if (v) h += `<div class="d-verse"><b>第五回 · 判词</b>${v.verse.map((l, i) => esc(l) + (i % 2 || i === v.verse.length - 1 ? '。' : '，')).map((l, i) => i % 2 ? l + '<br>' : l).join('').replace(/<br>$/, '')}</div>`;
+    if (n.fate) h += Reading.spoiler(`<p>${esc(n.fate)}</p><p class="source-note">标“续书”的情节取自后四十回；标“批语”的内容属于推断。其余为人物资料整理，具体版本与出处仍需逐条核对。</p>`);
     this.head.innerHTML = hd;
     this.body.innerHTML = h;
     this.body.scrollTop = 0;
     this.el.classList.add('open');
+    this.el.inert = false;
+    this.el.removeAttribute('aria-hidden');
     if (this.sheet.matches) {
       /* 已经拉高的卡片保持高度；收着或露头时按调用方的意思来 */
       const keep = this.snap === 'full' || (this.snap === 'half' && !opt.snap);
-      this.setSnap(keep ? this.snap : (opt.snap || 'half'));
+      this.setSnap(keep ? this.snap : (opt.snap || (Tabs.cur === 'graph' ? 'half' : 'full')));
     }
+    $('.d-name', this.head).focus({ preventScroll: true });
+    Reading.remember(id);
+    Route.write(id);
   },
-  close() {
+  close(silent = false) {
+    const hadPerson = !!this.cur;
+    const restore = this.el.contains(document.activeElement);
     this.el.classList.remove('open');
+    this.el.inert = true;
+    this.el.setAttribute('aria-hidden', 'true');
     this.cur = null; this.trail = [];
     this.setSnap('closed');
+    if (!silent && hadPerson) {
+      Route.write(null, true);
+      if (restore) {
+        const target = this.trigger?.isConnected && this.trigger.matches('button, input, a[href], [tabindex]') && !this.trigger.closest('[hidden], [inert]') ? this.trigger : $('.primary-tab[aria-selected="true"]');
+        target?.focus({ preventScroll: true });
+      }
+    }
   }
 };
 
@@ -260,14 +293,21 @@ function pickPerson(id) {
 /* ============ 联想搜索 ============ */
 function bindSearch(input, listEl, onPick) {
   let items = [], hi = -1;
-  const hide = () => { listEl.hidden = true; hi = -1; };
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-controls', listEl.id);
+  input.setAttribute('aria-expanded', 'false');
+  listEl.setAttribute('role', 'listbox');
+  listEl.setAttribute('aria-label', '人物搜索结果');
+  const hide = () => { listEl.hidden = true; hi = -1; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
   const render = q => {
     q = q.trim();
     if (!q) { hide(); return; }
-    items = PEOPLE.filter(n => n.id.includes(q) || n.sub.includes(q))
-      .sort((a, b) => (a.id.startsWith(q) ? 0 : 1) - (b.id.startsWith(q) ? 0 : 1) || KIND_RANK[a.kind] - KIND_RANK[b.kind]).slice(0, 12);
-    if (!items.length) { listEl.innerHTML = '<button type="button" disabled>没有找到这个人物</button>'; listEl.hidden = false; return; }
-    listEl.innerHTML = items.map((n, i) => `<button type="button" data-i="${i}"><i class="dot" style="--c:${gColor(n.grp)}"></i>${esc(n.id)}<small>${esc(n.sub.split(' · ')[0])}</small></button>`).join('');
+    items = Catalog.search(q, 12);
+    input.setAttribute('aria-expanded', 'true');
+    input.removeAttribute('aria-activedescendant');
+    if (!items.length) { listEl.innerHTML = '<div class="search-empty" role="option" aria-disabled="true">没找到，试试姓名中的一两个字。</div>'; listEl.hidden = false; return; }
+    listEl.innerHTML = items.map((n, i) => `<button type="button" role="option" tabindex="-1" aria-selected="false" id="${listEl.id}-${i}" data-i="${i}"><i class="dot" style="--c:${gColor(n.grp)}"></i>${esc(n.id)}<small>${esc(n.sub.split(' · ')[0])}</small></button>`).join('');
     listEl.hidden = false; hi = -1;
   };
   const pick = i => { const n = items[i]; if (!n) return; input.value = n.id; hide(); onPick(n.id); };
@@ -278,45 +318,52 @@ function bindSearch(input, listEl, onPick) {
     const bs = $$('button[data-i]', listEl);
     if (ev.key === 'ArrowDown') { hi = Math.min(hi + 1, bs.length - 1); ev.preventDefault(); }
     else if (ev.key === 'ArrowUp') { hi = Math.max(hi - 1, 0); ev.preventDefault(); }
-    else if (ev.key === 'Enter') { pick(hi >= 0 ? hi : 0); ev.preventDefault(); return; }
+    else if (ev.key === 'Enter' && items.length) { pick(hi >= 0 ? hi : 0); ev.preventDefault(); return; }
     else if (ev.key === 'Escape') { hide(); ev.preventDefault(); return; }
-    bs.forEach((b, i) => b.classList.toggle('hi', i === hi));
+    bs.forEach((b, i) => { b.classList.toggle('hi', i === hi); b.setAttribute('aria-selected', String(i === hi)); });
+    if (hi >= 0) input.setAttribute('aria-activedescendant', `${listEl.id}-${hi}`);
   });
-  listEl.addEventListener('mousedown', ev => { const b = ev.target.closest('button[data-i]'); if (b) { ev.preventDefault(); pick(+b.dataset.i); } });
+  listEl.addEventListener('pointerdown', ev => { if (ev.target.closest('button[data-i]')) ev.preventDefault(); });
+  listEl.addEventListener('click', ev => { const b = ev.target.closest('button[data-i]'); if (b) pick(+b.dataset.i); });
   input.addEventListener('blur', () => setTimeout(hide, 120));
 }
 
 /* ============ 标签页 ============ */
 const Tabs = {
   cur: null, inited: {},
-  names: ['graph', 'tree', 'families', 'twelve', 'garden', 'timeline', 'love', 'index'],
+  names: ['home', 'graph', 'tree', 'families', 'twelve', 'garden', 'timeline', 'love', 'index'],
+  group(name) { return ['index', 'twelve'].includes(name) ? 'people' : ['graph', 'tree', 'families', 'love'].includes(name) ? 'relations' : name; },
   init() {
-    const bar = $('.tabs-in');
-    $$('.tab').forEach(b => b.addEventListener('click', () => this.show(b.dataset.tab, true)));
-    bar.addEventListener('keydown', ev => {
+    $$('.tab').forEach((b, i) => { b.id = 'nav-' + i; b.setAttribute('aria-controls', 'tab-' + b.dataset.tab); b.addEventListener('click', () => this.show(b.dataset.tab, true)); });
+    $$('[role="tablist"]').forEach(bar => bar.addEventListener('keydown', ev => {
       if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
-      const tabs = $$('.tab'), i = tabs.findIndex(t => t.dataset.tab === this.cur);
+      const tabs = $$('.tab', bar), i = tabs.indexOf(document.activeElement);
       const next = tabs[(i + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
       this.show(next.dataset.tab, true); next.focus(); ev.preventDefault();
-    });
-    const h = location.hash.replace('#', '');
-    this.show(this.names.includes(h) ? h : 'graph');
+    }));
+    Route.init();
   },
   show(name, userClick) {
     if (!this.names.includes(name)) return;
     const changed = this.cur !== name;
+    if (changed) { Drawer.close(true); if (this.inited.graph && name !== 'graph') Graph.exitFull(true); }
     this.cur = name;
-    $$('.tab').forEach(b => { const on = b.dataset.tab === name; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+    $$('.tab').forEach(b => { const on = b.classList.contains('primary-tab') ? this.group(b.dataset.tab) === this.group(name) : b.dataset.tab === name; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+    $$('.subnav').forEach(el => { el.hidden = el.dataset.section !== this.group(name); });
     $$('.sec').forEach(s => { s.hidden = s.id !== 'tab-' + name; });
+    const selected = $$('.tab[aria-selected="true"]').find(b => !b.classList.contains('primary-tab')) || $('.primary-tab[aria-selected="true"]');
+    const panel = $('#tab-' + name);
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', selected.id);
     if (!this.inited[name]) {
       this.inited[name] = true;
-      ({ graph: Graph, tree: Tree, families: Families, twelve: Twelve, garden: Garden, timeline: Timeline, love: Love, index: PeopleIndex })[name].init();
+      ({ home: Home, graph: Graph, tree: Tree, families: Families, twelve: Twelve, garden: Garden, timeline: Timeline, love: Love, index: PeopleIndex })[name].init();
     } else if (name === 'graph') Graph.resize();
-    if (changed) { Drawer.close(); if (this.inited.graph && name !== 'graph') Graph.exitFull(); }
+    document.title = (name === 'home' ? '红楼梦' : $('#tab-' + name + ' h2')?.textContent || '红楼梦') + ' · 人物关系图谱';
     if (userClick) {
-      try { history.replaceState(null, '', '#' + name); } catch (e) { /* 沙箱里改不了地址时忽略 */ }
-      const top = $('.tabs').offsetTop;
-      if (window.scrollY > top) window.scrollTo({ top, behavior: 'auto' });
+      Drawer.close(true);
+      Route.write(null);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   },
   closeDrawerAndClear() {

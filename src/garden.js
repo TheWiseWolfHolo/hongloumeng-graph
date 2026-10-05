@@ -728,5 +728,5 @@ const Garden = (() => {
     render();
     if (box.scrollWidth > box.clientWidth) box.scrollLeft = (box.scrollWidth - box.clientWidth) / 2;
   }
-  return { init };
+  return { init, select, startTour };
 })();

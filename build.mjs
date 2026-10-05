@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const src = f => readFileSync(join(dir, 'src', f), 'utf8');
-const js = ['data-people.js', 'data-extra.js', 'data-events.js', 'core.js', 'graph.js', 'tree.js', 'pages.js', 'garden.js', 'timeline.js', 'main.js'].map(src).join('\n');
-const css = src('style.css');
+const js = ['data-people.js', 'data-extra.js', 'data-events.js', 'catalog.js', 'core.js', 'reading.js', 'graph.js', 'tree.js', 'pages.js', 'garden.js', 'timeline.js', 'main.js'].map(src).join('\n');
+const css = [src('style.css'), src('reading.css')].join('\n');
 const body = src('body.html');
 const title = '红楼梦人物关系图谱';
 const fonts = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300..900&family=Noto+Serif+SC:wght@300..900&display=swap';

@@ -99,12 +99,11 @@ const Twelve = (() => {
       <p class="ln"><b>图</b>${esc(v.pic)}</p>
       ${v.song ? `<p class="ln"><b>曲</b>${esc(v.song)}</p>` : ''}
       ${v.flower ? `<p class="ln"><b>花签</b>${esc(v.flower)}</p>` : ''}
-      <p class="gloss">${esc(v.gloss)}</p></div>
-      ${fates ? `<div class="fate">${fates}</div>` : ''}</article>`;
+      ${Reading.spoiler(`<p class="gloss">${esc(v.gloss)}</p>${fates ? `<div class="fate">${fates}</div>` : ''}`, '判词解读与结局')}</div></article>`;
   }
   function render() {
     $('#cards12').innerHTML = list().map(card).join('');
-    $('#cards12').classList.toggle('pics', book === 'z');
+    $('#cards12').classList.toggle('pics', list().some(v => v.ids.some(id => PORTRAITS[id])));
     $$('#segBook button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === book)));
   }
   function init() {
@@ -148,7 +147,7 @@ const Love = (() => {
       <p class="lov-k">${esc(l.kind)}</p>
       <h4>${esc(l.title)}</h4>
       <p class="lov-t">${esc(l.text)}</p>
-      <p class="out"><b>结局</b>${esc(l.out)}</p>
+      ${Reading.spoiler(`<p class="out">${esc(l.out)}</p>`)}
       <div class="mem">${l.ids.map(pill).join('')}</div></article>`).join('');
     renderCards();
     $('#segLove').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; filter = b.dataset.k; renderCards(); });
@@ -170,20 +169,28 @@ const PeopleIndex = (() => {
     const sorted = [...PEOPLE].sort((a, b) => ORDER.indexOf(a.grp) - ORDER.indexOf(b.grp) || KIND_RANK[a.kind] - KIND_RANK[b.kind]);
     $('#idxGrid').innerHTML = sorted.map(p => {
       const ev = evOf.get(p.id).length;
-      return `<button class="pc" type="button" data-pick="${esc(p.id)}" style="--c:var(--g-${p.grp})"><span class="n">${esc(p.id)}</span><span class="s">${esc(p.sub)}</span><span class="m">${GROUPS[p.grp].name} · ${adj.get(p.id).length} 条关系${ev ? ` · ${ev} 件大事` : ''}${p.tag ? `<span class="z">${BOOK[p.tag]}</span>` : ''}</span></button>`;
+      return `<button class="pc${PORTRAITS[p.id] ? ' with-portrait' : ''}" type="button" data-pick="${esc(p.id)}" style="--c:var(--g-${p.grp})">${PORTRAITS[p.id] ? `<img src="${portrait(p.id)}" alt="" width="640" height="960" loading="lazy">` : ''}<span class="n">${esc(p.id)}</span><span class="s">${esc(p.sub)}</span><span class="m">${GROUPS[p.grp].name} · ${adj.get(p.id).length} 条关系${ev ? ` · ${ev} 件大事` : ''}${p.tag ? `<span class="z">${BOOK[p.tag]}</span>` : ''}</span></button>`;
     }).join('');
     $('#idxChips').addEventListener('click', ev => { const c = ev.target.closest('.chip'); if (!c) return; grp = c.dataset.k; $$('#idxChips .chip').forEach(x => x.setAttribute('aria-pressed', String(x === c))); apply(); });
     $('#idxQ').addEventListener('input', ev => { q = ev.target.value.trim(); apply(); });
+    $('#idxReset').addEventListener('click', () => search(''));
     apply();
   }
   function apply() {
     let n = 0;
+    const matched = new Set(Catalog.search(q).map(p => p.id));
     $$('#idxGrid .pc').forEach(el => {
       const p = byId.get(el.dataset.pick);
-      const ok = (grp === 'all' || (grp === 'tag' ? !!p.tag : p.grp === grp)) && (!q || p.id.includes(q) || p.sub.includes(q) || p.bio.includes(q));
+      const ok = (grp === 'all' || (grp === 'tag' ? !!p.tag : p.grp === grp)) && matched.has(p.id);
       el.hidden = !ok; if (ok) n++;
     });
     $('#idxCount').textContent = `共 ${n} 位`;
+    $('#idxEmpty').hidden = n > 0;
   }
-  return { init };
+  function search(value) {
+    q = value.trim(); grp = 'all'; $('#idxQ').value = q;
+    $$('#idxChips .chip').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === grp)));
+    apply(); $('#idxQ').focus({ preventScroll: true });
+  }
+  return { init, search };
 })();

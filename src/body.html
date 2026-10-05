@@ -1,49 +1,55 @@
-<header class="hero">
-  <div class="cover">
-    <div class="wrap hero-in">
-      <div class="slip" aria-hidden="true">
-        <span class="slip-t">红楼梦</span>
-        <span class="slip-s">人物关系图谱</span>
-        <span class="slip-seal">石头记</span>
-      </div>
-      <div class="hero-side">
-        <div class="hero-kicker">石头记 · 金陵十二钗 · 太虚幻境</div>
-        <h1 class="hero-h1"><span class="vh">红楼梦</span>人物关系图谱</h1>
-        <p class="hero-p">从荣宁二府到大观园，从判词到仆役，把书里的人放进一张能拖动、能筛选、能追问的图里。点任何一个名字，都能看到这个人是谁的什么人。</p>
-        <p class="hero-poem"><span>满纸荒唐言，一把辛酸泪。</span><span>都云作者痴，谁解其中味？</span></p>
-        <p class="hero-stats"><span><b id="stPeople">0</b>位人物</span><span><b id="stRel">0</b>条关系</span><span><b id="stEv">0</b>件回目大事</span><span><b>120</b>回</span></p>
-      </div>
-    </div>
-    <p class="couplet" aria-hidden="true">假作真时真亦假<br>无为有处有还无</p>
-    <div class="binding" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-  </div>
+<a class="skip-link" href="#content">跳到正文</a>
+<header class="masthead wrap">
+  <a class="brand" href="#home" aria-label="红楼梦，回到入卷"><img src="img/icon.svg" alt="" width="38" height="38"><span>红楼梦<small>人物关系图谱</small></span></a>
+  <p class="mast-note">一百二十回 · 人物与旧事</p>
+  <div class="mast-actions"><button class="reading-toggle" id="endingToggle" type="button" aria-pressed="false">结局收起</button><button class="theme-btn" id="themeBtn" type="button"></button></div>
 </header>
-
-<nav class="tabs" aria-label="图谱分页">
-  <div class="wrap tabs-bar">
-    <div class="tabs-in" role="tablist">
-      <button class="tab" role="tab" data-tab="graph" aria-selected="true">关系星图</button>
-      <button class="tab" role="tab" data-tab="tree" aria-selected="false">贾府世系</button>
-      <button class="tab" role="tab" data-tab="families" aria-selected="false">四大家族</button>
-      <button class="tab" role="tab" data-tab="twelve" aria-selected="false">金陵十二钗</button>
-      <button class="tab" role="tab" data-tab="garden" aria-selected="false">大观园</button>
-      <button class="tab" role="tab" data-tab="timeline" aria-selected="false">百二十回</button>
-      <button class="tab" role="tab" data-tab="love" aria-selected="false">情缘与风波</button>
-      <button class="tab" role="tab" data-tab="index" aria-selected="false">人物谱</button>
-    </div>
-    <button class="theme-btn" id="themeBtn" type="button"></button>
-  </div>
+<nav class="tabs" aria-label="阅读导航">
+  <div class="wrap tabs-bar"><div class="tabs-in" role="tablist" aria-label="主要栏目">
+    <button class="tab primary-tab" role="tab" data-tab="home" aria-selected="true">入卷</button>
+    <button class="tab primary-tab" role="tab" data-tab="index" aria-selected="false">人物</button>
+    <button class="tab primary-tab" role="tab" data-tab="graph" aria-selected="false">关系</button>
+    <button class="tab primary-tab" role="tab" data-tab="garden" aria-selected="false">园中</button>
+    <button class="tab primary-tab" role="tab" data-tab="timeline" aria-selected="false">回目</button>
+  </div><span class="nav-note">满纸荒唐言，一把辛酸泪。</span></div>
 </nav>
-
-<main class="wrap">
+<div class="wrap subnav" data-section="people" hidden><div role="tablist" aria-label="人物栏目">
+  <button class="tab" role="tab" data-tab="index" aria-selected="false">人物谱</button><button class="tab" role="tab" data-tab="twelve" aria-selected="false">金陵十二钗</button>
+</div></div>
+<div class="wrap subnav" data-section="relations" hidden><div role="tablist" aria-label="关系栏目">
+  <button class="tab" role="tab" data-tab="graph" aria-selected="false">关系星图</button><button class="tab" role="tab" data-tab="tree" aria-selected="false">贾府世系</button><button class="tab" role="tab" data-tab="families" aria-selected="false">四大家族</button><button class="tab" role="tab" data-tab="love" aria-selected="false">情缘与风波</button>
+</div></div>
+<main class="wrap" id="content" tabindex="-1">
+  <section class="sec" id="tab-home">
+    <div class="reading-cover">
+      <div class="cover-copy">
+        <p class="eyebrow">石头记 · 阅读手边的图谱</p>
+        <h1>一部红楼，<br>从人读起。</h1>
+        <p class="cover-deck">记不清谁是谁的亲戚，或想再读一个人的故事，<br class="desktop-break">从这里翻开。</p>
+        <form class="home-search" id="homeSearchForm" role="search">
+          <label for="homeQ">你想找谁</label>
+          <div class="home-search-line"><input id="homeQ" type="search" placeholder="姓名或别称，如黛玉、宝二爷" autocomplete="off"><button type="submit">找人物</button></div>
+          <div class="suggest" id="homeSuggest" hidden></div>
+        </form>
+        <div class="quick-names"><span>从这里开始</span><button type="button" data-pick="林黛玉">林黛玉</button><button type="button" data-pick="贾宝玉">贾宝玉</button><button type="button" data-pick="王熙凤">王熙凤</button></div>
+      </div>
+      <figure class="cover-portrait"><img src="img/12/daiyu.webp" alt="竹影窗前的林黛玉，AI 工笔设色插画" width="640" height="960" fetchpriority="high"><figcaption><span>林黛玉</span><small>潇湘妃子 · 金陵十二钗正册</small><button type="button" data-pick="林黛玉">读她的故事</button></figcaption></figure>
+    </div>
+    <div class="home-meta"><p><b id="stPeople">0</b> 位人物<span>·</span><b id="stRel">0</b> 条关系<span>·</span><b id="stEv">0</b> 件回目大事</p><p>人物结局可单独展开，简介与关系仍会涉及情节。</p></div>
+    <div class="home-heading"><div><p class="eyebrow">循着故事读</p><h2>不妨从这一回开始</h2></div><button class="text-link" type="button" data-nav="timeline">查看回目</button></div>
+    <div class="reading-paths" id="readingPaths"></div>
+    <div class="home-heading"><div><p class="eyebrow">金陵十二钗</p><h2>画中人，书中命</h2></div><button class="text-link" type="button" data-nav="twelve">翻看判词册页</button></div>
+    <div class="portrait-strip" id="homePortraits"></div>
+    <div class="continue-reading" id="continueReading" hidden></div>
+  </section>
   <!-- 关系星图 -->
-  <section class="sec" id="tab-graph">
+  <section class="sec" id="tab-graph" hidden>
     <div class="sec-head">
       <h2 data-no="壹">关系星图</h2>
-      <p>每个圆点是一个人，颜色是所属家族，线的颜色与样式是关系类型。点一个人，与之相连的人都会亮起来，旁边出现这个人的介绍，再点一次收起；双击一个人进入命盘，以这个人为中心排开全部关系，关系链能查两个人之间隔着谁。</p>
+      <p>先选一位人物，看清身边的亲友。想查两人如何相识，切到“关系链”；想看全书人物，再选“全部人物”。</p>
     </div>
     <div class="stage" id="stage">
-      <svg id="gsvg" role="img" aria-label="红楼梦人物关系星图"></svg>
+      <svg id="gsvg" role="group" aria-label="红楼梦人物关系星图"></svg>
       <div class="sg-top">
         <button class="sg-btn sg-close" id="gClose" type="button" aria-label="退出全屏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <div class="search sg-search">
@@ -51,7 +57,7 @@
           <input id="gSearch" type="search" placeholder="搜人物，如 晴雯 或 潇湘" autocomplete="off" aria-label="搜索人物">
           <div class="suggest" id="gSuggest" hidden></div>
         </div>
-        <button class="sg-btn sg-filter-btn" id="gFilterBtn" type="button" aria-expanded="false" aria-controls="gFilter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>筛选</span></button>
+        <button class="sg-btn sg-filter-btn" id="gFilterBtn" type="button" aria-label="筛选人物与关系" aria-expanded="false" aria-controls="gFilter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>筛选</span></button>
       </div>
       <div class="sg-modes" id="gModes" role="group" aria-label="星图模式">
         <button type="button" data-m="all" aria-pressed="true">全景</button>
@@ -142,7 +148,7 @@
   <section class="sec" id="tab-twelve" hidden>
     <div class="sec-head">
       <h2 data-no="肆">金陵十二钗</h2>
-      <p>第五回宝玉梦游太虚幻境，在薄命司翻看正册、副册、又副册。判词按册页的样子竖排，每张卡片列出画、曲、花签与解读。正册的画像是 AI 生成的工笔设色，衣饰与场景依书中描写补足，不作考证，点画像看大图。</p>
+      <p>翻开第五回的薄命司册页，读判词、曲与花签。解读和结局可单独展开。画像为 AI 工笔设色创作，供欣赏，不作服饰考据。</p>
     </div>
     <div class="seg" id="segBook" role="group" aria-label="册别">
       <button type="button" data-k="z" aria-pressed="true">正册</button>
@@ -261,21 +267,23 @@
   <section class="sec" id="tab-index" hidden>
     <div class="sec-head">
       <h2 data-no="捌">人物谱</h2>
-      <p>全部人物按家族与重要程度排列，右上角的颜色是所属家族。点开可以看到简介、结局与全部关系。</p>
+      <p>按姓名或别称找人，也可以顺着家族慢慢看。点开一位人物，查看亲友、住处和书中经历。</p>
     </div>
     <div class="gtool">
       <div class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-        <input id="idxQ" type="search" placeholder="按姓名、称号或简介搜索" autocomplete="off" aria-label="搜索人物谱">
+        <input id="idxQ" type="search" placeholder="姓名、别称或关键词，如宝二爷" autocomplete="off" aria-label="搜索人物谱">
       </div>
     </div>
     <div class="frow" id="idxChips" style="margin-top:6px"></div>
-    <div class="idx-count" id="idxCount"></div>
+    <div class="idx-count" id="idxCount" role="status" aria-live="polite"></div>
+    <div class="empty-state" id="idxEmpty" hidden><p>这一页还没找到你要的人。</p><p>试试姓名中的一两个字，或清除家族筛选。</p><button class="btn" type="button" id="idxReset">清除搜索与筛选</button></div>
     <div class="idx-grid" id="idxGrid"></div>
   </section>
 </main>
 
-<aside class="drawer" id="drawer" aria-label="人物详情"></aside>
+<aside class="drawer" id="drawer" aria-label="人物详情" inert aria-hidden="true"></aside>
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
 
 <footer class="foot">
   <div class="wrap">

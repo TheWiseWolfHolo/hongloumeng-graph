@@ -12,6 +12,7 @@ const Graph = (() => {
   let T = { x: 0, y: 0, k: 1 }, inv = 1;
   let root, gSky, gNeb, gGuide, gE, gN, gEgo;
   let nodes = [], links = [];
+  let keyboardId = null;
   const nmap = new Map(), lmap = new Map(), nebs = {};
   let alpha = 0, raf = 0, ready = false;
   const state = { types: new Set(TYPE_ORDER), groups: new Set(ALL_GROUPS), servants: true, focus: null, layout: 'family', preset: 'all' };
@@ -332,7 +333,7 @@ const Graph = (() => {
     document.documentElement.classList.toggle('stage-full', on);
     $('#zFull').setAttribute('aria-label', on ? '退出全屏' : '全屏');
     /* 手机的返回键用来退出全屏 */
-    if (on) { try { history.pushState({ hlmStage: 1 }, ''); } catch (e) { /* 沙箱里改不了历史时忽略 */ } }
+    if (on) { try { history.pushState({ ...(history.state || {}), hlmStage: 1 }, ''); } catch (e) { /* 沙箱里改不了历史时忽略 */ } }
     else if (!fromPop && history.state && history.state.hlmStage) { try { history.back(); } catch (e) { /* 同上 */ } }
     hideTip();
     toggleFilter(false);
@@ -400,7 +401,7 @@ const Graph = (() => {
     });
     nodes.forEach(n => {
       const p = n.p;
-      const g = svgEl('g', { class: `nd ${p.kind}`, 'data-id': p.id }, gN);
+      const g = svgEl('g', { class: `nd ${p.kind}`, 'data-id': p.id, role: 'button', tabindex: '-1', 'aria-label': `${p.id}，${p.sub}` }, gN);
       g.style.setProperty('--c', `var(--g-${p.grp})`);
       g.style.setProperty('--fs', FS[p.kind] + 'px');
       svgEl('circle', { class: 'glow', r: n.r * 2.4 }, g);
@@ -436,7 +437,8 @@ const Graph = (() => {
       links.forEach(l => { if (l.vis) { deg.add(l.s.id); deg.add(l.t.id); } });
       nodes.forEach(n => { if (n.vis && !deg.has(n.id) && n.id !== selected) n.vis = false; });
     }
-    nodes.forEach(n => { n.el.style.display = n.vis ? '' : 'none'; });
+    if (!nodes.some(n => n.vis && n.id === keyboardId)) keyboardId = nodes.find(n => n.vis)?.id || null;
+    nodes.forEach(n => { n.el.style.display = n.vis ? '' : 'none'; n.el.setAttribute('tabindex', n.vis && n.id === keyboardId ? '0' : '-1'); });
     links.forEach(l => { l.g.style.display = l.vis ? '' : 'none'; });
     gNeb.style.display = gSky.style.display = mode === 'all' ? '' : 'none';
     if (selected && !nmap.get(selected).vis) selected = null;
@@ -1069,9 +1071,23 @@ const Graph = (() => {
     buildControls();
     buildPath();
     bindPointer();
+    svg.addEventListener('keydown', ev => {
+      const current = ev.target.closest('.nd');
+      if (!current) return;
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(current.dataset.id, true); return; }
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(ev.key)) return;
+      const visible = nodes.filter(n => n.vis), i = visible.findIndex(n => n.id === current.dataset.id);
+      const next = ev.key === 'Home' ? visible[0] : ev.key === 'End' ? visible[visible.length - 1]
+        : visible[(i + (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' ? visible.length - 1 : 1)) % visible.length];
+      if (next) { keyboardId = next.id; nodes.forEach(n => n.el.setAttribute('tabindex', n.id === keyboardId ? '0' : '-1')); next.el.focus(); }
+      ev.preventDefault();
+    });
     alpha = 1;
     for (let i = 0; i < 700; i++) step();
     alpha = .02;
+    state.preset = 'baoyu';
+    state.focus = nb('贾宝玉');
+    syncChips();
     applyFilters();
     /* 初始布局已经算好，筛选里的那次加热不要了，免得取景之后人还在往外散 */
     alpha = 0;
@@ -1087,5 +1103,5 @@ const Graph = (() => {
       else if (mode !== 'all') exitModes();
     });
   }
-  return { init, resize, select, clearSelection, radial, focus, openPath, exitFull: () => setFull(false), home: () => exitModes() };
+  return { init, resize, select, clearSelection, radial, focus, openPath, exitFull: (fromPop = false) => setFull(false, fromPop), home: () => exitModes() };
 })();

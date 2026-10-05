@@ -80,10 +80,10 @@ const Timeline = (() => {
     $$('#segPart button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === part)));
     let s = `共 ${n} 件`;
     if (who) {
-      const evs = evOf.get(who);
+      const all = evOf.get(who), evs = all.filter(ok);
       s = evs.length
-        ? `${who}出现在 ${evs.length} 件大事里，最早是${chName(evs[0].c)}，最后是${chName(evs[evs.length - 1].c)}。`
-        : `${who}没有收录在这些大事里。`;
+        ? `${who}在当前筛选中有 ${evs.length} 件大事，全部收录 ${all.length} 件。`
+        : `当前筛选没有${who}的经历，全部收录 ${all.length} 件。`;
     }
     $('#tlCount').textContent = s;
     $('#tlWhoChip').hidden = !who;
@@ -113,5 +113,11 @@ const Timeline = (() => {
     li.scrollIntoView({ block: 'center', behavior: 'smooth' });
     flash(li);
   }
-  return { init, focus };
+  function setPerson(id) {
+    if (!byId.has(id)) return;
+    who = id; kind = 'all'; part = 'all';
+    $('#tlWho').value = ''; apply();
+    $('.tl-tools').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  return { init, focus, setPerson };
 })();

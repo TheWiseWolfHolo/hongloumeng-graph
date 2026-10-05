@@ -1,5 +1,6 @@
 /* ============ 启动 ============ */
 (function boot() {
+  $('.skip-link').addEventListener('click', ev => { ev.preventDefault(); $('#content').focus(); $('#content').scrollIntoView({ block: 'start', behavior: 'instant' }); });
   $('#stPeople').textContent = PEOPLE.length;
   $('#stRel').textContent = REL.length;
   $('#stEv').textContent = EVENTS.length;
@@ -13,6 +14,7 @@
     else pickPerson(b.dataset.pick);
   });
   Theme.init();
+  Reading.init();
   Drawer.init();
   Tabs.init();
 })();
