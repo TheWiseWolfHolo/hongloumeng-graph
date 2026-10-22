@@ -82,7 +82,7 @@ const leaves = BOOKS.map(b => ({
               <figcaption><span class="cap-k">画</span>{v.pic}</figcaption>
             </figure>
             <div class="words">
-              <div class="verse kai" aria-label={v.verse.join('，')}>
+              <div class="verse" aria-label={v.verse.join('，')}>
                 {v.verse.map((l, j) => <span style={`--j:${j}`}>{l}</span>)}
               </div>
               {notes.length > 0 && (
@@ -176,8 +176,9 @@ const leaves = BOOKS.map(b => ({
   .cap-k { font: 700 11.5px/1 var(--label); letter-spacing: .2em; color: var(--cinnabar); margin-right: 10px; }
 
   .words { display: grid; gap: 18px; justify-items: center; }
-  .verse { writing-mode: vertical-rl; display: flex; flex-direction: column; font-size: clamp(24px, 2.4vw, 30px); letter-spacing: .28em; line-height: 1; color: var(--ink); padding: .4em 0; border-right: 1px solid color-mix(in srgb, var(--cinnabar) 22%, transparent); min-height: 10em; }
-  .verse span { padding: .6em .42em; border-left: 1px solid color-mix(in srgb, var(--cinnabar) 22%, transparent); }
+  /* 判词照第五回写在册子上的样子：刻本字，淡墨的乌丝栏 */
+  .verse { writing-mode: vertical-rl; display: flex; flex-direction: column; font: 400 clamp(26px, 2.5vw, 32px)/1 var(--title); letter-spacing: .3em; color: #231b14; padding: .4em 0; border-right: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); min-height: 10em; }
+  .verse span { padding: .6em .42em; border-left: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); }
   .verse span:nth-child(2n) { padding-top: 1.8em; }
   @media (prefers-reduced-motion: no-preference) {
     .leaf.in .verse span { animation: ink-in 1.2s var(--ease-ink) both; animation-delay: calc(var(--j) * .18s); }

@@ -21,12 +21,13 @@ const twelve = TWELVE_ORDER.map(id => {
   const lines = id === '林黛玉' ? ['堪怜咏絮才', '玉带林中挂'] : id === '薛宝钗' ? ['可叹停机德', '金簪雪里埋'] : v!.verse.slice(-2);
   return { p, img: portraitImage(p.portrait)!, lines, book: p.book === 'z' ? '正册' : p.book === 'f' ? '副册' : '又副册' };
 });
-/* 开卷四轴：人物、关系、回目取改琦《红楼梦图咏》，园子取孙温全景的左半边；句子都是书里的原话 */
+/* 开卷四轴，画取改琦《红楼梦图咏》和孙温全景的左半边，句子都是书里的原话。
+   人物谱配黛玉绣像；关系配警幻，她“司人间之风情月债”；回目配通灵宝石，这部书原叫《石头记》，故事就刻在石上 */
 const DOORS = [
   { href: '/people/', title: '人物譜', img: imgDaiyu, line: '千红一窟，万艳同杯' },
-  { href: '/graph/', title: '關係', img: imgStone, line: '一损皆损，一荣皆荣' },
+  { href: '/graph/', title: '關係', img: imgJinghuan, line: '千里姻缘一线牵' },
   { href: '/garden/', title: '大觀園', img: imgGarden, line: '天上人间诸景备' },
-  { href: '/chapters/', title: '一百二十回', img: imgJinghuan, line: '字字看来皆是血' }
+  { href: '/chapters/', title: '一百二十回', img: imgStone, line: '无材可去补苍天' }
 ];
 const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary]);
 ---
