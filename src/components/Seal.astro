@@ -1,5 +1,7 @@
 ---
 interface Props { text: string; size?: number; color?: string; outline?: boolean; round?: boolean; class?: string; title?: string }
 const { text, size = 30, color, outline = false, round = false, class: cls, title } = Astro.props;
+/* 两个字竖排成一列；三个字做成长条的引首章 */
+const n = [...text].length;
 ---
-<span class:list={['seal', cls, { outline, round }]} style={`--s:${size}px;${color ? `--seal-bg:${color};` : ''}`} title={title} aria-hidden={title ? undefined : 'true'}>{text}</span>
+<span class:list={['seal', cls, { outline, round, duo: n === 2, tall: n > 2 }]} style={`--s:${size}px;${color ? `--seal-bg:${color};` : ''}`} title={title} aria-hidden={title ? undefined : 'true'}>{text}</span>

@@ -46,8 +46,10 @@
   --serif: "HLM Serif", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
   --kai: "HLM Kai", "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", var(--serif);
   /* 标题和小标签都用朱雀仿宋，有刻本的味道；不用黑体 */
-  --display: "HLM Fang", "Zhuque Fangsong (technical preview)", "FangSong", "STFangsong", var(--serif);
-  --label: "HLM Fang", "FangSong", "STFangsong", var(--serif);
+  /* 大标题用齐伋体刻本字，小字和正文都用思源宋体；只有一档粗细的字不让浏览器假加粗，见 html 上的 font-synthesis */
+  --display: "HLM Qiji", var(--serif);
+  --title: "HLM Qiji", var(--serif);
+  --label: var(--serif);
 
   --wrap: 1180px;
   --gutter: clamp(16px, 4vw, 40px);
@@ -105,6 +107,7 @@ html {
   scroll-padding-top: calc(var(--header-h) + 16px);
   background: var(--paper);
   hanging-punctuation: allow-end;
+  font-synthesis-weight: none;
 }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body {
@@ -153,7 +156,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   flex: none;
   background: var(--seal-bg, var(--cinnabar));
   color: var(--seal-ink);
-  font: 700 calc(var(--s) * .62)/1 var(--display);
+  font: 400 calc(var(--s) * .62)/1 var(--display);
   border-radius: 3px;
   filter: url(#rough);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--seal-ink) 30%, transparent);
@@ -165,6 +168,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   box-shadow: inset 0 0 0 2px currentColor;
 }
 .seal.round { border-radius: 50%; }
+.seal.duo, .seal.tall { writing-mode: vertical-rl; font-size: calc(var(--s) * .4); line-height: 1.05; letter-spacing: .04em; }
+.seal.tall { height: calc(var(--s) * 1.45); font-size: calc(var(--s) * .42); }
 
 /* ---- 标签、按钮 ---- */
 .chip {
@@ -241,8 +246,8 @@ a.person:hover { color: var(--pc, var(--cinnabar)); background-size: 100% 2px; }
   align-items: end;
 }
 .page-head h1 {
-  font: 700 clamp(46px, 7.6vw, 96px)/1 var(--display);
-  letter-spacing: .04em;
+  font: 900 clamp(46px, 7.6vw, 96px)/1 var(--display);
+  letter-spacing: .08em;
   margin-top: 18px;
 }
 .page-head .lede { color: var(--ink-2); font-size: 16px; line-height: 1.9; }

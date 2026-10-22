@@ -15,7 +15,7 @@ const current = NAV.find(n => n.key === section);
   <div class="hd wrap">
     <a class="brand" href="/" aria-label="红楼梦人物关系图谱 首页">
       <img src="/img/icon.svg" width="34" height="34" alt="" class="brand-seal">
-      <span class="brand-text"><b>红楼梦</b><small>人物 · 关系 · 原文</small></span>
+      <span class="brand-text"><b>红楼梦</b></span>
     </a>
     <nav class="nav" aria-label="主栏目">
       {NAV.map(n => (
@@ -25,8 +25,7 @@ const current = NAV.find(n => n.key === section);
     <div class="tools">
       <button class="tool search-open" type="button" data-search-open aria-label="搜索人物、回目与原文">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span class="search-label">寻人 · 查回目</span>
-        <kbd>/</kbd>
+        <span class="search-label">寻</span>
       </button>
       <button class="tool" type="button" data-progress-open aria-haspopup="dialog" aria-label="阅读进度：防剧透">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 4.5h9.5a3 3 0 0 1 3 3V20l-4.2-2.6L9 20V4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>

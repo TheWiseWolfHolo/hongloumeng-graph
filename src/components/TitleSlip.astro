@@ -1,0 +1,67 @@
+---
+/* 题签：“紅樓夢”三字用齐伋体刻本字形，按笔顺一笔一笔写出来。
+   每个字的笔画中线做成遮罩，依次描出，刻本字就跟着显出来；写完再整个补满，免得中线没盖到的边角露白。 */
+import GLYPHS from '../data/title-glyphs.json';
+
+interface Props { start?: number; class?: string }
+const { start = 0, class: cls } = Astro.props;
+
+const len = (pts: string) => {
+  const p = pts.split(' ').map(s => s.split(',').map(Number));
+  let l = 0;
+  for (let i = 1; i < p.length; i++) l += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+  return l;
+};
+let t = start;
+const chars = GLYPHS.map(g => {
+  const strokes = g.medians.map(m => {
+    const dur = .04 + len(m) / 1024 * .17;
+    const s = { pts: m, delay: t, dur };
+    t += dur + .015;
+    return s;
+  });
+  const fill = t;
+  t += .16;
+  return { ...g, strokes, fill };
+});
+---
+<span class:list={['slip-wrap', cls]} style={`--done:${t.toFixed(2)}s`}>
+<span class="slip">
+  <span class="slip-in">
+    {chars.map((c, i) => (
+      <svg viewBox="0 0 1024 1024" class="g" role={i ? undefined : 'img'} aria-label={i ? undefined : '红楼梦'} aria-hidden={i ? 'true' : undefined}>
+        <mask id={`slip-m${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+          {c.strokes.map(s => <polyline points={s.pts} pathLength="1" style={`animation-delay:${s.delay.toFixed(3)}s;animation-duration:${s.dur.toFixed(3)}s`} />)}
+          <rect class="fill" width="1024" height="1024" style={`animation-delay:${c.fill.toFixed(3)}s`} />
+        </mask>
+        <g mask={`url(#slip-m${i})`}><path d={c.glyph} transform={c.tf} /></g>
+      </svg>
+    ))}
+  </span>
+</span>
+<slot />
+</span>
+
+<style>
+  .slip-wrap { display: inline-flex; align-items: flex-end; gap: 10px; }
+  .slip {
+    --w: clamp(70px, 7.4vw, 112px);
+    display: inline-block;
+    width: var(--w);
+    padding: calc(var(--w) * .16) calc(var(--w) * .12);
+    background-color: #f3ead4;
+    background-image: radial-gradient(circle at 30% 20%, rgb(255 255 255 / .5), transparent 60%), var(--paper-grain);
+    box-shadow: 0 1px 0 rgb(255 255 255 / .6) inset, 0 10px 30px -12px rgb(30 22 10 / .5), 0 2px 4px rgb(30 22 10 / .25);
+  }
+  .slip-in { display: flex; flex-direction: column; gap: calc(var(--w) * .02); padding: calc(var(--w) * .1) 0; outline: 1.5px solid #3b2f22; outline-offset: calc(var(--w) * .05); border: .5px solid #3b2f22; }
+  .g { display: block; width: 100%; height: auto; }
+  .g path { fill: #1d1712; }
+  .g polyline { fill: none; stroke: #fff; stroke-width: 150; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 2; stroke-dashoffset: 0; }
+  .g .fill { fill: #fff; }
+  @media (prefers-reduced-motion: no-preference) {
+    .g polyline { animation-name: write; animation-timing-function: linear; animation-fill-mode: both; }
+    .g .fill { animation: fill .5s ease both; }
+  }
+  @keyframes write { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+  @keyframes fill { from { opacity: 0; } to { opacity: 1; } }
+</style>

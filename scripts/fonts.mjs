@@ -25,9 +25,9 @@ const FONTS = [
     url: 'https://github.com/lxgw/LxgwWenKai/releases/download/v1.530/LXGWWenKai-Regular.ttf'
   },
   {
-    /* 朱雀仿宋，照宋刻本做的仿宋，标题和小标签都用它；发布包是 zip，取出里面的 ttf */
-    key: 'fang', family: 'HLM Fang', file: 'ZhuqueFangsong-Regular.ttf', weight: '400',
-    url: 'https://github.com/TrionesType/zhuque/releases/download/v0.212/ZhuqueFangsong-v0.212.zip', zip: true
+    /* 齐伋体，取自明代闵齐伋刻本的木刻宋体，只用在大标题；简体字也映射到它的繁体字形上 */
+    key: 'qiji', family: 'HLM Qiji', file: 'qiji-combo.ttf', weight: '400',
+    url: 'https://github.com/LingDong-/qiji-font/releases/download/0.0.4/qiji-combo.ttf'
   }
 ];
 
@@ -90,7 +90,7 @@ for (const f of FONTS) {
   console.log(f.key, `${files.length} 包，共 ${(size / 1024 / 1024).toFixed(2)} MB，收字 ${[...text].length}`);
 }
 
-/* 三份字体样式合成一份，去掉生成器的注释，路径改成从 /fonts/ 起算 */
+/* 几份字体样式合成一份，去掉生成器的注释，路径改成从 /fonts/ 起算 */
 let css = '';
 for (const f of FONTS) {
   const raw = readFileSync(join(outRoot, f.key, 'result.css'), 'utf8');

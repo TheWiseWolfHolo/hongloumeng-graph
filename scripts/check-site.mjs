@@ -23,7 +23,7 @@ const MUST = {
   'people/index.html': ['人物谱'],
   'people/林黛玉/index.html': ['林黛玉'],
   '404.html': ['四〇四'],
-  'fonts/fonts.css': ['HLM Serif', 'HLM Kai', 'HLM Fang'],
+  'fonts/fonts.css': ['HLM Serif', 'HLM Kai', 'HLM Qiji'],
   'manifest.webmanifest': ['红楼梦']
 };
 

@@ -43,7 +43,7 @@ npm run build      # 统计 → 切字体 → 出站 → 自检，输出到 dist
 
 ### 字体
 
-线上不引 Google Fonts。`scripts/fonts.mjs` 收集 `src/` 里实际出现的字，把思源宋体（正文）、霞鹜文楷（引文）和朱雀仿宋（标题与小标签）裁成子集，再切成按 unicode-range 分包的 woff2，输出到 `public/fonts/`。用到的字没变时直接跳过。字体源文件第一次运行时下载到 `.fonts-cache/`。
+线上不引 Google Fonts。`scripts/fonts.mjs` 收集 `src/` 里实际出现的字，把思源宋体（正文）、霞鹜文楷（引文）和齐伋体（大标题，明代闵齐伋刻本字形）裁成子集，再切成按 unicode-range 分包的 woff2，输出到 `public/fonts/`。用到的字没变时直接跳过。字体源文件第一次运行时下载到 `.fonts-cache/`。
 
 ## 数据约定
 

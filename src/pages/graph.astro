@@ -80,7 +80,6 @@ const client = {
               </g>
             </g>
           </svg>
-          <div class="sheen" aria-hidden="true"></div>
         </div>
         <div class="face front">
           <svg class="gsvg" data-front viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="命盘">
@@ -94,7 +93,6 @@ const client = {
               <g data-ego></g>
             </g>
           </svg>
-          <div class="sheen" aria-hidden="true"></div>
         </div>
       </div>
 
@@ -152,7 +150,6 @@ const client = {
   const edges = [...back.querySelectorAll<SVGPathElement>('.e')];
   const nodes = new Map([...back.querySelectorAll<SVGGElement>('.n')].map(g => [g.dataset.id!, g]));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const coarse = matchMedia('(pointer: coarse)').matches;
   const rad = (d: number) => (d * Math.PI) / 180;
   type P = [number, number];
 
@@ -176,30 +173,18 @@ const client = {
     back.querySelector('[data-patina]')!.setAttribute('href', c.toDataURL('image/webp', .8));
   }
 
-  /* ---------- 镜子的姿态：翻面、随鼠标微倾、反光 ---------- */
-  let flipDeg = 0, tiltX = 0, tiltY = 0, wantX = 0, wantY = 0, sink = 0;
-  const pose = () => { mirror.style.transform = `translateZ(${-sink}px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${(flipDeg + tiltY).toFixed(2)}deg)`; };
-  let tiltRaf = 0;
-  const tiltLoop = () => {
-    tiltX += (wantX - tiltX) * .08; tiltY += (wantY - tiltY) * .08;
-    pose();
-    if (Math.abs(wantX - tiltX) + Math.abs(wantY - tiltY) > .01) tiltRaf = requestAnimationFrame(tiltLoop); else tiltRaf = 0;
+  /* ---------- 翻面 ----------
+     只有翻的那一秒进入三维；平时镜子按平面画，字才清楚 */
+  let flipDeg = 0, sink = 0;
+  const pose = () => {
+    const moving = mirror.classList.contains('flipping');
+    mirror.style.transform = moving ? `translateZ(${-sink}px) rotateY(${flipDeg.toFixed(2)}deg)` : '';
   };
-  if (!coarse && !reduced) {
-    stage.addEventListener('pointermove', e => {
-      if (dragging) return;
-      const b = mirror.getBoundingClientRect();
-      const nx = (e.clientX - b.left) / b.width - .5, ny = (e.clientY - b.top) / b.height - .5;
-      wantX = Math.max(-1, Math.min(1, ny)) * -5; wantY = Math.max(-1, Math.min(1, nx)) * 5 * (flipDeg > 90 ? -1 : 1);
-      mirror.style.setProperty('--sx', `${(nx + .5) * 100}%`); mirror.style.setProperty('--sy', `${(ny + .5) * 100}%`);
-      if (!tiltRaf) tiltRaf = requestAnimationFrame(tiltLoop);
-    });
-    stage.addEventListener('pointerleave', () => { wantX = wantY = 0; if (!tiltRaf) tiltRaf = requestAnimationFrame(tiltLoop); });
-  }
   let flipRaf = 0;
   function flipTo(deg: number, onHalf?: () => void) {
     cancelAnimationFrame(flipRaf);
-    if (reduced) { onHalf?.(); flipDeg = deg; pose(); syncFace(); return; }
+    if (reduced) { onHalf?.(); flipDeg = deg; syncFace(); pose(); return; }
+    mirror.classList.add('flipping');
     const from = flipDeg, t0 = performance.now(), ms = 1100;
     let halfDone = false;
     const step = (now: number) => {
@@ -209,7 +194,7 @@ const client = {
       sink = Math.sin(Math.PI * t) * 160;
       if (!halfDone && t >= .5) { halfDone = true; onHalf?.(); syncFace(); }
       pose();
-      if (t < 1) flipRaf = requestAnimationFrame(step); else { sink = 0; pose(); syncFace(); }
+      if (t < 1) flipRaf = requestAnimationFrame(step); else { sink = 0; mirror.classList.remove('flipping'); syncFace(); pose(); }
     };
     flipRaf = requestAnimationFrame(step);
   }
@@ -220,6 +205,9 @@ const client = {
   const cur = () => (focusId ? 'front' : 'back') as 'back' | 'front';
   const applyView = (which: 'back' | 'front') => {
     const v = views[which], half = HALF / v.k;
+    /* 拖到镜缘就停，不让镜子拖出视野 */
+    const lim = HALF - half, d = Math.hypot(v.x, v.y);
+    if (d > lim) { v.x *= lim / (d || 1); v.y *= lim / (d || 1); }
     (which === 'back' ? back : front).setAttribute('viewBox', `${(v.x - half).toFixed(1)} ${(v.y - half).toFixed(1)} ${(half * 2).toFixed(1)} ${(half * 2).toFixed(1)}`);
     if (which === 'back') back.classList.toggle('zoomed', v.k > 1.45);
   };
@@ -249,7 +237,7 @@ const client = {
     v.x = k === 1 ? 0 : px - (px - v.x) * r; v.y = k === 1 ? 0 : py - (py - v.y) * r; v.k = k;
     applyView(which);
   }, { passive: false });
-  let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false, dragging = false;
+  let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false;
   stage.addEventListener('pointerdown', e => {
     if ((e.target as Element).closest('.hud, .panel')) return;
     const v = views[cur()];
@@ -258,13 +246,13 @@ const client = {
   stage.addEventListener('pointermove', e => {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!moved && Math.abs(dx) + Math.abs(dy) > 6 && views[cur()].k > 1) { moved = dragging = true; stage.classList.add('dragging'); }
+    if (!moved && Math.abs(dx) + Math.abs(dy) > 6 && views[cur()].k > 1) { moved = true; stage.classList.add('dragging'); }
     if (!moved) return;
     const v = views[cur()], u = unitPx();
     v.x = drag.vx - dx * u; v.y = drag.vy - dy * u;
     applyView(cur());
   });
-  const up = () => { drag = null; dragging = false; stage.classList.remove('dragging'); };
+  const up = () => { drag = null; stage.classList.remove('dragging'); };
   stage.addEventListener('pointerup', up);
   stage.addEventListener('pointercancel', up);
   document.querySelectorAll<HTMLButtonElement>('[data-z]').forEach(b => b.addEventListener('click', () => {
@@ -419,7 +407,7 @@ const client = {
     focusId = id;
     views.front = { x: 0, y: 0, k: 1 }; applyView('front');
     if (was) { egoG.classList.remove('show'); setTimeout(() => drawEgo(id), reduced ? 0 : 260); }
-    else if (instant || reduced) { drawEgo(id); flipDeg = 180; pose(); syncFace(); }
+    else if (instant || reduced) { drawEgo(id); flipDeg = 180; syncFace(); pose(); }
     else { egoG.classList.remove('show'); egoG.innerHTML = ''; flipTo(180, () => drawEgo(id)); }
     renderPanel(id);
     backBtn.hidden = false;
@@ -556,13 +544,16 @@ const client = {
   .stage:fullscreen, .stage.pseudo-full { position: fixed; inset: 0; z-index: 100; height: 100%; border-radius: 0; }
 
   /* 镜子本体：正方形，居中；有面板时让到左边 */
-  .mirror { position: absolute; left: 50%; top: 50%; width: min(96cqw, 96cqh); aspect-ratio: 1; translate: -50% -50%; transform-style: preserve-3d; transition: left .6s var(--ease), top .6s var(--ease), width .6s var(--ease); }
-  .has-panel .mirror { left: calc((100cqw - 372px) / 2); width: min(calc(100cqw - 392px), 96cqh); }
-  .face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; box-shadow: 0 40px 70px -30px rgb(30 20 5 / .55), 0 14px 26px -12px rgb(30 20 5 / .4); }
-  .face.front { transform: rotateY(180deg); }
+  .mirror { --m: round(down, min(96cqw, 96cqh), 2px); position: absolute; inset: 0 0 0 0; margin: auto; width: var(--m); height: var(--m); transition: width .6s var(--ease), height .6s var(--ease), margin-right .6s var(--ease); }
+  .has-panel .mirror { --m: round(down, min(calc(100cqw - 392px), 96cqh), 2px); margin-right: 372px; }
+  .face { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; box-shadow: 0 40px 70px -30px rgb(30 20 5 / .55), 0 14px 26px -12px rgb(30 20 5 / .4); }
+  /* 平时只显示朝外的那一面，不用三维；翻的时候才立起来 */
+  .mirror:not(.flipping) .face.front, .mirror.flipped:not(.flipping) .face.back { visibility: hidden; }
+  .mirror.flipping { transform-style: preserve-3d; }
+  .mirror.flipping .face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .mirror.flipping .face.front { transform: rotateY(180deg); }
+  .mirror.flipped:not(.flipping) .face.front { visibility: visible; }
   .gsvg { width: 100%; height: 100%; display: block; }
-  .sheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at var(--sx, 35%) var(--sy, 28%), rgb(255 248 225 / .2), transparent 42%); mix-blend-mode: screen; }
-  .front .sheen { background: radial-gradient(circle at var(--sx, 35%) var(--sy, 28%), rgb(255 255 255 / .55), transparent 45%); mix-blend-mode: soft-light; }
   /* 开场只动透明度和大小；滤镜会把三维的镜子压平，翻面时背面就藏不住 */
   .enter .mirror { animation: rise 1.4s var(--ease) backwards; }
   @keyframes rise { from { opacity: 0; scale: .9; } }
@@ -571,7 +562,7 @@ const client = {
   .rim-outer { fill: none; stroke: url(#rim); stroke-width: 40; }
   .rim-outer.f { stroke: url(#rim2); }
   .field { fill: url(#bronze); }
-  [data-patina] { opacity: .9; mix-blend-mode: screen; }
+  [data-patina] { opacity: .45; mix-blend-mode: screen; }
   .ring { fill: none; stroke: #b9965c; stroke-opacity: .55; stroke-width: 1.2; }
   .ring.faint { stroke-opacity: .2; stroke-dasharray: 1 5; }
   .beads { fill: none; stroke: #c9a76a; stroke-opacity: .28; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 11; }
@@ -591,12 +582,12 @@ const client = {
   @keyframes ink { from { opacity: 0; } }
   .lit .e { opacity: .07; }
   .lit .e.on { opacity: 1; }
-  .chain .e.on { fill: #ff8a63; filter: drop-shadow(0 0 4px rgb(255 140 90 / .8)); }
+  .chain .e.on { fill: #ff9a73; }
 
   .n { cursor: pointer; outline: none; }
   .hit { fill: transparent; }
   .dot { fill: #e6c983; }
-  .tier-c .dot { fill: #f4dd9f; stroke: #8a6c35; stroke-width: 2; filter: drop-shadow(0 0 5px rgb(244 214 140 / .6)); }
+  .tier-c .dot { fill: #f4dd9f; stroke: #8a6c35; stroke-width: 2; }
   .tier-s .dot, .tier-o .dot { fill: #c9ad73; }
   .lb { font: 500 14px var(--serif); fill: #e9dcbc; pointer-events: none; transition: opacity .3s, fill .3s; }
   .tier-c .lb { font: 700 21px var(--display); fill: #fbf0d4; }
@@ -698,8 +689,7 @@ const client = {
   @media (max-width: 900px) {
     .gwrap { padding: 0; margin-top: 0; }
     .stage { border-radius: 0; height: calc(100svh - var(--header-h) - 42px); }
-    .mirror { top: 52%; }
-    .has-panel .mirror { left: 50%; top: 28%; width: min(94cqw, 50cqh); }
+    .has-panel .mirror { --m: round(down, min(94cqw, 50cqh), 2px); margin: 8px auto auto; }
     .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46%; border-radius: 16px 16px 0 0; animation-name: up; }
     @keyframes up { from { opacity: 0; transform: translateY(20px); } }
     .has-panel .zoom, .has-panel .legend, .status { display: none; }
