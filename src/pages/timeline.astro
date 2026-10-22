@@ -138,17 +138,17 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
   .ax.dim i { opacity: .15; }
   .ax:hover i { transform: scale(1.7); }
   .ax-scale { position: relative; height: 26px; margin-top: 4px; border-top: 1px solid var(--line); }
-  .ax-scale span { position: absolute; left: calc(var(--at) * 100%); top: 6px; transform: translateX(-50%); font: 600 11px var(--sans); color: var(--ink-3); }
-  .ax-scale b { position: absolute; left: calc(var(--at) * 100%); top: -36px; bottom: 0; border-left: 1px dashed var(--cinnabar); padding: 30px 0 0 8px; font: 600 11px var(--sans); color: var(--cinnabar); letter-spacing: .1em; white-space: nowrap; }
+  .ax-scale span { position: absolute; left: calc(var(--at) * 100%); top: 6px; transform: translateX(-50%); font: 600 11px var(--label); color: var(--ink-3); }
+  .ax-scale b { position: absolute; left: calc(var(--at) * 100%); top: -36px; bottom: 0; border-left: 1px dashed var(--cinnabar); padding: 30px 0 0 8px; font: 600 11px var(--label); color: var(--cinnabar); letter-spacing: .1em; white-space: nowrap; }
 
   .tl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin: 28px 0 10px; }
   .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); }
-  .seg button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-3); }
+  .seg button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--label); color: var(--ink-3); }
   .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
   .kinds { display: flex; flex-wrap: wrap; gap: 6px; }
-  .who { display: inline-flex; align-items: center; gap: 8px; font: 600 12.5px var(--sans); color: var(--ink-3); }
+  .who { display: inline-flex; align-items: center; gap: 8px; font: 600 12.5px var(--label); color: var(--ink-3); }
   .who input { width: 110px; height: 34px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); font-size: 14px; color: var(--ink); }
-  .tl-count { margin-left: auto; font: 600 12.5px var(--sans); color: var(--ink-3); }
+  .tl-count { margin-left: auto; font: 600 12.5px var(--label); color: var(--ink-3); }
 
   .tl { list-style: none; margin: 0; padding: 0; }
   .te { display: grid; grid-template-columns: 170px 64px minmax(0, 1fr); gap: 0 26px; padding: 26px 0; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 20px); }
@@ -159,10 +159,10 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
   .te-mark { display: grid; justify-items: center; }
   .te-mark span { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--kc); color: var(--kc); font-size: 19px; writing-mode: vertical-rl; letter-spacing: .05em; }
   .te.big .te-mark span { border: 2.5px solid var(--cinnabar); color: #fff6ea; background: var(--cinnabar); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cinnabar) 15%, transparent); }
-  .te-k { display: flex; align-items: center; gap: 8px; font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--kc); }
+  .te-k { display: flex; align-items: center; gap: 8px; font: 700 11.5px/1 var(--label); letter-spacing: .2em; color: var(--kc); }
   .te-k i { width: 14px; height: 2px; background: var(--kc); }
   .te-k em { font-style: normal; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 2px 5px; letter-spacing: .1em; }
-  .te h2 { font: 400 clamp(24px, 2.4vw, 30px)/1.25 var(--brush); margin: 10px 0 8px; }
+  .te h2 { font: 700 clamp(24px, 2.4vw, 30px)/1.25 var(--display); margin: 10px 0 8px; }
   .te-d { font-size: 16px; line-height: 1.95; color: var(--ink-2); max-width: 42em; }
   .te .mem { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 14.5px; }
   .te.xu { opacity: .78; }

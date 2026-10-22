@@ -279,9 +279,9 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   @keyframes mist { to { transform: translateX(12%); } }
   .petals { position: absolute; inset: 0; width: 100%; height: 100%; }
   .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px; align-items: center; align-self: center; padding-top: clamp(28px, 5vh, 64px); padding-bottom: 20px; }
-  .hero-eyebrow { display: flex; align-items: center; gap: 12px; font: 600 12.5px/1 var(--sans); letter-spacing: .36em; color: var(--ink-2); }
+  .hero-eyebrow { display: flex; align-items: center; gap: 12px; font: 600 12.5px/1 var(--label); letter-spacing: .36em; color: var(--ink-2); }
   .hero-eyebrow i { width: 4px; height: 4px; border-radius: 50%; background: var(--cinnabar); }
-  .hero-title { position: relative; display: flex; align-items: flex-end; gap: .04em; margin: 26px 0 26px -.04em; font: 400 clamp(108px, 17vw, 236px)/.95 var(--brush); letter-spacing: 0; color: var(--ink); }
+  .hero-title { position: relative; display: flex; align-items: flex-end; gap: .04em; margin: 26px 0 26px -.04em; font: 700 clamp(108px, 17vw, 236px)/.95 var(--display); letter-spacing: 0; color: var(--ink); }
   .hero-title span { display: inline-block; }
   .hero-title :global(.hero-seal) { --s: clamp(46px, 5.5vw, 70px) !important; font-size: calc(var(--s) * .32); writing-mode: vertical-rl; letter-spacing: .05em; line-height: 1.05; margin: 0 0 .25em .3em; align-self: flex-end; transform: rotate(2deg); }
   @media (prefers-reduced-motion: no-preference) {
@@ -296,7 +296,7 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   .hero-search { display: flex; gap: 8px; margin-top: 30px; max-width: 520px; padding: 6px 6px 6px 22px; border: 1px solid var(--line-2); border-radius: 999px; background: color-mix(in srgb, var(--card) 86%, transparent); box-shadow: var(--shadow); backdrop-filter: blur(6px); transition: border-color .2s, box-shadow .3s; }
   .hero-search:focus-within { border-color: var(--cinnabar); box-shadow: 0 0 0 4px var(--cinnabar-soft), var(--shadow); }
   .hero-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 17px; }
-  .hero-search .btn { height: 46px; width: 64px; font: 400 22px/1 var(--brush); letter-spacing: 0; }
+  .hero-search .btn { height: 46px; width: 64px; font: 700 22px/1 var(--display); letter-spacing: 0; }
   .hero-quick { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 14px; padding-left: 22px; }
   .hero-quick button { color: var(--ink-2); border-bottom: 1px dashed var(--line-2); transition: color .2s, border-color .2s; }
   .hero-quick button:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
@@ -309,7 +309,7 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   @keyframes ink-drop { from { opacity: 0; filter: blur(6px); transform: translateY(-6px); } }
   .hero-poem :global(.poem-seal) { position: absolute; bottom: -14px; left: 0; writing-mode: horizontal-tb; }
   .hero-stats { display: flex; gap: clamp(20px, 5vw, 64px); padding: 18px 0 48px; margin: 0 auto; }
-  .hero-stats dt { font: 600 11.5px/1 var(--sans); letter-spacing: .28em; color: var(--ink-3); }
+  .hero-stats dt { font: 600 11.5px/1 var(--label); letter-spacing: .28em; color: var(--ink-3); }
   .hero-stats dd { margin: 10px 0 0; font: 300 clamp(30px, 3.6vw, 44px)/1 var(--serif); color: var(--ink); font-variant-numeric: oldstyle-nums; }
   .hero-stats small { font-size: 14px; margin-left: 4px; color: var(--ink-3); }
   .scroll-cue { position: absolute; right: var(--gutter); bottom: 40px; width: 1px; height: 46px; background: var(--line-2); overflow: hidden; }
@@ -319,12 +319,12 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   .doors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
   .door { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 24px; min-height: 340px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; transition: transform .45s var(--ease), box-shadow .45s, border-color .3s; }
   .door:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--line-2); }
-  .door-num { font: 400 15px/1 var(--brush); color: var(--cinnabar); }
+  .door-num { font: 400 15px/1 var(--display); color: var(--cinnabar); }
   .door-art { height: 110px; display: grid; place-items: center; margin: 4px 0 8px; }
-  .door h3 { font: 400 32px/1.1 var(--brush); letter-spacing: .06em; }
+  .door h3 { font: 700 32px/1.1 var(--display); letter-spacing: .06em; }
   .door p { font-size: 14.5px; line-height: 1.85; color: var(--ink-2); flex: 1; }
   .ppl { display: flex; gap: 6px; }
-  .ppl i { font: 400 26px/1 var(--brush); font-style: normal; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line-2); color: var(--ink-2); transition: transform .5s var(--ease), background .3s, color .3s; transition-delay: calc(var(--i) * 40ms); }
+  .ppl i { font: 700 26px/1 var(--display); font-style: normal; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line-2); color: var(--ink-2); transition: transform .5s var(--ease), background .3s, color .3s; transition-delay: calc(var(--i) * 40ms); }
   .door:hover .ppl i { transform: translateY(calc(-6px + var(--i) * 3px * (var(--i) - 2) / 2)); background: var(--cinnabar); color: #fff; border-color: transparent; }
   .net line { stroke: var(--line-2); stroke-width: 1.2; transition: stroke .3s; }
   .net circle { fill: var(--ink-3); transition: fill .3s, r .3s; }
@@ -336,7 +336,7 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   .roofs path { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-linejoin: round; }
   .door:hover .roofs path { stroke: var(--cinnabar); }
   .book { display: flex; flex-direction: column; align-items: center; padding: 12px 18px; border: 1px solid var(--line-2); border-radius: 2px; background: var(--paper); box-shadow: 4px 4px 0 var(--paper-3); transition: transform .5s var(--ease); }
-  .book i { font: 400 22px/1.2 var(--brush); font-style: normal; }
+  .book i { font: 700 22px/1.2 var(--display); font-style: normal; }
   .door:hover .book { transform: rotate(-4deg) translateY(-4px); }
 
   .today-wrap { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
@@ -345,15 +345,15 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   .zhu .eyebrow { color: var(--cinnabar); }
   .zhu-s { margin: 0; font-size: clamp(18px, 1.7vw, 21px); line-height: 2; color: var(--cinnabar); }
   .zhu figcaption { display: grid; gap: 6px; font-size: 13.5px; line-height: 1.8; color: var(--ink-3); }
-  .zhu figcaption b { font: 700 12.5px/1.4 var(--sans); letter-spacing: .1em; color: var(--ink-2); }
+  .zhu figcaption b { font: 700 12.5px/1.4 var(--label); letter-spacing: .1em; color: var(--ink-2); }
   .zhu figcaption a:hover b { color: var(--cinnabar); }
   .zhu.flip .zhu-s { animation: ink-in .7s var(--ease-ink); }
-  .today::after { content: '回'; position: absolute; right: -10px; bottom: -60px; font: 400 240px/1 var(--brush); color: var(--ink); opacity: .04; pointer-events: none; }
+  .today::after { content: '回'; position: absolute; right: -10px; bottom: -60px; font: 700 240px/1 var(--display); color: var(--ink); opacity: .04; pointer-events: none; }
   .today-body { display: grid; gap: 10px; }
   .today-cn { font-size: 44px; line-height: 1; color: var(--cinnabar); }
   .today-title { font-size: clamp(20px, 2.4vw, 28px); font-weight: 700; letter-spacing: .1em; }
   .today-sum { font-size: 16px; line-height: 2; color: var(--ink-2); max-width: 46em; }
-  .today-shuffle { position: absolute; top: 20px; right: 22px; font: 600 13px/1 var(--sans); color: var(--ink-3); padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 999px; }
+  .today-shuffle { position: absolute; top: 20px; right: 22px; font: 600 13px/1 var(--label); color: var(--ink-3); padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 999px; }
   .today-shuffle:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
   .today.flip .today-body { animation: ink-in .7s var(--ease-ink); }
 
@@ -369,18 +369,18 @@ const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
   .lady:hover .lady-verse { opacity: 1; }
   .lady-verse span:nth-child(2) { margin-top: 1.4em; }
   .lady-name { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
-  .lady-name b { font: 400 26px/1 var(--brush); }
-  .lady-name small { font: 600 11px/1 var(--sans); color: var(--cinnabar); letter-spacing: .2em; }
+  .lady-name b { font: 700 26px/1 var(--display); }
+  .lady-name small { font: 600 11px/1 var(--label); color: var(--cinnabar); letter-spacing: .2em; }
 
   .river-note { max-width: 30em; }
   .pairs { margin-top: 36px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
-  .pairs-h { font: 600 13px/1.8 var(--sans); color: var(--ink-3); letter-spacing: .12em; }
+  .pairs-h { font: 600 13px/1.8 var(--label); color: var(--ink-3); letter-spacing: .12em; }
   .pairs ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; counter-reset: p; }
   .pairs li { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 16.5px; counter-increment: p; }
-  .pairs li::before { content: counter(p); font: 400 18px/1 var(--brush); color: var(--cinnabar); width: 1.3em; }
+  .pairs li::before { content: counter(p); font: 400 18px/1 var(--display); color: var(--cinnabar); width: 1.3em; }
   .pairs a:hover { color: var(--cinnabar); }
   .amp { font-size: 13px; color: var(--ink-3); }
-  .pn { margin-left: auto; font: 500 12px/1 var(--sans); color: var(--ink-3); }
+  .pn { margin-left: auto; font: 500 12px/1 var(--label); color: var(--ink-3); }
 
   @media (max-width: 1000px) {
     .doors { grid-template-columns: repeat(2, minmax(0, 1fr)); }

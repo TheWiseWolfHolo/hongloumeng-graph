@@ -137,11 +137,11 @@ const f = (n: number) => n.toFixed(1);
 </script>
 
 <style>
-  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; font: 500 12.5px/1 var(--sans); color: var(--ink-2); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; font: 500 12.5px/1 var(--label); color: var(--ink-2); }
   .legend span { display: inline-flex; align-items: center; gap: 8px; }
   .tree-shell { position: relative; margin: 22px auto 0; max-width: calc(var(--wrap) + 160px); padding: 0 var(--gutter); }
   .tree-tools { position: absolute; top: 12px; right: calc(var(--gutter) + 12px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(6px); }
-  .tree-tools button { height: 32px; min-width: 32px; padding: 0 12px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-2); }
+  .tree-tools button { height: 32px; min-width: 32px; padding: 0 12px; border-radius: 999px; font: 600 13px/1 var(--label); color: var(--ink-2); }
   .tree-tools button:hover { background: var(--paper-2); color: var(--cinnabar); }
   .tree-tools .sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
   .tree-box { overflow: auto; max-height: min(86vh, 1000px); border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: grab; scrollbar-width: thin; }
@@ -150,9 +150,9 @@ const f = (n: number) => n.toFixed(1);
   .tscroll { display: flex; width: max-content; min-width: 100%; }
   .tlabels { position: sticky; left: 0; width: 96px; flex: none; z-index: 2; background: var(--card); border-right: 1px solid var(--line); }
   .tlab { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; pointer-events: none; }
-  .tlab i { font: normal 500 11px/1.4 var(--sans); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
-  .tlab b { font: 400 38px/1.15 var(--brush); color: var(--cinnabar); }
-  .tlab span { font: 500 11px/1.45 var(--sans); color: var(--ink-3); padding: 0 10px; }
+  .tlab i { font: normal 500 11px/1.4 var(--label); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
+  .tlab b { font: 700 38px/1.15 var(--display); color: var(--cinnabar); }
+  .tlab span { font: 500 11px/1.45 var(--label); color: var(--ink-3); padding: 0 10px; }
   .tsvg { display: block; margin: 0 auto; }
   .tn { cursor: pointer; outline: none; }
   .tn.xx { cursor: default; }
@@ -178,14 +178,14 @@ const f = (n: number) => n.toFixed(1);
   .t-tie.bro { stroke: var(--gold); stroke-dasharray: 6 5; }
   .gen-band { fill: var(--paper-2); opacity: .5; }
   .gen-note { font-family: var(--serif); font-size: 11.5px; letter-spacing: .12em; fill: var(--ink-3); text-anchor: middle; }
-  .tr-house { font-family: var(--brush); font-size: 27px; letter-spacing: .5em; text-anchor: middle; fill: var(--c); opacity: .85; }
+  .tr-house { font-family: var(--display); font-size: 27px; letter-spacing: .5em; text-anchor: middle; fill: var(--c); opacity: .85; }
 
   .gens { margin-top: 44px; }
-  .gens-h { font: 400 28px/1.2 var(--brush); margin-bottom: 16px; }
+  .gens-h { font: 700 28px/1.2 var(--display); margin-bottom: 16px; }
   .gens ol { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
   .gens li { padding: 16px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); display: grid; gap: 4px; }
-  .gens li b { font: 400 40px/1 var(--brush); color: var(--cinnabar); }
-  .gens li span { font: 600 12px/1.5 var(--sans); letter-spacing: .14em; color: var(--ink-3); }
+  .gens li b { font: 700 40px/1 var(--display); color: var(--cinnabar); }
+  .gens li span { font: 600 12px/1.5 var(--label); letter-spacing: .14em; color: var(--ink-3); }
   .gens li p { font-size: 14px; line-height: 1.75; color: var(--ink-2); }
   @media (max-width: 760px) {
     .tlabels { width: 46px; }

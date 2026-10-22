@@ -25,8 +25,9 @@ const FONTS = [
     url: 'https://github.com/lxgw/LxgwWenKai/releases/download/v1.530/LXGWWenKai-Regular.ttf'
   },
   {
-    key: 'brush', family: 'HLM Brush', file: 'MaShanZheng-Regular.ttf', weight: '400',
-    url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/mashanzheng/MaShanZheng-Regular.ttf'
+    /* 朱雀仿宋，照宋刻本做的仿宋，标题和小标签都用它；发布包是 zip，取出里面的 ttf */
+    key: 'fang', family: 'HLM Fang', file: 'ZhuqueFangsong-Regular.ttf', weight: '400',
+    url: 'https://github.com/TrionesType/zhuque/releases/download/v0.212/ZhuqueFangsong-v0.212.zip', zip: true
   }
 ];
 
@@ -53,7 +54,12 @@ async function source(f) {
   console.log('下载', f.file);
   const res = await fetch(f.url);
   if (!res.ok) throw new Error(`${f.file} 下载失败 ${res.status}`);
-  writeFileSync(p, Buffer.from(await res.arrayBuffer()));
+  if (!f.zip) { writeFileSync(p, Buffer.from(await res.arrayBuffer())); return p; }
+  const zp = p + '.zip';
+  writeFileSync(zp, Buffer.from(await res.arrayBuffer()));
+  const unzip = 'import zipfile,sys,os; z=zipfile.ZipFile(sys.argv[1]); m=[n for n in z.namelist() if os.path.basename(n)==sys.argv[2]][0]; open(sys.argv[3],"wb").write(z.read(m))';
+  execFileSync('python', ['-c', unzip, zp, f.file, p]);
+  rmSync(zp);
   return p;
 }
 

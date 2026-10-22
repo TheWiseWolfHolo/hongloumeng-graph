@@ -93,11 +93,11 @@ const layers = order.map((id, li) => {
   .lyr:hover path { opacity: .85; }
   .xu { stroke: var(--line-2); stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
   .xu-veil { position: absolute; top: -6px; bottom: -6px; right: 0; width: calc(100% * 40.5 / 119); background: color-mix(in srgb, var(--paper) 58%, transparent); pointer-events: none; border-left: 1px dashed var(--line-2); }
-  .xu-veil span { position: absolute; top: 4px; left: 10px; font: 600 11px/1 var(--sans); letter-spacing: .3em; color: var(--ink-3); }
+  .xu-veil span { position: absolute; top: 4px; left: 10px; font: 600 11px/1 var(--label); letter-spacing: .3em; color: var(--ink-3); }
   .labels { position: absolute; inset: 0; pointer-events: none; }
-  .labels span { position: absolute; transform: translate(-50%, -50%); font: 400 clamp(13px, 1.4vw, 18px)/1 var(--brush); color: var(--ink); writing-mode: vertical-rl; letter-spacing: .1em; text-shadow: 0 0 6px var(--paper), 0 0 2px var(--paper); transition: opacity .3s; }
+  .labels span { position: absolute; transform: translate(-50%, -50%); font: 700 clamp(13px, 1.4vw, 18px)/1 var(--display); color: var(--ink); writing-mode: vertical-rl; letter-spacing: .1em; text-shadow: 0 0 6px var(--paper), 0 0 2px var(--paper); transition: opacity .3s; }
   .river:has(.lyr:hover) .labels span { opacity: .25; }
-  .river-axis { position: relative; height: 22px; margin-top: 10px; font: 500 11.5px/1 var(--sans); color: var(--ink-3); border-top: 1px solid var(--line); }
+  .river-axis { position: relative; height: 22px; margin-top: 10px; font: 500 11.5px/1 var(--label); color: var(--ink-3); border-top: 1px solid var(--line); }
   .river-axis span { position: absolute; top: 8px; transform: translateX(-50%); }
   @media (prefers-reduced-motion: no-preference) {
     .river.in .lyr path { animation: flow 1.6s var(--ease-ink) backwards; animation-delay: calc(var(--i) * 60ms); }

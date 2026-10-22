@@ -42,8 +42,8 @@ const peak = bars.reduce((a, b) => (b.v > a.v ? b : a), bars[0]);
   .strip .xu-bg { fill: var(--paper-2); opacity: .6; }
   .strip .bar.xu .ink { fill: var(--ink-4); }
   .strip .xu-cap { color: var(--ink-4); }
-  .ticks { position: relative; height: 18px; margin-top: 6px; font: 500 11px/1 var(--sans); color: var(--ink-3); }
+  .ticks { position: relative; height: 18px; margin-top: 6px; font: 500 11px/1 var(--label); color: var(--ink-3); }
   .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 500 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); margin-top: 8px; }
+  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 500 11.5px/1 var(--label); letter-spacing: .2em; color: var(--ink-3); margin-top: 8px; }
   .strip figcaption span:last-child { padding-left: 10px; border-left: 1px dashed var(--line-2); }
 </style>

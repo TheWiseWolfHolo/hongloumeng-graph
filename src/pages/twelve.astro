@@ -156,7 +156,7 @@ const leaves = BOOKS.map(b => ({
 <style>
   .cabinet { display: flex; gap: 18px; justify-content: center; margin: 30px 0 10px; }
   .seal-tab { position: relative; padding: 0; background: none; transition: transform .4s var(--ease); }
-  .tab-paper { display: grid; place-items: center; width: 66px; height: 214px; background: #f6efdf; border: 1px solid #d8c9a6; box-shadow: 0 2px 0 #e3d6b8, var(--shadow); font: 400 22px/1 var(--brush); letter-spacing: .14em; color: #6c5b45; writing-mode: vertical-rl; transition: background .3s, color .3s, box-shadow .3s; }
+  .tab-paper { display: grid; place-items: center; width: 66px; height: 214px; background: #f6efdf; border: 1px solid #d8c9a6; box-shadow: 0 2px 0 #e3d6b8, var(--shadow); font: 700 22px/1 var(--display); letter-spacing: .14em; color: #6c5b45; writing-mode: vertical-rl; transition: background .3s, color .3s, box-shadow .3s; }
   :global(:root[data-theme="dark"]) .tab-paper { background: #2a2620; border-color: #4a4235; color: #b7a78a; box-shadow: 0 2px 0 #1c1915; }
   .seal-tab:hover { transform: translateY(-4px); }
   .seal-tab[aria-selected="true"] .tab-paper { background: var(--cinnabar); border-color: var(--cinnabar); color: #fff6ea; box-shadow: 0 10px 30px -10px var(--cinnabar); }
@@ -173,7 +173,7 @@ const leaves = BOOKS.map(b => ({
   .pic-a:hover :global(img) { transform: scale(1.04); }
   .pic figcaption { grid-column: 1 / -1; font: 400 15px/1.85 var(--kai); color: var(--ink-2); }
   .pic.bare figcaption { padding: 34px 26px; border: 1px solid var(--line-2); background: var(--card); font-size: 19px; }
-  .cap-k { font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--cinnabar); margin-right: 10px; }
+  .cap-k { font: 700 11.5px/1 var(--label); letter-spacing: .2em; color: var(--cinnabar); margin-right: 10px; }
 
   .words { display: grid; gap: 18px; justify-items: center; }
   .verse { writing-mode: vertical-rl; display: flex; flex-direction: column; font-size: clamp(24px, 2.4vw, 30px); letter-spacing: .28em; line-height: 1; color: var(--ink); padding: .4em 0; border-right: 1px solid color-mix(in srgb, var(--cinnabar) 22%, transparent); min-height: 10em; }
@@ -184,21 +184,21 @@ const leaves = BOOKS.map(b => ({
   }
   .pi { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-width: 16em; }
   .pi li { font: 14.5px/1.75 var(--kai); color: var(--cinnabar); }
-  .pi b { font: 600 11px/1 var(--sans); letter-spacing: .08em; margin-right: 8px; opacity: .8; }
+  .pi b { font: 600 11px/1 var(--label); letter-spacing: .08em; margin-right: 8px; opacity: .8; }
 
-  .info h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: 400 34px/1.2 var(--brush); }
+  .info h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: 700 34px/1.2 var(--display); }
   .info h2 :global(a.person) { --pc: var(--c); }
-  .and { font: 500 14px/1 var(--sans); color: var(--ink-3); }
+  .and { font: 500 14px/1 var(--label); color: var(--ink-3); }
   .info dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 18px 0; font-size: 15.5px; line-height: 1.8; }
-  .info dt { font: 700 11.5px/1.9 var(--sans); letter-spacing: .18em; color: var(--ink-3); }
+  .info dt { font: 700 11.5px/1.9 var(--label); letter-spacing: .18em; color: var(--ink-3); }
   .info dd { margin: 0; }
-  .info dd small { margin-left: 8px; color: var(--ink-3); font: 500 11.5px/1 var(--sans); }
+  .info dd small { margin-left: 8px; color: var(--ink-3); font: 500 11.5px/1 var(--label); }
   .info dd a { color: var(--cinnabar); }
-  .gloss summary { cursor: pointer; list-style: none; font: 600 13.5px/1.4 var(--sans); color: var(--cinnabar); letter-spacing: .08em; }
+  .gloss summary { cursor: pointer; list-style: none; font: 600 13.5px/1.4 var(--label); color: var(--cinnabar); letter-spacing: .08em; }
   .gloss summary::before { content: '▸ '; }
   .gloss[open] summary::before { content: '▾ '; }
   .gloss p { margin-top: 10px; font-size: 15.5px; line-height: 1.9; color: var(--ink-2); }
-  .fate p b { display: block; font: 700 12px/1.6 var(--sans); letter-spacing: .12em; color: var(--cinnabar); }
+  .fate p b { display: block; font: 700 12px/1.6 var(--label); letter-spacing: .12em; color: var(--cinnabar); }
   .fate p.xu { color: var(--ink-3); font-size: 14.5px; }
   .fate p.xu b { color: var(--ink-3); }
 
@@ -206,12 +206,12 @@ const leaves = BOOKS.map(b => ({
   .song-list { list-style: none; margin: 0; padding: 0; columns: 2 380px; column-gap: 48px; }
   .song { break-inside: avoid; padding: 22px 0 24px; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 60px); }
   .song:target { background: var(--gold-soft); }
-  .song h3 { display: flex; align-items: baseline; gap: 12px; font: 400 26px/1.2 var(--brush); }
-  .song-n { font: 400 15px/1 var(--brush); color: var(--cinnabar); border: 1px solid currentColor; border-radius: 3px; padding: 4px 4px 3px; min-width: 1.6em; text-align: center; }
+  .song h3 { display: flex; align-items: baseline; gap: 12px; font: 700 26px/1.2 var(--display); }
+  .song-n { font: 400 15px/1 var(--display); color: var(--cinnabar); border: 1px solid currentColor; border-radius: 3px; padding: 4px 4px 3px; min-width: 1.6em; text-align: center; }
   .song-who { display: flex; gap: 12px; margin-top: 6px; font-size: 14px; }
   .song-text { margin-top: 12px; font-size: 17.5px; line-height: 2.05; color: var(--ink); }
   .song-pi { margin-top: 8px; font: 14px/1.75 var(--kai); color: var(--cinnabar); }
-  .song-pi b { font: 600 11px/1 var(--sans); margin-right: 8px; opacity: .8; }
+  .song-pi b { font: 600 11px/1 var(--label); margin-right: 8px; opacity: .8; }
 
   @media (max-width: 1100px) {
     }

@@ -26,14 +26,14 @@
 .garden-grid { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .gmain { min-width: 0; }
 .gtools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
-.gt-hint { font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+.gt-hint { font-family: var(--label); font-size: 13px; color: var(--ink-3); }
 .gmap { border-radius: 12px; background: var(--gd-mount); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
 .gscroll { overflow-x: auto; overscroll-behavior-x: contain; }
 .gscroll svg { width: 100%; height: auto; display: block; }
 .gplaces { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 7px; margin-top: 12px; }
-.gplaces > span { font-family: var(--sans); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin-right: 2px; }
+.gplaces > span { font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin-right: 2px; }
 .gplaces .br { flex-basis: 100%; height: 0; }
-.map-note { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin: 10px 2px 2px; }
+.map-note { font-family: var(--label); font-size: 12px; color: var(--ink-3); margin: 10px 2px 2px; }
 
 .gd-h1 { stop-color: var(--gd-hill1); } .gd-h2 { stop-color: var(--gd-hill2); } .gd-h3 { stop-color: var(--gd-hill3); }
 .gd-w1 { stop-color: var(--gd-water1); } .gd-w2 { stop-color: var(--gd-water2); }
@@ -49,7 +49,7 @@
 .g-lakewave { fill: url(#gdWave); opacity: .5; pointer-events: none; }
 .g-ripple { fill: none; stroke: var(--gd-wave); stroke-width: 1; stroke-dasharray: 2 9; stroke-linecap: round; opacity: .5; }
 .g-moonref { fill: var(--gd-moon); opacity: calc(var(--gd-moon-o) * .45); }
-.g-flow { font-family: var(--brush); font-size: 19px; fill: var(--gd-bank); letter-spacing: .9em; }
+.g-flow { font-family: var(--display); font-size: 19px; fill: var(--gd-bank); letter-spacing: .9em; }
 .g-hill { fill: url(#gdHill); stroke: var(--gd-ink); stroke-width: 1.1; stroke-linejoin: round; }
 .g-cun { fill: none; stroke: var(--gd-ink); stroke-width: .8; opacity: .38; stroke-linecap: round; }
 .g-moss { fill: var(--gd-moss); }
@@ -122,8 +122,8 @@
 .g-mound { fill: var(--gd-earth); stroke: var(--gd-ink); stroke-width: .8; }
 .g-flag { fill: var(--gd-pear); stroke: var(--gd-plum); stroke-width: 1.2; stroke-linejoin: round; }
 .g-sl { font-family: var(--serif); font-weight: 700; font-size: 15px; fill: var(--gd-ink); paint-order: stroke; stroke: var(--gd-silk); stroke-width: 4px; stroke-linejoin: round; letter-spacing: .1em; transition: fill .2s; }
-.g-ml { font-family: var(--sans); font-size: 11.5px; fill: var(--gd-ink2); paint-order: stroke; stroke: var(--gd-silk); stroke-width: 3.5px; stroke-linejoin: round; letter-spacing: .25em; pointer-events: none; }
-.gi-t { font-family: var(--brush); font-size: 34px; fill: var(--gd-ink); text-anchor: middle; }
+.g-ml { font-family: var(--label); font-size: 11.5px; fill: var(--gd-ink2); paint-order: stroke; stroke: var(--gd-silk); stroke-width: 3.5px; stroke-linejoin: round; letter-spacing: .25em; pointer-events: none; }
+.gi-t { font-family: var(--display); font-size: 34px; fill: var(--gd-ink); text-anchor: middle; }
 .gi-s { font-family: var(--serif); font-size: 12px; fill: var(--gd-ink2); text-anchor: middle; }
 .gi-seal { fill: var(--gd-sealred); }
 .gi-sealt { font-family: var(--serif); font-weight: 900; font-size: 10.5px; fill: var(--gd-seal-ink); text-anchor: middle; dominant-baseline: central; }
@@ -134,7 +134,7 @@
 .gp-nail { fill: var(--gd-plq-line); }
 .gp-board { fill: var(--gd-plq); stroke: var(--gd-plq-line); stroke-width: 1.2; transition: fill .2s; }
 .gp-inner { fill: none; stroke: var(--gd-plq-line); stroke-width: .6; opacity: .8; }
-.gp-ch { font-family: var(--brush); font-size: 19px; fill: var(--gd-plq-ink); text-anchor: middle; dominant-baseline: central; }
+.gp-ch { font-family: var(--display); font-size: 19px; fill: var(--gd-plq-ink); text-anchor: middle; dominant-baseline: central; }
 .gp-seal { fill: var(--c); }
 .gp-st { font-family: var(--serif); font-weight: 900; font-size: 10px; fill: var(--gd-seal-ink); text-anchor: middle; dominant-baseline: central; }
 .g-home, .g-site { cursor: pointer; outline: none; }
@@ -158,14 +158,14 @@
 @keyframes gpulse { from { transform: scale(.7); opacity: .9; } to { transform: scale(2.6); opacity: 0; } }
 
 .gcard { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 16px 20px 18px; position: sticky; top: 64px; max-height: calc(100vh - 84px); overflow-y: auto; }
-.gc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: var(--sans); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; }
+.gc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; }
 .gc-seal { writing-mode: vertical-rl; background: var(--c); color: var(--gd-seal-ink); font-family: var(--serif); font-weight: 900; font-size: 13px; letter-spacing: .04em; line-height: 1.1; padding: 6px 4px; border-radius: 3px; }
 .gc-count { font-variant-numeric: tabular-nums; color: var(--cinnabar); }
-.gcard h3 { margin: 2px 0 0; font-family: var(--brush); font-size: 42px; font-weight: 400; line-height: 1.25; letter-spacing: .06em; text-wrap: balance; }
-.gcard .al { font-family: var(--sans); color: var(--ink-2); font-size: 13px; margin-bottom: 10px; }
+.gcard h3 { margin: 2px 0 0; font-family: var(--display); font-size: 42px; font-weight: 700; line-height: 1.25; letter-spacing: .06em; text-wrap: balance; }
+.gcard .al { font-family: var(--label); color: var(--ink-2); font-size: 13px; margin-bottom: 10px; }
 .gcard p { margin: 8px 0; font-size: 14.5px; line-height: 1.85; }
-.gcard p b { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: .2em; margin-right: 8px; padding: 1px 4px 1px 7px; border: 1px solid currentColor; border-radius: 3px; vertical-align: 1px; }
-.gc-sec { font-family: var(--sans); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin: 14px 0 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.gcard p b { font-family: var(--label); font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: .2em; margin-right: 8px; padding: 1px 4px 1px 7px; border: 1px solid currentColor; border-radius: 3px; vertical-align: 1px; }
+.gc-sec { font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin: 14px 0 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .gcard .mem { display: flex; flex-wrap: wrap; gap: 6px; }
 .gc-evs .rel .role { min-width: 4.8em; }
 .gc-steps { list-style: none; display: flex; margin: 12px 0 6px; padding: 0; }
@@ -180,12 +180,12 @@
 .gcard .gc-text { font-size: 15.5px; }
 .gc-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .btn[disabled] { opacity: .4; cursor: default; }
-.gc-more { display: block; margin-top: 12px; background: none; border: 0; padding: 0; color: var(--cinnabar); font-family: var(--sans); font-size: 13px; text-decoration: underline dotted; text-underline-offset: 3px; }
-.gcard .gc-hint { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin: 10px 0 0; }
+.gc-more { display: block; margin-top: 12px; background: none; border: 0; padding: 0; color: var(--cinnabar); font-family: var(--label); font-size: 13px; text-decoration: underline dotted; text-underline-offset: 3px; }
+.gcard .gc-hint { font-family: var(--label); font-size: 12px; color: var(--ink-3); margin: 10px 0 0; }
 .gc-evs { display: grid; gap: 2px; }
 .gc-evs .rel { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; text-align: left; }
 .gc-evs .rel:hover { background: var(--paper-2); }
-.gc-evs .rel .role { font: 600 12px var(--sans); color: var(--cinnabar); }
+.gc-evs .rel .role { font: 600 12px var(--label); color: var(--cinnabar); }
 .gc-evs .rel .nm { font-size: 15px; }
-.gc-evs .rel .note { margin-left: 8px; font: 600 10.5px var(--sans); color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 4px; }
+.gc-evs .rel .note { margin-left: 8px; font: 600 10.5px var(--label); color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 4px; }
 .gcard .mem { gap: 6px 14px; }
