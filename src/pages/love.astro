@@ -1,0 +1,199 @@
+---
+import Base from '../layouts/Base.astro';
+import PersonLink from '../components/PersonLink.astro';
+import { LOVES, FEUDS } from '../data/loves.ts';
+
+const ENDS = { 悲: '悲剧', 喜: '圆满', 另: '另说' } as const;
+const count = (k: string) => LOVES.filter(l => l.end === k).length;
+/* 风波按回目先后排 */
+const CN: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+const firstHui = (s: string) => {
+  const m = /第([一二三四五六七八九十百]+)/.exec(s);
+  if (!m) return 999;
+  let n = 0, cur = 0;
+  for (const c of m[1]) { if (c === '十') { n += (cur || 1) * 10; cur = 0; } else if (c === '百') { n += (cur || 1) * 100; cur = 0; } else cur = CN[c] ?? 0; }
+  return n + cur;
+};
+const feuds = [...FEUDS].sort((a, b) => firstHui(a.ch) - firstHui(b.ch));
+---
+<Base title="情缘与风波" description="《红楼梦》里的木石前盟与金玉良缘，十几段情缘的始末，以及贾府里的几场大风波。结局分前八十回的原意与续书的写法。" section="graph" sub="love">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">关系 · 肆</span>
+        <h1 class="ink-in" style="--d:.1s">情缘与风波</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">书从一段前世的灌溉之恩讲起，“大旨谈情”。这里收了十几段情缘和府里的几场风波，结局分开写：前八十回与脂批透露的放在前面，续书的写法另起一行。</p>
+    </header>
+
+    <section class="duet">
+      <p class="duet-q kai reveal"><span>都道是金玉良姻，</span><span>俺只念木石前盟。</span><small>第五回　红楼梦曲 · 终身误</small></p>
+      <div class="pacts">
+        <article class="pact reveal" style="--c:var(--k-lv)">
+          <div class="pact-art">
+            <a class="tab t-zhu" href="/people/绛珠仙草/" data-peek><span class="tab-m"><span>阆苑仙葩</span></span><small>绛珠仙草</small></a>
+            <div class="tie"><b>以泪相还</b><i></i></div>
+            <a class="tab t-ying" href="/people/神瑛侍者/" data-peek><span class="tab-m"><span>美玉无瑕</span></span><small>神瑛侍者</small></a>
+          </div>
+          <h2>木石前盟</h2>
+          <p class="pact-k">第一回　甄士隐梦幻识通灵</p>
+          <p>西方灵河岸上三生石畔有一株绛珠草，赤瑕宫的神瑛侍者天天用甘露浇灌它。草修成女体，跟着他下世为人，说要“把我一生所有的眼泪还他”。</p>
+          <p class="pact-pi kai"><b>甲戌侧批</b>细思“绛珠”二字岂非血泪乎。</p>
+        </article>
+        <article class="pact reveal" style="--c:var(--gold);--d:120ms">
+          <div class="pact-art">
+            <a class="tab t-jade" href="/people/通灵宝玉/" data-peek><span class="tab-m two"><span>莫失莫忘</span><span>仙寿恒昌</span></span><small>通灵宝玉</small></a>
+            <div class="tie"><b>是一对儿</b><i></i></div>
+            <a class="tab t-lock" href="/people/金锁/" data-peek><span class="tab-m two"><span>不离不弃</span><span>芳龄永继</span></span><small>金锁</small></a>
+          </div>
+          <h2>金玉良缘</h2>
+          <p class="pact-k">第八回　比通灵金莺微露意</p>
+          <p>宝玉的玉上刻着“莫失莫忘，仙寿恒昌”，宝钗的金锁上刻着“不离不弃，芳龄永继”。莺儿说“倒像和姑娘的项圈上的两句话是一对儿”；和尚给锁时也留过话，要等日后有玉的方可正配。</p>
+        </article>
+      </div>
+      <div class="trio reveal">
+        <a class="slip" href="/people/林黛玉/" data-peek><span class="sn">林黛玉</span><span class="sl">世外仙姝寂寞林</span><span class="ss">泪尽</span></a>
+        <div class="thread" style="--c:var(--k-lv)"><b>知己</b><i></i><span>心事终虚化</span></div>
+        <a class="slip main" href="/people/贾宝玉/" data-peek><span class="sn">贾宝玉</span><span class="sl">我偏说是木石姻缘</span><span class="ss">出家</span></a>
+        <div class="thread wed" style="--c:var(--gold)"><b>夫妻</b><i></i><span>到底意难平</span></div>
+        <a class="slip" href="/people/薛宝钗/" data-peek><span class="sn">薛宝钗</span><span class="sl">山中高士晶莹雪</span><span class="ss">守寡</span></a>
+      </div>
+      <p class="duet-end kai reveal">“宝玉有此世人莫忍为之毒，故后文方有‘悬崖撒手’一回。若他人得宝钗之妻、麝月之婢，岂能弃而为僧哉？”<small>第二十一回 · 庚辰夹批</small></p>
+    </section>
+
+    <section class="section">
+      <div class="section-head reveal">
+        <div><span class="eyebrow">情缘档案</span><h2>{LOVES.length} 段姻缘</h2></div>
+        <div class="seg" role="group" aria-label="按结局筛选">
+          <button type="button" data-end="" aria-pressed="true">全部 <small>{LOVES.length}</small></button>
+          {Object.entries(ENDS).map(([k, v]) => <button type="button" data-end={k} aria-pressed="false">{v} <small>{count(k)}</small></button>)}
+        </div>
+      </div>
+      <div class="loves">
+        {LOVES.map((l, i) => (
+          <article class="lov reveal" data-end={l.end} style={`--d:${(i % 3) * 60}ms`}>
+            <span class:list={['lov-seal', `e-${l.end}`]}>{ENDS[l.end]}</span>
+            <p class="lov-k">{l.kind}</p>
+            <h3>{l.title}</h3>
+            <p class="lov-t">{l.text}</p>
+            <div class="mem">{l.ids.map(id => <PersonLink id={id} />)}</div>
+            <details class="out spoil" data-ch="81">
+              <summary>后来</summary>
+              <div class="spoil-body">
+                <p>{l.out}</p>
+                {l.xu && <p class="xu"><b>续书</b>{l.xu}</p>}
+              </div>
+            </details>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head reveal"><div><span class="eyebrow">府中风波</span><h2>几场大闹</h2></div></div>
+      <ol class="feuds">
+        {feuds.map(f => (
+          <li class="fe reveal spoil" data-ch={firstHui(f.ch)}>
+            <div class="spoil-body">
+              <p class="fe-hui"><small>{f.ch}</small><span class="kai">{f.hui}</span></p>
+              <div class="fe-b">
+                <h3>{f.title}</h3>
+                <p>{f.text}</p>
+                <div class="mem">{f.ids.map(id => <PersonLink id={id} />)}</div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+</Base>
+
+<script>
+  const btns = [...document.querySelectorAll<HTMLButtonElement>('[data-end]')].filter(b => b.tagName === 'BUTTON');
+  const cards = [...document.querySelectorAll<HTMLElement>('.lov')];
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    cards.forEach(c => { c.hidden = !!b.dataset.end && c.dataset.end !== b.dataset.end; if (!c.hidden) c.classList.add('in'); });
+  }));
+</script>
+
+<style>
+  .duet { margin-top: 40px; display: grid; gap: 34px; }
+  .duet-q { display: grid; justify-items: center; gap: 4px; font-size: clamp(26px, 3.4vw, 42px); letter-spacing: .2em; text-align: center; }
+  .duet-q span:last-of-type { color: var(--cinnabar); padding-left: 2em; }
+  .duet-q small { margin-top: 12px; font: 500 12px/1 var(--sans); letter-spacing: .24em; color: var(--ink-3); }
+  .pacts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pact { padding: 28px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 10px; align-content: start; }
+  .pact h2 { font: 400 32px/1.1 var(--brush); color: var(--c); }
+  .pact-k { font: 600 12px/1 var(--sans); letter-spacing: .14em; color: var(--ink-3); }
+  .pact > p { font-size: 15.5px; line-height: 1.95; color: var(--ink-2); }
+  .pact-pi { font-size: 15px !important; color: var(--cinnabar) !important; }
+  .pact-pi b { font: 600 11px/1 var(--sans); margin-right: 8px; }
+  .pact-art { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px 0 18px; }
+  .tab { display: grid; justify-items: center; gap: 8px; }
+  .tab-m { display: flex; gap: 6px; writing-mode: vertical-rl; padding: 16px 12px; font: 20px/1.2 var(--kai); letter-spacing: .2em; border: 1px solid var(--c); border-radius: 4px; color: var(--ink); background: color-mix(in srgb, var(--c) 6%, var(--paper)); transition: transform .5s var(--ease), box-shadow .4s; }
+  .t-ying .tab-m, .t-jade .tab-m { border-radius: 40px; }
+  .tab:hover .tab-m { transform: translateY(-4px) rotate(-1.5deg); box-shadow: var(--shadow); }
+  .tab small { font: 600 11.5px/1 var(--sans); color: var(--ink-3); letter-spacing: .1em; }
+  .tie { display: grid; justify-items: center; gap: 6px; min-width: 70px; }
+  .tie b { font: 600 12px/1 var(--sans); color: var(--c); letter-spacing: .14em; }
+  .tie i { width: 100%; height: 1px; background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 10px); }
+
+  .trio { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: center; gap: 10px; }
+  .slip { display: grid; justify-items: center; gap: 8px; padding: 22px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; transition: transform .4s var(--ease), border-color .3s; }
+  .slip:hover { transform: translateY(-3px); border-color: var(--cinnabar); }
+  .slip.main { border-color: var(--line-2); box-shadow: var(--shadow); }
+  .sn { font: 400 28px/1 var(--brush); }
+  .sl { font: 15px/1.6 var(--kai); color: var(--ink-2); }
+  .ss { font: 400 15px/1 var(--brush); color: #fff6ea; background: var(--cinnabar); padding: 6px 8px 5px; border-radius: 3px; }
+  .thread { display: grid; justify-items: center; gap: 6px; min-width: 90px; }
+  .thread b { font: 600 12px/1 var(--sans); color: var(--c); letter-spacing: .14em; }
+  .thread i { width: 100%; height: 2px; background: var(--c); opacity: .6; }
+  .thread.wed i { height: 4px; background: linear-gradient(var(--c) 0 1px, transparent 1px 3px, var(--c) 3px); }
+  .thread span { font: 12.5px/1 var(--kai); color: var(--ink-3); }
+  .duet-end { text-align: center; font-size: 17px; line-height: 2; color: var(--cinnabar); max-width: 40em; margin: 0 auto; }
+  .duet-end small { display: block; margin-top: 6px; font: 500 12px/1 var(--sans); color: var(--ink-3); letter-spacing: .14em; }
+
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); }
+  .seg button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-3); }
+  .seg button small { font-weight: 500; opacity: .7; }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  .loves { columns: 3 300px; column-gap: 16px; }
+  .lov { position: relative; break-inside: avoid; margin-bottom: 16px; padding: 22px 22px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  .lov-seal { position: absolute; top: 18px; right: 18px; font: 400 14px/1 var(--brush); writing-mode: vertical-rl; padding: 5px 4px; border-radius: 3px; color: #fff6ea; background: var(--ink-3); }
+  .lov-seal.e-悲 { background: var(--cinnabar); }
+  .lov-seal.e-喜 { background: var(--g-shi); }
+  .lov-k { font: 600 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); }
+  .lov h3 { font: 400 26px/1.25 var(--brush); margin: 8px 40px 10px 0; }
+  .lov-t { font-size: 15px; line-height: 1.9; color: var(--ink-2); }
+  .mem { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 14.5px; }
+  .out { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+  .out summary { cursor: pointer; list-style: none; font: 600 12.5px/1.4 var(--sans); color: var(--cinnabar); letter-spacing: .12em; }
+  .out summary::before { content: '▸ '; }
+  .out[open] summary::before { content: '▾ '; }
+  .out p { margin-top: 8px; font-size: 14.5px; line-height: 1.85; }
+  .out p.xu { color: var(--ink-3); font-size: 13.5px; }
+  .out p.xu b { font: 700 11px/1 var(--sans); margin-right: 8px; padding: 2px 5px; border: 1px solid var(--line-2); border-radius: 3px; }
+
+  .feuds { list-style: none; margin: 0; padding: 0; position: relative; }
+  .feuds::before { content: ''; position: absolute; left: 150px; top: 8px; bottom: 8px; width: 1px; background: var(--line-2); }
+  .fe .spoil-body { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 34px; padding: 18px 0; }
+  .fe-hui { display: grid; gap: 4px; text-align: right; position: relative; }
+  .fe-hui::after { content: ''; position: absolute; right: -40px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--cinnabar); box-shadow: 0 0 0 4px var(--paper); }
+  .fe-hui small { font: 600 12px/1.4 var(--sans); color: var(--cinnabar); letter-spacing: .1em; }
+  .fe-hui span { font-size: 14px; line-height: 1.6; color: var(--ink-3); }
+  .fe h3 { font: 400 24px/1.25 var(--brush); }
+  .fe p { margin-top: 6px; font-size: 15.5px; line-height: 1.9; color: var(--ink-2); }
+  @media (max-width: 860px) {
+    .pacts { grid-template-columns: 1fr; }
+    .trio { grid-template-columns: 1fr; }
+    .thread { min-width: 0; }
+    .thread i { width: 1px; height: 30px; }
+    .thread.wed i { width: 4px; height: 30px; background: linear-gradient(90deg, var(--c) 0 1px, transparent 1px 3px, var(--c) 3px); }
+    .feuds::before { left: 6px; }
+    .fe .spoil-body { grid-template-columns: 1fr; gap: 8px; padding-left: 26px; }
+    .fe-hui { text-align: left; }
+    .fe-hui::after { right: auto; left: -26px; }
+  }
+</style>
