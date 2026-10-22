@@ -1,10 +1,11 @@
-# 构建产物,由 build.mjs 与 tools/build-site.py 生成
-index.html
+# 构建产物
 dist/
-.bundle.check.js
+.astro/
 
-# 字体源文件缓存,首次构建时从 google/fonts 下载
+# 原文 wikitext 与字体源文件缓存
+.text-cache/
 .fonts-cache/
+public/fonts/
 
 node_modules/
 .wrangler/
