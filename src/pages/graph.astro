@@ -1,489 +1,245 @@
 ---
+/* 关系图：千里姻缘一线牵。整块素绢竖挂，从上到下是太虚幻境、大观园、宁荣二府、府外；
+   人是一枚竖写名字的签，人和人之间用丝线牵着，线的颜色就是关系：婚配情缘红丝，血亲墨线，主仆麻线，交游青线，前世神缘金线。
+   一开始只露血亲、婚配、情缘和神缘这副骨架，点到人才把他的线全牵出来，线上写明是他的什么人。 */
 import Base from '../layouts/Base.astro';
-import { layWheel, R } from '../lib/graph-layout.ts';
-import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE, EDGES } from '../lib/data.ts';
+import { layBoard } from '../lib/board-layout.ts';
+import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE } from '../lib/data.ts';
 
-const W = layWheel();
-const HALF = R + 172;
-const rad = (d: number) => (d * Math.PI) / 180;
-const pt = (deg: number, r: number) => `${(Math.cos(rad(deg)) * r).toFixed(1)} ${(Math.sin(rad(deg)) * r).toFixed(1)}`;
-/* 家族名写在外圈弧上；下半圈的弧反着走，字才不会倒 */
-const arc = (a0: number, a1: number, r: number) => {
-  const mid = (((a0 + a1) / 2) % 360 + 360) % 360;
-  const bottom = mid > 0 && mid < 180;
-  const large = a1 - a0 > 180 ? 1 : 0;
-  return bottom ? `M${pt(a1, r)}A${r} ${r} 0 ${large} 0 ${pt(a0, r)}` : `M${pt(a0, r)}A${r} ${r} 0 ${large} 1 ${pt(a1, r)}`;
-};
-const flip = (a: number) => a > 90 && a < 270;
-/* 镜缘上的回纹，每隔六度一个 */
-const HUI = Array.from({ length: 60 }, (_, i) => i * 6);
-const RIM_POEM = '满纸荒唐言　一把辛酸泪　都云作者痴　谁解其中味　';
+const B = layBoard();
+const NAME_OF: Record<string, string> = { b: '血親', m: '婚配', lv: '情緣', my: '前世', in: '姻親', sv: '主僕', fr: '交遊', ri: '恩怨' };
+const SPOOLS = ['m', 'lv', 'b', 'in', 'my', 'sv', 'fr', 'ri'];
 const client = {
   p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name, p.tier]])),
   t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role])])),
-  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name])),
-  order: TYPE_ORDER,
-  R, HALF
+  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name]))
 };
+/* 祥云，太虚幻境那一层里散几朵 */
+const CLOUDS: [number, number, number][] = [[260, 70, 1], [520, 120, .8], [820, 60, 1.1], [1180, 118, .9], [1430, 64, 1], [1640, 128, .75]];
+const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toFixed(1);
 ---
-<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系，画成一面“风月宝鉴”。镜背是全景，九个家族沿镜缘排开；点一个人，镜子翻到正面，照出他的亲友。`} section="relations" sub="graph" bodyClass="pg-graph">
-  <div class="gwrap">
-    <div class="stage" data-stage>
-      <div class="mirror" data-mirror>
-        <div class="face back">
-          <svg class="gsvg" data-backface viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="人物关系全景">
-            <defs>
-              <radialGradient id="bronze" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#3b4a43" /><stop offset=".55" stop-color="#26322d" /><stop offset="1" stop-color="#161d1a" /></radialGradient>
-              <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8a86a" /><stop offset=".35" stop-color="#7d6338" /><stop offset=".6" stop-color="#b8955a" /><stop offset="1" stop-color="#4a3a20" /></linearGradient>
-              <radialGradient id="knob" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#e8cf91" /><stop offset=".45" stop-color="#a5834a" /><stop offset="1" stop-color="#4b3b1f" /></radialGradient>
-              <clipPath id="disc-clip"><circle r={R + 150} /></clipPath>
-              <path id="hui" d="M-5 4V-4H5V3H-2V-1H2" />
-              <path id="poem-ring" d={`M0 ${-(R + 136)}A${R + 136} ${R + 136} 0 1 1 -0.1 ${-(R + 136)}`} />
-            </defs>
-            <g data-vp>
-              <g class="disc">
-                <circle class="rim-outer" r={R + 168} />
-                <circle class="field" r={R + 150} />
-                <image data-patina x={-(R + 150)} y={-(R + 150)} width={(R + 150) * 2} height={(R + 150) * 2} clip-path="url(#disc-clip)" preserveAspectRatio="none" />
-                <circle class="ring" r={R + 150} />
-                <text class="poem"><textPath href="#poem-ring" textLength={(2 * Math.PI * (R + 136) * .99).toFixed(0)} lengthAdjust="spacing">{RIM_POEM + RIM_POEM}</textPath></text>
-                <circle class="ring" r={R + 124} />
-                {HUI.map(a => <use href="#hui" class="hui" transform={`rotate(${a}) translate(0 ${-(R + 116)})`} />)}
-                <circle class="ring" r={R + 108} />
-                {W.sectors.map(s => (
-                  <g class="sec" data-sector={s.g} style={`--gc:var(--g-${s.g})`}>
-                    <path class="sec-arc" d={arc(s.a0 + .6, s.a1 - .6, R + 92)} id={`arc-${s.g}`} />
-                    <text class="sec-name" dy="0.35em"><textPath href={`#arc-${s.g}`} startOffset="50%">{GROUPS[s.g].name}</textPath></text>
-                  </g>
-                ))}
-                <circle class="ring faint" r={R + 78} />
-                <circle class="beads" r={R * .4} />
-              </g>
-              <g class="edges">
-                {W.links.map(l => <path class:list={['e', `t-${l.type}`, { x: l.cross }]} d={l.d} data-a={l.a} data-b={l.b} />)}
-              </g>
-              <g class="nodes">
-                {W.nodes.map(n => (
-                  <g class:list={['n', `tier-${n.tier}`]} data-id={n.id} transform={`translate(${n.x} ${n.y})`} style={`--d:${(((n.a + 90) % 360) / 360 * 1.2).toFixed(2)}s`} tabindex="0" role="button" aria-label={n.id}>
-                    <circle class="hit" r={n.tier === 'c' ? 14 : 9} />
-                    <circle class="dot" r={n.r} />
-                    <text class="lb" x={flip(n.a) ? -(n.r + 7) : n.r + 7} dy="0.36em" text-anchor={flip(n.a) ? 'end' : 'start'} transform={`rotate(${flip(n.a) ? n.a + 180 : n.a})`}>{n.id}</text>
-                  </g>
-                ))}
-              </g>
-              <g class="knob" aria-hidden="true">
-                <circle class="knob-base" r="74" />
-                {[45, 135, 225, 315].map(a => <path class="petal" transform={`rotate(${a})`} d="M0 -30C14 -40 20 -58 0 -70C-20 -58 -14 -40 0 -30Z" />)}
-                {['风', '月', '宝', '鉴'].map((c, i) => <text class="knob-ch" transform={`rotate(${i * 90}) translate(0 -50) rotate(${-i * 90})`} dy="0.36em">{c}</text>)}
-                <circle class="knob-ball" r="24" />
-                <circle class="knob-hole" r="24" />
-              </g>
-            </g>
-          </svg>
-        </div>
-        <div class="face front">
-          <svg class="gsvg" data-front viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="命盘">
-            <defs>
-              <radialGradient id="silver" cx="40%" cy="35%" r="72%"><stop offset="0" stop-color="#faf6ec" /><stop offset=".6" stop-color="#e7dfcb" /><stop offset="1" stop-color="#c9bc9a" /></radialGradient>
-              <linearGradient id="rim2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8a86a" /><stop offset=".35" stop-color="#7d6338" /><stop offset=".6" stop-color="#b8955a" /><stop offset="1" stop-color="#4a3a20" /></linearGradient>
-            </defs>
-            <g data-fvp>
-              <circle class="rim-outer f" r={R + 168} />
-              <circle class="mface" r={R + 150} />
-              <g data-ego></g>
-            </g>
-          </svg>
-        </div>
+<Base title="关系" description="《红楼梦》人物关系。一块素绢从太虚幻境挂到府外，人和人之间用丝线牵着：婚配情缘红丝，血亲墨线，前世神缘金线。" section="relations" sub="graph" bodyClass="pg-graph">
+  <div class="loom">
+    <div class="bar" data-bar>
+      <form class="find" data-find role="search">
+        <label class="sr-only" for="g-q">寻一个人</label>
+        <input id="g-q" data-q list="g-names" type="search" placeholder="寻一个人" autocomplete="off">
+        <input data-to list="g-names" type="search" placeholder="与谁相干" autocomplete="off" hidden aria-label="另一个人">
+        <button type="button" class="pair" data-pair aria-pressed="false" title="查两人之间隔着谁">兩人之間</button>
+      </form>
+      <datalist id="g-names">{PEOPLE.map(p => <option value={p.id} />)}</datalist>
+      <div class="spools" role="group" aria-label="丝线">
+        {SPOOLS.map(t => (
+          <button type="button" class={`spool t-${t}`} data-type={t} aria-pressed={['b', 'm', 'lv', 'my'].includes(t) ? 'true' : 'false'}>
+            <svg viewBox="0 0 24 28" aria-hidden="true"><rect class="flange" x="2" y="1" width="20" height="3.2" rx="1.2" /><rect class="flange" x="2" y="23.8" width="20" height="3.2" rx="1.2" /><rect class="wound" x="5" y="4.2" width="14" height="19.6" /><path class="wind" d="M5 7.5h14M5 11h14M5 14.5h14M5 18h14M5 21.5h14" /></svg>
+            <span>{NAME_OF[t]}</span>
+          </button>
+        ))}
       </div>
-
-      <div class="hud top">
-        <div class="modes" role="tablist" aria-label="看法">
-          <button type="button" role="tab" data-mode="all" aria-selected="true">全景</button>
-          <button type="button" role="tab" data-mode="chain" aria-selected="false">关系链</button>
-        </div>
-        <label class="find" data-find-all>
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-          <input list="g-names" placeholder="照一个人" data-q aria-label="找一个人">
-        </label>
-        <form class="chain-form" data-chain-form hidden>
-          <input list="g-names" placeholder="从" data-from aria-label="从谁">
-          <span aria-hidden="true">到</span>
-          <input list="g-names" placeholder="到" data-to aria-label="到谁">
-          <button type="submit" class="btn">查</button>
-        </form>
-        <button type="button" class="flipback" data-back hidden>← 翻回镜背</button>
-        <p class="status" data-status>停在名字上看他的亲友，点一下把镜子翻过来</p>
-        <datalist id="g-names">{PEOPLE.map(p => <option value={p.id} />)}</datalist>
-      </div>
-
-      <div class="hud left legend" data-legend>
-        {TYPE_ORDER.map(t => <button type="button" class={`lg t-${t}`} data-type={t} aria-pressed="true"><i />{REL_TYPES[t].name}</button>)}
-      </div>
-
-      <div class="hud right zoom">
-        <button type="button" data-z="1.35" aria-label="放大">＋</button>
-        <button type="button" data-z="0.74" aria-label="缩小">−</button>
-        <button type="button" data-z="0" aria-label="复位">复位</button>
-        <button type="button" data-full aria-label="全屏">全屏</button>
-      </div>
-
-      <aside class="panel" data-panel hidden aria-live="polite"></aside>
     </div>
+
+    <div class="frame" data-frame>
+      <svg class="silk" data-silk viewBox={`0 0 ${B.width} ${B.height}`} role="img" aria-label="人物关系图">
+        <defs>
+          <pattern id="weave" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 .5H6M.5 0V6" stroke="#8a7350" stroke-opacity=".07" stroke-width="1" /></pattern>
+          <radialGradient id="aged" cx="50%" cy="45%" r="75%"><stop offset=".6" stop-color="#000" stop-opacity="0" /><stop offset="1" stop-color="#4a3418" stop-opacity=".16" /></radialGradient>
+          <symbol id="cloud" viewBox="0 0 120 50"><path d="M8 40c-8 0-8-12 0-12 0-10 14-12 18-4 3-12 22-14 26-2 4-8 18-8 18 2 10-4 18 6 10 12 8 2 6 12-2 12M30 40c0-6 8-8 11-3 2-5 10-4 10 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></symbol>
+        </defs>
+        <rect width={B.width} height={B.height} fill="#efe6cf" />
+        <rect width={B.width} height={B.height} fill="url(#weave)" />
+        <rect width={B.width} height={B.height} fill="url(#aged)" />
+
+        <g class="zones" aria-hidden="true">
+          {CLOUDS.map(([x, y, s]) => <use href="#cloud" class="cloud" x={x} y={y} width={120 * s} height={50 * s} />)}
+          {B.zones.map((z, i) => (
+            <g>
+              {i > 0 && <><line class="rule" x1="30" x2={B.width - 30} y1={z.y - 46} y2={z.y - 46} /><line class="rule thin" x1="30" x2={B.width - 30} y1={z.y - 42} y2={z.y - 42} /></>}
+              <text class="zone-name" x="48" y={z.y + 20}>{[...z.name].map((c, j) => <tspan x="48" y={z.y + 34 + j * 30}>{c}</tspan>)}</text>
+              {z.clusters.map(c => <text class="cl-name" x={c.x} y={c.y + 18}>{c.name}</text>)}
+            </g>
+          ))}
+        </g>
+
+        <g class="threads" data-threads>
+          {B.threads.map((t, i) => <path class={`th t-${t.type}`} d={t.d} data-a={t.a} data-b={t.b} data-type={t.type} pathLength="1" style={`--i:${i % 40}`} />)}
+        </g>
+
+        <g class="slips" data-slips>
+          {B.slips.map(s => (
+            <g class={`slip tier-${s.tier} band-${s.band}`} data-id={s.id} transform={`translate(${s.x} ${s.y})`} tabindex="0" role="button" aria-label={s.id} style={`--gc:var(--g-${byId.get(s.id)!.group})`}>
+              <rect class="body" width={s.w} height={s.h} rx="3" />
+              <rect class="cap" width={s.w} height="5" rx="2" />
+              <text class="nm" font-size={s.fs}>{[...s.id].map((c, i) => <tspan x={s.w / 2} y={charY(s.fs, i)}>{c}</tspan>)}</text>
+            </g>
+          ))}
+        </g>
+        <g class="tags" data-tags aria-hidden="true"></g>
+      </svg>
+    </div>
+    <aside class="panel" data-panel hidden aria-live="polite"></aside>
   </div>
   <script is:inline type="application/json" id="g-data" set:html={JSON.stringify(client)} />
 </Base>
 
 <script>
-  import { esc } from '../client/site.ts';
   type Tie = [string, string, string];
-  const D: { p: Record<string, [string, string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string>; order: string[]; R: number; HALF: number } = JSON.parse(document.getElementById('g-data')!.textContent!);
-  const { R, HALF } = D;
+  const D: { p: Record<string, [string, string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string> } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   const NS = 'http://www.w3.org/2000/svg';
-  const stage = document.querySelector<HTMLElement>('[data-stage]')!;
-  const mirror = document.querySelector<HTMLElement>('[data-mirror]')!;
-  const back = document.querySelector<SVGSVGElement>('[data-backface]')!;
-  const front = document.querySelector<SVGSVGElement>('[data-front]')!;
-  const egoG = front.querySelector<SVGGElement>('[data-ego]')!;
+  const frame = document.querySelector<HTMLElement>('[data-frame]')!;
   const panel = document.querySelector<HTMLElement>('[data-panel]')!;
-  const status = document.querySelector<HTMLElement>('[data-status]')!;
-  const backBtn = document.querySelector<HTMLButtonElement>('[data-back]')!;
-  const edges = [...back.querySelectorAll<SVGPathElement>('.e')];
-  const nodes = new Map([...back.querySelectorAll<SVGGElement>('.n')].map(g => [g.dataset.id!, g]));
+  const tagsG = document.querySelector<SVGGElement>('[data-tags]')!;
+  const threads = [...document.querySelectorAll<SVGPathElement>('.th')];
+  const slips = new Map([...document.querySelectorAll<SVGGElement>('.slip')].map(g => [g.dataset.id!, g]));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const rad = (d: number) => (d * Math.PI) / 180;
-  type P = [number, number];
+  const ties = (id: string) => D.t[id] ?? [];
+  const touches = (p: SVGPathElement, id: string) => p.dataset.a === id || p.dataset.b === id;
 
-  /* ---------- 铜锈：用画布随手点出斑驳的锈色，铺在镜背上 ---------- */
-  {
-    const c = document.createElement('canvas'); c.width = c.height = 512;
-    const x = c.getContext('2d')!;
-    let seed = 7;
-    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < 160; i++) {
-      const cx = rnd() * 512, cy = rnd() * 512, r = 10 + rnd() * 70;
-      const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
-      const green = rnd() < .6;
-      g.addColorStop(0, green ? `rgba(110,160,130,${.05 + rnd() * .12})` : `rgba(150,110,60,${.04 + rnd() * .1})`);
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2);
-    }
-    const img = x.getImageData(0, 0, 512, 512);
-    for (let i = 0; i < img.data.length; i += 4) { const n = (rnd() - .5) * 26; img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n; }
-    x.putImageData(img, 0, 0);
-    back.querySelector('[data-patina]')!.setAttribute('href', c.toDataURL('image/webp', .8));
-  }
-
-  /* ---------- 翻面 ----------
-     只有翻的那一秒进入三维；平时镜子按平面画，字才清楚 */
-  let flipDeg = 0, sink = 0;
-  const pose = () => {
-    const moving = mirror.classList.contains('flipping');
-    mirror.style.transform = moving ? `translateZ(${-sink}px) rotateY(${flipDeg.toFixed(2)}deg)` : '';
-  };
-  let flipRaf = 0;
-  function flipTo(deg: number, onHalf?: () => void) {
-    cancelAnimationFrame(flipRaf);
-    if (reduced) { onHalf?.(); flipDeg = deg; syncFace(); pose(); return; }
-    mirror.classList.add('flipping');
-    const from = flipDeg, t0 = performance.now(), ms = 1100;
-    let halfDone = false;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      flipDeg = from + (deg - from) * e;
-      sink = Math.sin(Math.PI * t) * 160;
-      if (!halfDone && t >= .5) { halfDone = true; onHalf?.(); syncFace(); }
-      pose();
-      if (t < 1) flipRaf = requestAnimationFrame(step); else { sink = 0; mirror.classList.remove('flipping'); syncFace(); pose(); }
-    };
-    flipRaf = requestAnimationFrame(step);
-  }
-  const syncFace = () => mirror.classList.toggle('flipped', flipDeg > 90);
-
-  /* ---------- 缩放与平移：改 viewBox，字始终清楚 ---------- */
-  const views = { back: { x: 0, y: 0, k: 1 }, front: { x: 0, y: 0, k: 1 } };
-  const cur = () => (focusId ? 'front' : 'back') as 'back' | 'front';
-  const applyView = (which: 'back' | 'front') => {
-    const v = views[which], half = HALF / v.k;
-    /* 拖到镜缘就停，不让镜子拖出视野 */
-    const lim = HALF - half, d = Math.hypot(v.x, v.y);
-    if (d > lim) { v.x *= lim / (d || 1); v.y *= lim / (d || 1); }
-    (which === 'back' ? back : front).setAttribute('viewBox', `${(v.x - half).toFixed(1)} ${(v.y - half).toFixed(1)} ${(half * 2).toFixed(1)} ${(half * 2).toFixed(1)}`);
-    if (which === 'back') back.classList.toggle('zoomed', v.k > 1.45);
-  };
-  const unitPx = () => (HALF * 2 / views[cur()].k) / mirror.getBoundingClientRect().width;
-  let zRaf = 0;
-  function zoomTo(k: number, ms = 300) {
-    const which = cur(), v = views[which];
-    k = Math.max(1, Math.min(5, k));
-    const target = { k, x: k === 1 ? 0 : v.x, y: k === 1 ? 0 : v.y };
-    cancelAnimationFrame(zRaf);
-    const from = { ...v }, t0 = performance.now();
-    const step = (now: number) => {
-      const t = reduced ? 1 : Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
-      v.k = from.k + (target.k - from.k) * e; v.x = from.x + (target.x - from.x) * e; v.y = from.y + (target.y - from.y) * e;
-      applyView(which);
-      if (t < 1) zRaf = requestAnimationFrame(step);
-    };
-    zRaf = requestAnimationFrame(step);
-  }
-  stage.addEventListener('wheel', e => {
-    if ((e.target as Element).closest('.panel')) return;
-    e.preventDefault();
-    const which = cur(), v = views[which], b = mirror.getBoundingClientRect(), u = unitPx();
-    const px = v.x + (e.clientX - b.left - b.width / 2) * u, py = v.y + (e.clientY - b.top - b.height / 2) * u;
-    const k = Math.max(1, Math.min(5, v.k * Math.exp(-e.deltaY * .0018)));
-    const r = v.k / k;
-    v.x = k === 1 ? 0 : px - (px - v.x) * r; v.y = k === 1 ? 0 : py - (py - v.y) * r; v.k = k;
-    applyView(which);
-  }, { passive: false });
-  let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false;
-  stage.addEventListener('pointerdown', e => {
-    if ((e.target as Element).closest('.hud, .panel')) return;
-    const v = views[cur()];
-    drag = { x: e.clientX, y: e.clientY, vx: v.x, vy: v.y }; moved = false;
-  });
-  stage.addEventListener('pointermove', e => {
-    if (!drag) return;
-    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!moved && Math.abs(dx) + Math.abs(dy) > 6 && views[cur()].k > 1) { moved = true; stage.classList.add('dragging'); }
-    if (!moved) return;
-    const v = views[cur()], u = unitPx();
-    v.x = drag.vx - dx * u; v.y = drag.vy - dy * u;
-    applyView(cur());
-  });
-  const up = () => { drag = null; stage.classList.remove('dragging'); };
-  stage.addEventListener('pointerup', up);
-  stage.addEventListener('pointercancel', up);
-  document.querySelectorAll<HTMLButtonElement>('[data-z]').forEach(b => b.addEventListener('click', () => {
-    const f = +b.dataset.z!;
-    zoomTo(f ? views[cur()].k * f : 1);
+  /* ---------- 线轴：哪几种线露在外面 ---------- */
+  const shown = new Set(['b', 'm', 'lv', 'my']);
+  const applyShown = () => threads.forEach(p => p.classList.toggle('show', shown.has(p.dataset.type!)));
+  document.querySelectorAll<HTMLButtonElement>('[data-type]').forEach(b => b.addEventListener('click', () => {
+    const t = b.dataset.type!;
+    shown.has(t) ? shown.delete(t) : shown.add(t);
+    b.setAttribute('aria-pressed', String(shown.has(t)));
+    applyShown();
   }));
-  document.querySelector('[data-full]')!.addEventListener('click', () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else stage.requestFullscreen?.().catch(() => stage.classList.toggle('pseudo-full'));
-  });
 
-  /* ---------- 镜背上的高亮 ---------- */
-  const hidden = new Set<string>();
-  const typeOf = (p: SVGPathElement) => p.classList[1].slice(2);
-  const ties = (id: string) => (D.t[id] ?? []).filter(t => !hidden.has(t[1]));
-  function light(ids: Set<string>, onEdge: (p: SVGPathElement) => boolean) {
-    back.classList.add('lit');
-    nodes.forEach((g, id) => g.classList.toggle('on', ids.has(id)));
-    edges.forEach(p => p.classList.toggle('on', onEdge(p)));
-  }
-  function unlight() {
-    back.classList.remove('lit', 'chain');
-    nodes.forEach(g => g.classList.remove('on', 'core'));
-    edges.forEach(p => p.classList.remove('on'));
-  }
-  let focusId: string | null = null, chainOn = false;
-  const DEFAULT_STATUS = status.textContent!;
-  function hover(id: string | null) {
-    if (focusId || chainOn) return;
-    if (!id) { unlight(); status.textContent = DEFAULT_STATUS; return; }
-    const ts = ties(id);
-    light(new Set([id, ...ts.map(t => t[0])]), p => (p.dataset.a === id || p.dataset.b === id) && !hidden.has(typeOf(p)));
-    nodes.get(id)!.classList.add('core');
-    status.textContent = `${id}　${D.p[id][1]}　·　${ts.length} 位亲友`;
-  }
-  nodes.forEach((g, id) => {
+  /* 开场：签先落定，丝线再牵出来 */
+  requestAnimationFrame(() => requestAnimationFrame(() => { frame.classList.add('ready'); applyShown(); }));
+
+  /* ---------- 停在签上：他露着的线加深 ---------- */
+  let focusId: string | null = null, pairOn = false;
+  const hover = (id: string | null) => {
+    if (focusId || pairOn || frame.classList.contains('paired')) return;
+    frame.classList.toggle('hov', !!id);
+    threads.forEach(p => p.classList.toggle('hl', !!id && touches(p, id)));
+    const near = new Set(id ? [id, ...ties(id).map(t => t[0])] : []);
+    slips.forEach((g, k) => g.classList.toggle('nb', near.has(k)));
+  };
+  slips.forEach((g, id) => {
     g.addEventListener('pointerenter', () => hover(id));
     g.addEventListener('pointerleave', () => hover(null));
-    g.addEventListener('click', () => { if (!moved) focus(id); });
+    g.addEventListener('click', e => { e.stopPropagation(); pairOn ? pairPick(id) : focus(id); });
     g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
   });
-  back.querySelectorAll<SVGGElement>('[data-sector]').forEach(s => s.addEventListener('click', e => {
-    e.stopPropagation();
-    if (moved || chainOn) return;
-    const g = s.dataset.sector!;
-    const ids = new Set([...nodes.keys()].filter(id => D.p[id][0] === g));
-    light(ids, p => ids.has(p.dataset.a!) || ids.has(p.dataset.b!));
-    status.textContent = `${s.textContent}　${ids.size} 人`;
-  }));
 
-  /* ---------- 镜面：命盘 ---------- */
-  /* 和构建时同一套笔触：沿曲线采样，两头细、中段粗 */
-  function taper(pts: P[], wMax: number, wMin = .4) {
-    const L: P[] = [], Rt: P[] = [];
-    pts.forEach((p, i) => {
-      const q0 = pts[Math.max(0, i - 1)], q1 = pts[Math.min(pts.length - 1, i + 1)];
-      let dx = q1[0] - q0[0], dy = q1[1] - q0[1];
-      const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
-      const w = wMin + (wMax - wMin) * Math.pow(Math.sin(Math.PI * i / (pts.length - 1)), .7);
-      L.push([p[0] - dy * w, p[1] + dx * w]); Rt.push([p[0] + dy * w, p[1] - dx * w]);
-    });
-    return 'M' + [...L, ...Rt.reverse()].map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L') + 'Z';
-  }
-  const quad = (a: P, c: P, b: P, n = 14): P[] => Array.from({ length: n + 1 }, (_, i) => { const t = i / n, u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; });
-  const mk = (tag: string, attrs: Record<string, string | number>, parent: Element = egoG) => {
-    const e = document.createElementNS(NS, tag);
-    for (const k in attrs) e.setAttribute(k, String(attrs[k]));
-    parent.appendChild(e); return e;
-  };
-  function drawEgo(id: string) {
-    egoG.innerHTML = '';
-    egoG.classList.remove('show');
-    const first = ties(id).sort((a, b) => D.order.indexOf(a[1]) - D.order.indexOf(b[1]));
-    const n1 = first.length;
-    const r1 = Math.min(R * .7, Math.max(R * .5, n1 * 62 / (2 * Math.PI)));
-    const pos = new Map<string, P>([[id, [0, 0]]]);
-    const ang = new Map<string, number>();
-    /* 人多时第一圈内外交错，名字才不会挤在一起 */
-    const stagger = n1 > 12;
-    first.forEach(([o], i) => { const a = -90 + (i + .5) * 360 / n1, rr = stagger ? (i % 2 ? r1 + 40 : r1 - 22) : r1; ang.set(o, a); pos.set(o, [Math.cos(rad(a)) * rr, Math.sin(rad(a)) * rr]); });
-    const seen = new Set([id, ...first.map(t => t[0])]);
-    const second: { id: string; a: number; via: string; t: Tie }[] = [];
-    for (const [o] of first) for (const t of ties(o)) { if (seen.has(t[0])) continue; seen.add(t[0]); second.push({ id: t[0], a: ang.get(o)!, via: o, t }); }
-    second.sort((a, b) => a.a - b.a);
-    const m = second.length, even = 360 / Math.max(m, 1);
-    const r2 = Math.min(R * 1.2, Math.max(r1 + (stagger ? 200 : 165), m * 22 / (2 * Math.PI)));
-    let off = 0;
-    if (m) off = second.reduce((acc, s, i) => acc + ((((s.a - (-90 + i * even)) + 540) % 360) - 180), 0) / m;
-    const a2 = second.map((s, i) => (m < 8 ? s.a : -90 + i * even + off));
-    second.forEach((s, i) => pos.set(s.id, [Math.cos(rad(a2[i])) * r2, Math.sin(rad(a2[i])) * r2]));
-
-    mk('circle', { r: r1, class: 'ering' });
-    if (m) mk('circle', { r: r2, class: 'ering two' });
-    /* 第一圈按关系分段，段名写在圈里 */
-    let i0 = 0;
-    for (let i = 1; i <= n1; i++) {
-      if (i < n1 && first[i][1] === first[i0][1]) continue;
-      const t = first[i0][1], a0 = -90 + i0 * 360 / n1, a1 = -90 + i * 360 / n1, rr = r1 * .58;
-      if (n1 > 1) mk('path', { class: `eseg t-${t}`, d: `M${Math.cos(rad(a0 + 1.5)) * rr} ${Math.sin(rad(a0 + 1.5)) * rr}A${rr} ${rr} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${Math.cos(rad(a1 - 1.5)) * rr} ${Math.sin(rad(a1 - 1.5)) * rr}` });
-      const am = (a0 + a1) / 2, lr = rr - 18;
-      mk('text', { class: `eseg-t t-${t}`, x: (Math.cos(rad(am)) * lr).toFixed(1), y: (Math.sin(rad(am)) * lr).toFixed(1) }).textContent = D.types[t];
-      i0 = i;
-    }
-    const lines = mk('g', { class: 'elines' });
-    second.forEach((s, i) => {
-      const a = pos.get(s.via)!, b = pos.get(s.id)!;
-      mk('path', { class: `el two t-${s.t[1]}`, d: taper(quad(a, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], b, 6), 1.3, .3), 'data-a': s.via, 'data-b': s.id, style: `--i:${i}` }, lines);
-    });
-    first.forEach(([o, t], i) => {
-      const b = pos.get(o)!;
-      mk('path', { class: `el one t-${t}`, d: taper(quad([0, 0], [b[0] * .5 - b[1] * .1, b[1] * .5 + b[0] * .1], b), 3.4, .5), 'data-a': id, 'data-b': o, style: `--i:${i}` }, lines);
-    });
-    const dots = mk('g', {});
-    const person = (pid: string, ring: 1 | 2, i: number, role?: string, a = 0) => {
-      const [x, y] = pos.get(pid)!;
-      const g = mk('g', { class: `en r${ring}`, 'data-id': pid, tabindex: 0, role: 'button', 'aria-label': pid, style: `--x:${x.toFixed(1)}px;--y:${y.toFixed(1)}px;--i:${i};--gc:var(--g-${D.p[pid][0]})` }, dots);
-      mk('circle', { r: ring === 1 ? 14 : 10, class: 'hit' }, g);
-      mk('circle', { r: ring === 1 ? (D.p[pid][3] === 'c' ? 10 : 7.5) : 4.5, class: 'dot' }, g);
-      if (ring === 1) {
-        mk('text', { class: 'lb', y: 31 }, g).textContent = pid;
-        if (role) mk('text', { class: 'role', y: 51 }, g).textContent = role;
-      } else {
-        const aa = ((a % 360) + 360) % 360, fl = aa > 90 && aa < 270;
-        mk('text', { class: 'lb', x: fl ? -8 : 8, dy: '0.36em', 'text-anchor': fl ? 'end' : 'start', transform: `rotate(${fl ? aa + 180 : aa})` }, g).textContent = pid;
+  /* ---------- 线上的字：写在线的中段，彼此不压，也不压签 ---------- */
+  type Box = [number, number, number, number];
+  const hit = (a: Box, b: Box) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+  const slipBox = (g: SVGGElement): Box => { const r = g.querySelector('rect')!; const m = g.transform.baseVal[0].matrix; return [m.e - 3, m.f - 3, +r.getAttribute('width')! + 6, +r.getAttribute('height')! + 6]; };
+  function writeTags(items: { path: SVGPathElement; text: string; cls: string }[], avoid: string[]) {
+    tagsG.replaceChildren();
+    const taken: Box[] = avoid.map(id => slipBox(slips.get(id)!));
+    for (const { path, text, cls } of items) {
+      const L = path.getTotalLength();
+      const w = [...text].length * 14 + 14, h = 22;
+      let at: Box | null = null;
+      for (const t of [.5, .4, .6, .32, .68, .24, .76]) {
+        const pt = path.getPointAtLength(L * t);
+        const box: Box = [pt.x - w / 2, pt.y - h / 2, w, h];
+        if (!taken.some(b => hit(b, box))) { at = box; break; }
       }
-      g.addEventListener('click', e => { e.stopPropagation(); focus(pid); });
-      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(pid); } });
-      g.addEventListener('pointerenter', () => { egoG.querySelectorAll<SVGPathElement>('.el').forEach(p => p.classList.toggle('hot', p.dataset.a === pid || p.dataset.b === pid)); status.textContent = `${pid}　${D.p[pid][1]}`; });
-      g.addEventListener('pointerleave', () => egoG.querySelectorAll('.el.hot').forEach(p => p.classList.remove('hot')));
-    };
-    second.forEach((s, i) => person(s.id, 2, i, undefined, a2[i]));
-    first.forEach(([o, , role], i) => person(o, 1, i, role));
-    /* 镜缘刻上本人的名号 */
-    const [, title, gname] = D.p[id];
-    const ring = `${gname}　${id}　${title}　`;
-    mk('path', { id: 'ego-rim', d: `M0 ${-(R + 132)}A${R + 132} ${R + 132} 0 1 1 -0.1 ${-(R + 132)}`, fill: 'none' });
-    const rt = mk('text', { class: 'erim' });
-    mk('textPath', { href: '#ego-rim', textLength: (2 * Math.PI * (R + 132) * .99).toFixed(0), lengthAdjust: 'spacing' }, rt).textContent = ring.repeat(Math.max(2, Math.round(64 / [...ring].length)));
-    /* 正中是本人，一方朱印 */
-    const me = mk('g', { class: 'me' });
-    mk('circle', { r: 64, class: 'me-ring' }, me);
-    mk('circle', { r: 54, class: 'me-disc' }, me);
-    const len = [...id].length;
-    mk('text', { class: 'me-t', dy: '0.36em', style: `font-size:${len > 3 ? 23 : len > 2 ? 30 : 36}px` }, me).textContent = id;
-    requestAnimationFrame(() => requestAnimationFrame(() => egoG.classList.add('show')));
+      if (!at) continue;
+      taken.push(at);
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', `tag ${cls}`);
+      g.setAttribute('transform', `translate(${at[0].toFixed(1)} ${at[1].toFixed(1)})`);
+      g.innerHTML = `<rect width="${w}" height="${h}" rx="2"/><text x="${w / 2}" y="15.5">${esc(text)}</text>`;
+      tagsG.append(g);
+    }
   }
 
-  function focus(id: string, instant = false) {
+  /* ---------- 点一个人：别人淡下去，他的线全牵出来，线上写明是他的什么人 ---------- */
+  function focus(id: string, scroll = true) {
     if (!D.p[id]) return;
-    const was = focusId;
-    unlight(); chainOn = false;
+    if (pairOn) setPair(false);
+    clear(false);
     focusId = id;
-    views.front = { x: 0, y: 0, k: 1 }; applyView('front');
-    if (was) { egoG.classList.remove('show'); setTimeout(() => drawEgo(id), reduced ? 0 : 260); }
-    else if (instant || reduced) { drawEgo(id); flipDeg = 180; syncFace(); pose(); }
-    else { egoG.classList.remove('show'); egoG.innerHTML = ''; flipTo(180, () => drawEgo(id)); }
+    frame.classList.add('focused');
+    const ts = ties(id);
+    const near = new Set(ts.map(t => t[0]));
+    slips.forEach((g, k) => { g.classList.toggle('me', k === id); g.classList.toggle('nb', near.has(k)); });
+    const items: { path: SVGPathElement; text: string; cls: string }[] = [];
+    threads.forEach(p => {
+      const on = touches(p, id);
+      p.classList.toggle('on', on);
+      if (!on) return;
+      const other = p.dataset.a === id ? p.dataset.b! : p.dataset.a!;
+      const tie = ts.find(t => t[0] === other && t[1] === p.dataset.type);
+      if (tie) items.push({ path: p, text: tie[2], cls: `t-${tie[1]}` });
+    });
+    writeTags(items, [id, ...near]);
     renderPanel(id);
-    backBtn.hidden = false;
-    status.textContent = `${id}　${D.p[id][1]}`;
     const url = new URL(location.href); url.search = ''; url.searchParams.set('focus', id); history.replaceState(null, '', url);
+    if (scroll) slips.get(id)!.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center', inline: 'center' });
   }
-  function toBack() {
-    if (!focusId && !chainOn) return;
-    const wasEgo = !!focusId;
-    focusId = null; chainOn = false;
-    unlight();
-    panel.hidden = true; stage.classList.remove('has-panel'); backBtn.hidden = true;
-    status.textContent = DEFAULT_STATUS;
-    history.replaceState(null, '', location.pathname);
-    if (wasEgo) flipTo(0, () => egoG.classList.remove('show'));
+  function clear(resetUrl = true) {
+    focusId = null;
+    frame.classList.remove('focused', 'paired', 'hov');
+    slips.forEach(g => g.classList.remove('me', 'nb', 'end'));
+    threads.forEach(p => p.classList.remove('on', 'hl', 'path'));
+    tagsG.replaceChildren();
+    panel.hidden = true;
+    if (resetUrl) { const url = new URL(location.href); url.search = ''; history.replaceState(null, '', url); }
   }
-  backBtn.addEventListener('click', toBack);
-  addEventListener('keydown', e => { if (e.key === 'Escape' && (focusId || chainOn)) toBack(); });
-  stage.addEventListener('click', e => {
-    if (moved || (e.target as Element).closest('.n, .en, .hud, .panel, [data-sector]')) return;
-    if (focusId || chainOn) toBack(); else { unlight(); status.textContent = DEFAULT_STATUS; }
-  });
+  frame.addEventListener('click', () => { if (focusId || frame.classList.contains('paired')) clear(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape') { if (pairOn) setPair(false); clear(); } });
 
-  const groupColor = (id: string) => `var(--g-${D.p[id][0]})`;
+  /* ---------- 旁边的笺：这个人和他的亲友 ---------- */
+  const ORDER = ['m', 'lv', 'b', 'in', 'my', 'sv', 'fr', 'ri'];
   function renderPanel(id: string) {
     const [group, title, gname] = D.p[id];
     const ts = ties(id);
-    const byType = new Map<string, Tie[]>();
-    ts.forEach(t => { if (!byType.has(t[1])) byType.set(t[1], []); byType.get(t[1])!.push(t); });
+    const by = new Map<string, Tie[]>();
+    ORDER.forEach(t => { const l = ts.filter(x => x[1] === t); if (l.length) by.set(t, l); });
     panel.innerHTML = `
-      <button type="button" class="pn-x" data-close aria-label="翻回镜背">×</button>
+      <button type="button" class="pn-x" data-close aria-label="收起">×</button>
       <p class="pn-g" style="--gc:var(--g-${group})">${esc(gname)}</p>
       <h2>${esc(id)}</h2>
       <p class="pn-t">${esc(title)}</p>
-      <p class="pn-n">${ts.length} 位亲友</p>
-      ${[...byType].map(([t, list]) => `<div class="pn-sec"><h3 class="t-${t}">${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}" style="--gc:${groupColor(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
-      <div class="pn-acts"><a class="btn" href="/people/${encodeURIComponent(id)}/">进人物页</a><button type="button" class="btn ghost" data-chain-from="${esc(id)}">从这里查关系链</button></div>`;
+      ${[...by].map(([t, list]) => `<div class="pn-sec t-${t}"><h3>${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
+      <p class="pn-acts"><a href="/people/${encodeURIComponent(id)}/">看他的生平</a><button type="button" data-pair-from="${esc(id)}">和谁相干</button></p>`;
     panel.hidden = false;
-    stage.classList.add('has-panel');
     panel.scrollTop = 0;
   }
   panel.addEventListener('click', e => {
     const t = e.target as HTMLElement;
-    if (t.closest('[data-close]')) { toBack(); return; }
+    if (t.closest('[data-close]')) { clear(); return; }
     const go = t.closest<HTMLElement>('[data-go]');
     if (go) { focus(go.dataset.go!); return; }
-    const cf = t.closest<HTMLElement>('[data-chain-from]');
-    if (cf) { const from = cf.dataset.chainFrom!; toBack(); setMode('chain'); fromIn.value = from; toIn.focus(); }
+    const pf = t.closest<HTMLElement>('[data-pair-from]');
+    if (pf) { const from = pf.dataset.pairFrom!; clear(); setPair(true); qIn.value = from; toIn.focus(); }
   });
 
-  /* ---------- 找人 ---------- */
-  const q = document.querySelector<HTMLInputElement>('[data-q]')!;
-  const pick = () => { const v = q.value.trim(); const hit = D.p[v] ? v : Object.keys(D.p).find(id => v && id.includes(v)); if (hit) { q.value = hit; q.blur(); focus(hit); } };
-  q.addEventListener('change', pick);
-  q.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
+  /* ---------- 寻人 ---------- */
+  const qIn = document.querySelector<HTMLInputElement>('[data-q]')!;
+  const toIn = document.querySelector<HTMLInputElement>('[data-to]')!;
+  const pairBtn = document.querySelector<HTMLButtonElement>('[data-pair]')!;
+  const resolve = (v: string) => (D.p[v] ? v : Object.keys(D.p).find(id => v && id.includes(v)) ?? null);
+  const go = () => {
+    const a = resolve(qIn.value.trim());
+    if (!pairOn) { if (a) { qIn.value = a; qIn.blur(); focus(a); } return; }
+    const b = resolve(toIn.value.trim());
+    if (a && b) { qIn.value = a; toIn.value = b; trace(a, b); }
+  };
+  document.querySelector('[data-find]')!.addEventListener('submit', e => { e.preventDefault(); go(); });
+  qIn.addEventListener('change', go);
+  toIn.addEventListener('change', go);
 
-  /* ---------- 关系类型开关 ---------- */
-  document.querySelectorAll<HTMLButtonElement>('[data-type]').forEach(b => b.addEventListener('click', () => {
-    const t = b.dataset.type!;
-    hidden.has(t) ? hidden.delete(t) : hidden.add(t);
-    b.setAttribute('aria-pressed', String(!hidden.has(t)));
-    edges.forEach(p => p.classList.toggle('off', hidden.has(typeOf(p))));
-    if (focusId) { drawEgo(focusId); renderPanel(focusId); }
-  }));
-
-  /* ---------- 关系链：两人之间最短的一条路，在镜背上描红 ---------- */
-  const form = document.querySelector<HTMLFormElement>('[data-chain-form]')!;
-  const fromIn = form.querySelector<HTMLInputElement>('[data-from]')!, toIn = form.querySelector<HTMLInputElement>('[data-to]')!;
-  const findAll = document.querySelector<HTMLElement>('[data-find-all]')!;
-  function setMode(m: string) {
-    document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
-    form.hidden = m !== 'chain';
-    findAll.hidden = m === 'chain';
-    if (m === 'chain') { if (focusId) { fromIn.value = focusId; toBack(); } fromIn.value ? toIn.focus() : fromIn.focus(); }
+  /* ---------- 两人之间：最短的一条线一段段亮起来，写成一句话 ---------- */
+  function setPair(on: boolean) {
+    pairOn = on;
+    pairBtn.setAttribute('aria-pressed', String(on));
+    toIn.hidden = !on;
+    qIn.placeholder = on ? '一个人' : '寻一个人';
+    if (on) { if (focusId) { qIn.value = focusId; clear(); } (qIn.value ? toIn : qIn).focus(); }
   }
-  document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode!)));
+  pairBtn.addEventListener('click', () => setPair(!pairOn));
+  function pairPick(id: string) {
+    if (!qIn.value || toIn.value) { qIn.value = id; toIn.value = ''; toIn.focus(); return; }
+    toIn.value = id; go();
+  }
   function bfs(a: string, b: string) {
     const prev = new Map<string, [string, Tie] | null>([[a, null]]);
     const queue = [a];
@@ -497,205 +253,135 @@ const client = {
     for (let c = b; prev.get(c); c = prev.get(c)![0]) steps.unshift({ from: prev.get(c)![0], to: c, tie: prev.get(c)![1] });
     return steps;
   }
-  const closeBtn = '<button type="button" class="pn-x" data-close aria-label="关闭">×</button>';
-  function chain(a: string, b: string) {
-    if (focusId) toBack();
-    const show = (html: string) => { panel.innerHTML = closeBtn + html; panel.hidden = false; stage.classList.add('has-panel'); };
-    if (!D.p[a] || !D.p[b]) { show(`<p class="pn-empty">人物谱里找不到${esc(!D.p[a] ? a || '起点' : b || '终点')}。</p>`); return; }
+  function trace(a: string, b: string) {
+    clear(false);
     const steps = a === b ? [] : bfs(a, b);
-    unlight();
-    if (!steps) { show(`<p class="pn-empty">${esc(a)}和${esc(b)}之间，在现有的关系里连不上。</p>`); return; }
-    chainOn = true;
-    const ids = new Set([a, ...steps.map(s => s.to)]);
-    light(ids, p => steps.some(s => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from)));
-    back.classList.add('chain');
-    nodes.get(a)!.classList.add('core'); nodes.get(b)!.classList.add('core');
-    show(`<p class="pn-g">关系链</p>
-      <h2 class="chain-h">${esc(a)}<small>到</small>${esc(b)}</h2>
-      <p class="pn-n">中间隔着 ${Math.max(0, steps.length - 1)} 个人</p>
-      <ol class="chain">
-        <li><button type="button" data-go="${esc(a)}" style="--gc:${groupColor(a)}">${esc(a)}</button></li>
-        ${steps.map(s => `<li><span class="via">${esc(s.tie[2])}<small>${esc(D.types[s.tie[1]])}</small></span><button type="button" data-go="${esc(s.to)}" style="--gc:${groupColor(s.to)}">${esc(s.to)}</button></li>`).join('')}
-      </ol>
-      <p class="pn-note">每一步写的是后一位之于前一位的身份。</p>`);
-    status.textContent = `${a} → ${b}`;
+    frame.classList.add('paired');
+    const ids = new Set([a, b, ...(steps ?? []).map(s => s.to)]);
+    slips.forEach((g, k) => { g.classList.toggle('nb', ids.has(k)); g.classList.toggle('end', k === a || k === b); });
+    const items: { path: SVGPathElement; text: string; cls: string }[] = [];
+    (steps ?? []).forEach((s, i) => {
+      const p = threads.find(p => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from));
+      if (!p) return;
+      p.style.setProperty('--k', String(i));
+      p.classList.add('path');
+      items.push({ path: p, text: s.tie[2], cls: `t-${s.tie[1]}` });
+    });
+    writeTags(items, [...ids]);
+    /* 一句一句念下来：后一位是前一位的什么人 */
+    const said = steps ? steps.map(s => `<button type="button" data-go="${esc(s.to)}">${esc(s.to)}</button>是<button type="button" data-go="${esc(s.from)}">${esc(s.from)}</button>的${esc(s.tie[2])}`).join('；') + '。' : '';
+    panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="收起">×</button>
+      <p class="pn-g">兩人之間</p>
+      <h2 class="pn-pair">${esc(a)}<small>与</small>${esc(b)}</h2>
+      <p class="pn-said kai">${steps ? said : `${esc(a)}与${esc(b)}，书里牵不上线。`}</p>`;
+    panel.hidden = false;
+    /* 滚到整条路线的中段 */
+    const rs = [...ids].map(k => slips.get(k)!.getBoundingClientRect());
+    const midY = (Math.min(...rs.map(r => r.top)) + Math.max(...rs.map(r => r.bottom))) / 2;
+    scrollTo({ top: scrollY + midY - innerHeight / 2, behavior: reduced ? 'auto' : 'smooth' });
     const url = new URL(location.href); url.search = ''; url.searchParams.set('from', a); url.searchParams.set('to', b); history.replaceState(null, '', url);
   }
-  form.addEventListener('submit', e => { e.preventDefault(); chain(fromIn.value.trim(), toIn.value.trim()); });
 
   /* ---------- 起步 ---------- */
   const params = new URLSearchParams(location.search);
-  if (params.get('from') && params.get('to')) { setMode('chain'); fromIn.value = params.get('from')!; toIn.value = params.get('to')!; chain(fromIn.value, toIn.value); }
-  else if (params.get('focus')) focus(params.get('focus')!, true);
-  if (!reduced && !params.size) stage.classList.add('enter');
-  pose();
+  if (params.get('from') && params.get('to')) { setPair(true); qIn.value = params.get('from')!; toIn.value = params.get('to')!; go(); }
+  else if (params.get('focus')) setTimeout(() => focus(params.get('focus')!), 60);
 </script>
 
 <style>
-  .gwrap { padding: 0 var(--gutter); max-width: calc(var(--wrap) + 240px); margin: 14px auto 0; }
-  .stage {
-    position: relative; height: calc(100svh - var(--header-h) - 60px); min-height: 600px; overflow: hidden; touch-action: none; user-select: none;
-    container-type: size; perspective: 1800px; border-radius: 10px;
-    background: radial-gradient(ellipse 60% 55% at 50% 52%, color-mix(in srgb, var(--paper-2) 70%, transparent), transparent 70%), var(--paper);
-    /* 镜子的配色不跟随站点主题 */
-    --e-b: #d9785a; --e-m: #e2bf73; --e-in: #c19a6a; --e-sv: #a8b8ac; --e-lv: #ea92a3; --e-fr: #93c1ca; --e-ri: #efe4cc; --e-my: #b3a5e0;
+  /* 丝线的颜色就是关系：婚配情缘红丝，血亲墨线，姻亲淡墨，主仆麻线，交游青线，恩怨黛色，前世金线 */
+  .loom { --t-m: #b02d22; --t-lv: #c95a4a; --t-b: #2b221b; --t-in: #7d6c58; --t-sv: #a8895a; --t-fr: #3f7a70; --t-ri: #3f4c78; --t-my: #b48a33; position: relative; padding-bottom: 40px; }
+  .loom :global(.t-m) { --tc: var(--t-m); } .loom :global(.t-lv) { --tc: var(--t-lv); } .loom :global(.t-b) { --tc: var(--t-b); } .loom :global(.t-in) { --tc: var(--t-in); }
+  .loom :global(.t-sv) { --tc: var(--t-sv); } .loom :global(.t-fr) { --tc: var(--t-fr); } .loom :global(.t-ri) { --tc: var(--t-ri); } .loom :global(.t-my) { --tc: var(--t-my); }
+
+  .bar { position: sticky; top: var(--header-h); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 18px 32px; flex-wrap: wrap; padding: 14px var(--gutter); background: color-mix(in srgb, var(--paper) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .find { display: flex; align-items: center; gap: 14px; }
+  .find input { width: 9em; border: 0; border-bottom: 1px solid var(--ink-3); background: none; padding: 6px 2px; font: 400 16px/1.2 var(--serif); letter-spacing: .08em; outline: 0; transition: border-color .3s; }
+  .find input:focus { border-color: var(--cinnabar); }
+  .pair { font: 400 17px/1 var(--title); letter-spacing: .16em; color: var(--ink-3); padding: 6px 2px; transition: color .3s; }
+  .pair[aria-pressed="true"], .pair:hover { color: var(--cinnabar); }
+  .spools { display: flex; gap: 4px 14px; flex-wrap: wrap; }
+  .spool { display: inline-flex; align-items: center; gap: 6px; padding: 4px 2px; font: 400 15px/1 var(--kai); letter-spacing: .12em; color: var(--ink-3); transition: color .3s, opacity .3s; }
+  .spool svg { width: 15px; height: 18px; }
+  .spool .flange { fill: #8a6a42; }
+  .spool .wound { fill: var(--tc); }
+  .spool .wind { stroke: rgb(255 255 255 / .28); stroke-width: .8; }
+  .spool[aria-pressed="false"] { opacity: .42; }
+  .spool[aria-pressed="false"] .wound { fill: transparent; stroke: var(--tc); stroke-width: 1; }
+  .spool[aria-pressed="true"] { color: var(--ink); }
+
+  /* 素绢挂在纸上，四周留白 */
+  .frame { margin: 36px auto 0; width: min(100% - 2 * var(--gutter), 1560px); overflow-x: auto; overscroll-behavior-x: contain; }
+  .silk { display: block; width: 100%; min-width: 1080px; height: auto; box-shadow: 0 0 0 1px rgb(90 66 30 / .18), 0 30px 60px -40px rgb(40 26 10 / .55); user-select: none; -webkit-user-select: none; }
+
+  .cloud { color: #a99a7e; opacity: .35; }
+  .rule { stroke: #8f7b5a; stroke-opacity: .35; stroke-width: 1; }
+  .rule.thin { stroke-opacity: .2; }
+  .zone-name { font: 400 26px/1 var(--title); fill: #5e4e39; text-anchor: middle; }
+  .cl-name { font: 400 15px/1 var(--kai); fill: #8a7658; text-anchor: middle; letter-spacing: .3em; }
+
+  /* 丝线：平时收着（虚线偏移满格），露出来时从一头牵到另一头 */
+  .th { fill: none; stroke: var(--tc); stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 1.3s cubic-bezier(.45, .05, .3, 1), opacity .5s, stroke-width .3s; transition-delay: calc(var(--i) * 18ms); }
+  .t-b.th { stroke-width: 1.6; } .t-m.th { stroke-width: 2.1; } .t-lv.th { stroke-width: 1.7; } .t-my.th { stroke-width: 1.9; }
+  .t-in.th, .t-sv.th, .t-fr.th { stroke-width: 1.25; } .t-ri.th { stroke-width: 1.4; }
+  .ready .th.show { stroke-dashoffset: 0; opacity: .5; }
+  .ready .t-b.th.show, .ready .t-in.th.show { opacity: .34; }
+  .ready.hov .th.show { opacity: .12; }
+  .ready.hov .th.show.hl { opacity: 1; stroke-width: 2.4; }
+  .ready.focused .th:not(.on), .ready.paired .th:not(.path) { opacity: 0; stroke-dashoffset: 1; transition-delay: 0s; }
+  .ready.focused .th.on { stroke-dashoffset: 0; opacity: 1; stroke-width: 2.3; transition-delay: 0s; }
+  .ready.paired .th.path { stroke-dashoffset: 0; opacity: 1; stroke-width: 3; transition-delay: calc(var(--k) * .35s); }
+
+  /* 签：象牙色，顶上一道家族的颜色 */
+  .slip { cursor: pointer; outline: none; transition: opacity .4s; }
+  .slip .body { fill: #f8f2e3; stroke: #c4ae86; stroke-width: .9; transition: stroke .3s, fill .3s; }
+  .slip .cap { fill: var(--gc); opacity: .85; }
+  .slip .nm { font-family: var(--title); fill: #241b14; text-anchor: middle; }
+  .tier-s .nm { font-family: var(--serif); fill: #3a3027; }
+  .tier-c .body { stroke: #a8895a; stroke-width: 1.2; }
+  .band-sky .body { fill: #fbf5e6; stroke: #c9a660; }
+  .slip:hover .body, .slip:focus-visible .body, .slip.me .body { stroke: var(--cinnabar); stroke-width: 1.6; }
+  .ready.hov .slip:not(.nb) { opacity: .5; }
+  .focused .slip:not(.me):not(.nb), .paired .slip:not(.nb) { opacity: .22; }
+  .slip.me .body, .slip.end .body { fill: #fff8e6; }
+  .slip.me .cap, .slip.end .cap { fill: var(--cinnabar); opacity: 1; }
+
+  /* 线上的字：一小块纸，楷书 */
+  .tags :global(.tag rect) { fill: #faf4e4; stroke: var(--tc); stroke-opacity: .55; stroke-width: .8; }
+  .tags :global(.tag text) { font: 400 14px/1 var(--kai); fill: var(--tc); text-anchor: middle; letter-spacing: .06em; }
+  @media (prefers-reduced-motion: no-preference) {
+    .tags :global(.tag) { animation: tag-in .5s ease .5s both; }
   }
-  .stage.dragging { cursor: grabbing; }
-  .stage:fullscreen, .stage.pseudo-full { position: fixed; inset: 0; z-index: 100; height: 100%; border-radius: 0; }
+  @keyframes tag-in { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .th, .slip { transition: none; } }
 
-  /* 镜子本体：正方形，居中；有面板时让到左边 */
-  .mirror { --m: round(down, min(96cqw, 96cqh), 2px); position: absolute; inset: 0 0 0 0; margin: auto; width: var(--m); height: var(--m); transition: width .6s var(--ease), height .6s var(--ease), margin-right .6s var(--ease); }
-  .has-panel .mirror { --m: round(down, min(calc(100cqw - 392px), 96cqh), 2px); margin-right: 372px; }
-  .face { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; box-shadow: 0 40px 70px -30px rgb(30 20 5 / .55), 0 14px 26px -12px rgb(30 20 5 / .4); }
-  /* 平时只显示朝外的那一面，不用三维；翻的时候才立起来 */
-  .mirror:not(.flipping) .face.front, .mirror.flipped:not(.flipping) .face.back { visibility: hidden; }
-  .mirror.flipping { transform-style: preserve-3d; }
-  .mirror.flipping .face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-  .mirror.flipping .face.front { transform: rotateY(180deg); }
-  .mirror.flipped:not(.flipping) .face.front { visibility: visible; }
-  .gsvg { width: 100%; height: 100%; display: block; }
-  /* 开场只动透明度和大小；滤镜会把三维的镜子压平，翻面时背面就藏不住 */
-  .enter .mirror { animation: rise 1.4s var(--ease) backwards; }
-  @keyframes rise { from { opacity: 0; scale: .9; } }
+  /* 旁边的笺 */
+  .panel { position: fixed; z-index: 20; right: 20px; top: calc(var(--header-h) + 100px); width: 300px; max-height: calc(100vh - var(--header-h) - 130px); overflow-y: auto; padding: 26px 24px 22px; background: #fbf6ea; color: #2a2119; box-shadow: 0 0 0 1px rgb(90 66 30 / .16), 0 24px 50px -24px rgb(40 26 10 / .5); scrollbar-width: thin; }
+  .panel :global(.pn-x) { position: absolute; top: 10px; right: 12px; font-size: 20px; color: #8a7658; padding: 4px 8px; }
+  .panel :global(.pn-g) { font: 400 14px/1 var(--kai); letter-spacing: .3em; color: var(--gc, var(--cinnabar)); }
+  .panel :global(h2) { margin-top: 12px; font: 400 34px/1.1 var(--title); letter-spacing: .1em; }
+  .panel :global(.pn-t) { margin-top: 8px; font: 400 15px/1.7 var(--kai); color: #6b5a45; }
+  .panel :global(.pn-sec) { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgb(90 66 30 / .14); }
+  .panel :global(.pn-sec h3) { display: flex; align-items: center; gap: 8px; font: 400 14px/1 var(--kai); letter-spacing: .24em; color: var(--tc); }
+  .panel :global(.pn-sec h3::before) { content: ''; width: 18px; height: 2px; background: var(--tc); border-radius: 1px; }
+  .panel :global(.pn-sec ul) { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .panel :global(.pn-sec li) { display: flex; align-items: baseline; gap: 6px; }
+  .panel :global([data-go]) { font: 400 17px/1.3 var(--title); color: #2a2119; transition: color .2s; }
+  .panel :global([data-go]:hover) { color: var(--cinnabar); }
+  .panel :global(.pn-sec span) { font: 400 13px/1 var(--kai); color: #8a7658; }
+  .panel :global(.pn-acts) { display: flex; gap: 22px; margin-top: 22px; padding-top: 14px; border-top: 1px solid rgb(90 66 30 / .14); font: 400 14.5px/1 var(--kai); letter-spacing: .14em; }
+  .panel :global(.pn-acts a), .panel :global(.pn-acts button) { color: var(--cinnabar); }
+  .panel :global(.pn-pair) { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .panel :global(.pn-pair small) { font: 400 15px/1 var(--kai); color: #8a7658; }
+  .panel :global(.pn-said) { margin-top: 16px; font-size: 17px; line-height: 2.1; color: #3a2e22; }
+  .panel :global(.pn-said [data-go]) { font: inherit; color: var(--cinnabar); }
 
-  /* 镜背 */
-  .rim-outer { fill: none; stroke: url(#rim); stroke-width: 40; }
-  .rim-outer.f { stroke: url(#rim2); }
-  .field { fill: url(#bronze); }
-  [data-patina] { opacity: .45; mix-blend-mode: screen; }
-  .ring { fill: none; stroke: #b9965c; stroke-opacity: .55; stroke-width: 1.2; }
-  .ring.faint { stroke-opacity: .2; stroke-dasharray: 1 5; }
-  .beads { fill: none; stroke: #c9a76a; stroke-opacity: .28; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 11; }
-  .hui { fill: none; stroke: #c9a76a; stroke-opacity: .5; stroke-width: 1.4; }
-  .poem { font: 15px var(--display); fill: #d8bd84; fill-opacity: .7; }
-  .sec { cursor: pointer; }
-  .sec-arc { fill: none; stroke: color-mix(in srgb, var(--gc) 35%, #b8955a); stroke-width: 26; stroke-opacity: .3; transition: stroke-opacity .3s; }
-  .sec:hover .sec-arc { stroke-opacity: .6; }
-  .sec-name { font: 700 19px var(--display); fill: #f3e6c4; text-anchor: middle; letter-spacing: .4em; }
-
-  .e { stroke: none; fill: var(--ec); opacity: .34; transition: opacity .35s; }
-  .e.x { opacity: .42; }
-  .e.off { display: none; }
-  .t-b { --ec: var(--e-b); } .t-m { --ec: var(--e-m); } .t-in { --ec: var(--e-in); } .t-sv { --ec: var(--e-sv); }
-  .t-lv { --ec: var(--e-lv); } .t-fr { --ec: var(--e-fr); } .t-ri { --ec: var(--e-ri); } .t-my { --ec: var(--e-my); }
-  .enter .e { animation: ink 1.6s var(--ease) both; animation-delay: .5s; }
-  @keyframes ink { from { opacity: 0; } }
-  .lit .e { opacity: .07; }
-  .lit .e.on { opacity: 1; }
-  .chain .e.on { fill: #ff9a73; }
-
-  .n { cursor: pointer; outline: none; }
-  .hit { fill: transparent; }
-  .dot { fill: #e6c983; }
-  .tier-c .dot { fill: #f4dd9f; stroke: #8a6c35; stroke-width: 2; }
-  .tier-s .dot, .tier-o .dot { fill: #c9ad73; }
-  .lb { font: 500 14px var(--serif); fill: #e9dcbc; pointer-events: none; transition: opacity .3s, fill .3s; }
-  .tier-c .lb { font: 700 21px var(--display); fill: #fbf0d4; }
-  .tier-m .lb { font-size: 14.5px; }
-  .tier-s .lb, .tier-o .lb { font-size: 12px; opacity: 0; }
-  .zoomed .tier-s .lb, .zoomed .tier-o .lb, .lit .n.on .lb { opacity: 1; }
-  .enter .n { animation: ink .8s var(--ease) both; animation-delay: calc(.2s + var(--d)); }
-  .n:hover .lb, .n:focus-visible .lb, .n.core .lb { fill: #ffd27a; }
-  .lit .n { opacity: .3; }
-  .lit .n.on { opacity: 1; }
-  .knob { pointer-events: none; }
-  .knob-base { fill: #1f2925; stroke: #b9965c; stroke-opacity: .6; stroke-width: 1.4; }
-  .petal { fill: #2f3d36; stroke: #c9a76a; stroke-opacity: .7; stroke-width: 1.2; }
-  .knob-ch { font: 700 17px var(--display); fill: #e2c88d; text-anchor: middle; }
-  .knob-ball { fill: url(#knob); filter: drop-shadow(0 4px 6px rgb(0 0 0 / .6)); }
-  .knob-hole { fill: none; stroke: #3b2e17; stroke-opacity: .5; stroke-width: 1; }
-
-  /* 镜面：命盘 */
-  .mface { fill: url(#silver); }
-  [data-ego] :global(.ering) { fill: none; stroke: #8f7a4f; stroke-opacity: .45; stroke-dasharray: 2 6; }
-  [data-ego] :global(.ering.two) { stroke-opacity: .25; }
-  [data-ego] :global(.eseg) { fill: none; stroke: var(--ec); stroke-width: 4; stroke-linecap: round; filter: brightness(.7); }
-  [data-ego] :global(.eseg-t) { font: 700 15px var(--label); fill: var(--ec); filter: brightness(.6); text-anchor: middle; dominant-baseline: middle; letter-spacing: .16em; }
-  [data-ego] :global(.el) { fill: var(--ec); filter: brightness(.62) saturate(1.3); transition: opacity .3s; }
-  [data-ego] :global(.el.one) { opacity: .75; }
-  [data-ego] :global(.el.two) { opacity: .32; }
-  [data-ego] :global(.el.hot) { opacity: 1; }
-  [data-ego] :global(.en) { cursor: pointer; outline: none; transform: translate(0, 0); opacity: 0; transition: transform .9s var(--ease), opacity .6s; transition-delay: calc(var(--i) * 22ms); }
-  [data-ego] :global(.en.r2) { transition-delay: calc(.25s + var(--i) * 6ms); }
-  [data-ego]:global(.show) :global(.en) { transform: translate(var(--x), var(--y)); opacity: 1; }
-  [data-ego] :global(.elines) { opacity: 0; transition: opacity .8s .5s; }
-  [data-ego]:global(.show) :global(.elines) { opacity: 1; }
-  [data-ego] :global(.en .dot) { fill: var(--gc); stroke: #fbf6ea; stroke-width: 2; }
-  [data-ego] :global(.erim) { font: 700 17px var(--display); fill: #8a7448; fill-opacity: .55; }
-  [data-ego] :global(.en .lb) { font: 700 21px var(--serif); fill: #2a2118; text-anchor: middle; paint-order: stroke; stroke: #f3ecdc; stroke-width: 4px; stroke-linejoin: round; opacity: 1; }
-  [data-ego] :global(.en.r2 .lb) { font: 500 15.5px var(--serif); fill: #4a3f30; stroke-width: 3px; }
-  [data-ego] :global(.en .role) { font: 700 14px var(--label); fill: #7a6a50; text-anchor: middle; paint-order: stroke; stroke: #f3ecdc; stroke-width: 3px; }
-  [data-ego] :global(.en:hover .lb) { fill: #a3321f; }
-  [data-ego] :global(.me) { opacity: 0; transform: scale(.4); transition: opacity .6s, transform .9s var(--ease); }
-  [data-ego]:global(.show) :global(.me) { opacity: 1; transform: scale(1); }
-  [data-ego] :global(.me-ring) { fill: none; stroke: #a3321f; stroke-width: 2; stroke-dasharray: 3 4; }
-  [data-ego] :global(.me-disc) { fill: #a3321f; filter: drop-shadow(0 6px 10px rgb(80 20 10 / .35)); }
-  [data-ego] :global(.me-t) { font-family: var(--display); font-weight: 700; fill: #fff4e2; text-anchor: middle; }
-
-  /* 浮在四周的工具 */
-  .hud { position: absolute; z-index: 3; display: flex; gap: 6px; align-items: center; }
-  .hud.top { top: 12px; left: 12px; right: 12px; flex-wrap: wrap; pointer-events: none; }
-  .hud.top > * { pointer-events: auto; }
-  .modes, .zoom, .legend, .find, .chain-form, .flipback { background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
-  .modes { display: flex; padding: 3px; }
-  .modes button { padding: 8px 16px; border-radius: 999px; font: 700 13px/1 var(--label); color: var(--ink-3); letter-spacing: .14em; }
-  .modes button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
-  .find { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; color: var(--ink-3); }
-  .find input, .chain-form input { border: 0; background: none; outline: none; font-size: 15px; width: 130px; color: var(--ink); }
-  .chain-form { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 14px; font: 700 12px var(--label); color: var(--ink-3); }
-  .chain-form input { width: 96px; }
-  .chain-form .btn { height: 32px; padding: 0 16px; }
-  .chain-form[hidden], .find[hidden], .flipback[hidden] { display: none; }
-  .flipback { height: 40px; padding: 0 16px; font: 700 13px var(--label); color: var(--cinnabar); letter-spacing: .1em; }
-  .status { margin: 0 0 0 auto; max-width: 380px; font: 500 13.5px var(--label); color: var(--ink-3); padding: 0 6px; pointer-events: none !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .06em; }
-  .has-panel .status { display: none; }
-  .legend { left: 12px; bottom: 12px; flex-direction: column; align-items: stretch; padding: 8px; border-radius: 12px; gap: 1px; }
-  .lg { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 6px; font: 700 12px/1 var(--label); color: var(--ink-2); letter-spacing: .1em; }
-  .lg i { width: 18px; height: 4px; border-radius: 4px; background: var(--ec); filter: brightness(.75); }
-  .lg[aria-pressed="false"] { opacity: .35; }
-  .lg[aria-pressed="false"] i { background: var(--line-2); }
-  .lg:hover { background: var(--paper-2); }
-  .zoom { right: 12px; bottom: 12px; flex-direction: column; padding: 4px; border-radius: 14px; gap: 2px; }
-  .zoom button { min-width: 42px; height: 34px; border-radius: 10px; font: 700 13px/1 var(--label); color: var(--ink-2); }
-  .zoom button:hover { background: var(--paper-2); color: var(--cinnabar); }
-  .has-panel .zoom { right: 384px; }
-
-  .panel { position: absolute; z-index: 4; top: 12px; right: 12px; bottom: 12px; width: 356px; overflow-y: auto; padding: 22px 22px 18px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px); animation: slide .5s var(--ease); cursor: auto; user-select: text; }
-  @keyframes slide { from { opacity: 0; transform: translateX(18px); } }
-  .panel :global(.pn-x) { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: var(--ink-3); }
-  .panel :global(.pn-x:hover) { background: var(--paper-2); color: var(--cinnabar); }
-  .panel :global(.pn-g) { font: 700 12px/1 var(--label); letter-spacing: .24em; color: var(--gc, var(--cinnabar)); }
-  .panel :global(h2) { font: 700 40px/1.15 var(--display); margin: 10px 0 4px; letter-spacing: .06em; }
-  .panel :global(.chain-h) { font-size: 28px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
-  .panel :global(.chain-h small) { font: 500 13px var(--label); color: var(--ink-3); }
-  .panel :global(.pn-t) { font-size: 14.5px; color: var(--ink-2); }
-  .panel :global(.pn-n) { font: 700 12px/1 var(--label); color: var(--ink-3); margin: 14px 0 6px; letter-spacing: .12em; }
-  .panel :global(.pn-sec) { padding: 10px 0; border-top: 1px solid var(--line); }
-  .panel :global(.pn-sec h3) { font: 700 12px/1 var(--label); letter-spacing: .22em; color: var(--ec); filter: brightness(.65); margin-bottom: 8px; }
-  .panel :global(.pn-sec ul) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-  .panel :global(.pn-sec li) { display: flex; align-items: baseline; gap: 10px; font-size: 15px; }
-  .panel :global([data-go]) { font-weight: 700; border-bottom: 1.5px solid color-mix(in srgb, var(--gc) 55%, transparent); }
-  .panel :global([data-go]:hover) { color: var(--gc); }
-  .panel :global(.pn-sec li span) { font-size: 13px; color: var(--ink-3); }
-  .panel :global(.pn-acts) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-  .panel :global(.chain) { list-style: none; margin: 14px 0 0; padding: 0; display: grid; font-size: 17px; }
-  .panel :global(.chain li) { display: grid; justify-items: start; gap: 4px; padding: 6px 0 6px 18px; border-left: 2px solid var(--cinnabar-soft); position: relative; }
-  .panel :global(.chain li::before) { content: ''; position: absolute; left: -6px; bottom: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--cinnabar); }
-  .panel :global(.via) { font-size: 13px; color: var(--ink-3); }
-  .panel :global(.via small) { margin-left: 8px; font: 700 10.5px var(--label); letter-spacing: .1em; color: var(--cinnabar); }
-  .panel :global(.pn-note), .panel :global(.pn-empty) { margin-top: 14px; font-size: 13px; color: var(--ink-3); line-height: 1.8; }
-  .panel :global(.pn-empty) { font-size: 15px; color: var(--ink-2); margin-top: 30px; }
-
-  @media (max-width: 900px) {
-    .gwrap { padding: 0; margin-top: 0; }
-    .stage { border-radius: 0; height: calc(100svh - var(--header-h) - 42px); }
-    .has-panel .mirror { --m: round(down, min(94cqw, 50cqh), 2px); margin: 8px auto auto; }
-    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46%; border-radius: 16px 16px 0 0; animation-name: up; }
-    @keyframes up { from { opacity: 0; transform: translateY(20px); } }
-    .has-panel .zoom, .has-panel .legend, .status { display: none; }
-    .legend { flex-direction: row; flex-wrap: wrap; max-width: calc(100% - 90px); }
-    .lg { font-size: 11px; padding: 4px 6px; }
-    .find input { width: 100px; }
-    .chain-form input { width: 60px; }
+  @media (max-width: 1100px) {
+    .panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 46vh; border-radius: 10px 10px 0 0; }
+  }
+  @media (max-width: 760px) {
+    .bar { position: static; }
+    .find input { width: 7em; }
+    .frame { width: 100%; margin-top: 18px; }
   }
 </style>
