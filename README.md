@@ -1,96 +1,73 @@
 # 红楼梦人物关系图谱
 
-《红楼梦》人物关系的单页网站，线上地址 https://honglou.wolfholo.com 。
+《红楼梦》的人物、关系与一百二十回原文，线上地址 https://honglou.wolfholo.com 。
 
-阅读版按入卷、人物、关系、园中和回目组织导航。人物栏目包括人物谱和金陵十二钗，关系栏目保留星图、世系、四大家族与情缘。首页提供人物搜索、三条故事入口和最近看过的人物。
+前八十回用《脂砚斋重评石头记》，正文里带着各本脂批；后四十回用程甲本，站里处处标明是续书，统计只算前八十回。
 
-网站使用原生 JS 和 SVG，最后合成一个 HTML 文件。人物搜索支持姓名、别称与简介关键词。人物链接使用 `#index?person=林黛玉`，原有 `#graph`、`#twelve` 等地址继续有效。
+| 栏目 | 页面 |
+|---|---|
+| 卷首 | 首页：搜索、今日一回、朱批一则、十二钗、人物出场的水墨河流图 |
+| 人物 | 人物谱、每人一页（出场分布、脂批、亲友、结局分三层写）、金陵十二钗判词册 |
+| 关系 | 关系星图（圆盘全景与命盘）、贾府世系、四大家族、情缘与风波 |
+| 大观园 | 手绘园图，院落住户与旧事，第十七回游园 |
+| 回目 | 一百二十回目录与原文阅读页、大事眉批 |
 
-结局和判词解读默认收起，可以逐项展开，也能用页首按钮更改默认状态。这个开关不屏蔽简介、关系与回目里的全部情节。主题、展开偏好与最近阅读记录仅保存在当前浏览器；首页可以清除阅读记录。
+结局、判词解说默认遮住，点开才看。阅读进度、主题和阅读偏好只存在访问者自己的浏览器里。
 
 ## 本地改
 
-```sh
-node build.mjs          # 合成 index.html，直接用浏览器打开就能看
-```
-
-源码都在 `src/`，`build.mjs` 按固定顺序把它们拼起来，并先用 `node --check` 检查一遍语法。
-
-| 文件 | 内容 |
-|---|---|
-| `data-people.js` | 分组、关系类型、人物 `NODES`、关系 `EDGES` |
-| `data-extra.js` | 世系树、十二钗判词、四大家族、大观园院落与游园路线、情缘与恩怨 |
-| `data-events.js` | 百二十回大事 `EVENTS` |
-| `catalog.js` | 人物别称、统一搜索和具名数据对象 |
-| `core.js` | 工具函数、主题切换、人物抽屉、页签 |
-| `reading.js` | 入卷页、阅读偏好、人物地址与分享 |
-| `graph.js` | 关系星图，含全景、命盘、关系链三种模式 |
-| `tree.js` / `pages.js` / `garden.js` / `timeline.js` | 其余各页签 |
-| `main.js` | 启动与全局点击委托 |
-| `style.css` / `reading.css` / `body.html` | 原有图形样式、阅读版排版与页面骨架 |
-
-本地生成的 `index.html` 引用 Google Fonts，只用来预览，不进仓库。
-
-`img/12/` 存放正册、副册与又副册的画像。正册沿用 640×960 的 WebP；香菱、晴雯、袭人使用作者提供的原始 PNG。页面按相对路径引用，线上构建会整个拷进 `dist/`。画像用于阅读配图，不作服饰与场景考证。
-
-`img/icon.svg`、`img/icon-32.png`、`img/icon-180.png` 是标签页和手机桌面的图标，由 `tools/make-icons.py` 从马善政毛笔楷里取“红”字生成，字形写成矢量路径，不靠访问者电脑上的字体。
-
-## 数据约定
-
-- 人物以名字作 id，`EDGES`、`EVENTS` 的 `ids`、大观园院落的 `who` 里出现的名字都要在 `NODES` 里有。
-- 关系称谓写成 `p/q` 时，表示甲是乙的 p、乙是甲的 q。星图悬停连线会把它念成「乙 是 甲 的 q」，所以两边都要能这样念通；双方对称的关系只写一个词，比如「兄弟」「结怨」。
-- `EVENTS` 按回目先后排，第八十回以后的情节属于续书，正文里注明。
-- 中文文字一律用全角标点，引号用“”。
-- 大观园院落的 `ev` 填的是事件标题，必须和 `EVENTS` 里的 `t` 一字不差。
-
-## 上线
-
-推到 `main` 分支后，GitHub Actions 自动构建并部署到 Cloudflare Pages 项目 `hongloumeng`，最后再抓一次线上页面检查内容和字体文件。流程在 `.github/workflows/deploy.yml`，也能在 Actions 页面手动触发。
-
-部署需要仓库 Secrets 里的两项。
-
-| 名称 | 值 |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | 只有 Cloudflare Pages 编辑权限的 API token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账号 ID |
-
-两项缺任何一项，Actions 就只构建和检查，不部署。fork 出去的仓库读不到这两项，所以别人的 fork 不会动到线上。
-
-想在本地出一份和线上一样的构建，需要 Python 3 和 `pip install fonttools brotli`。
+需要 Node 24（直接运行 `.ts`）、Python 3 和 `pip install fonttools brotli`。
 
 ```sh
-python tools/build-site.py          # 输出到 dist/
-python tools/check-html.py dist/index.html
+npm install
+npm run dev        # 本地预览 http://localhost:4321
+npm run build      # 统计 → 切字体 → 出站 → 自检，输出到 dist/
 ```
+
+| 位置 | 内容 |
+|---|---|
+| `src/data/people.ts` | 分组、人物（`end` 前八十回已写到的结局，`fate` 判词与脂批透露的原意，`xu` 续书写法） |
+| `src/data/relations.ts` | 关系 `EDGES` |
+| `src/data/events.ts` | 大事 |
+| `src/data/garden.ts` | 大观园院落、景致与游园路线 |
+| `src/data/loves.ts`、`families.ts`、`lineage.ts`、`twelve.ts` | 情缘与风波、四大家族、世系、十二钗 |
+| `src/data/text/` | 一百二十回原文，一回一个 JSON，脂批挂在正文的字位上 |
+| `src/data/derived/` | `npm run stats` 算出来的出场次数、同场人物和每人的脂批 |
+| `src/lib/` | 数据汇总、原文渲染、星图与世系的布局计算 |
+| `src/pages/` | 各页面 |
+| `scripts/` | 抓原文、算统计、切字体、构建后自检 |
+
+### 原文
+
+`npm run text` 从维基文库下载原文到 `.text-cache/`，解析成 `src/data/text/`。前八十回取《脂硯齋重評石頭記》，批语模板 `{{~|…}}` 解析成挂在字位上的注；后四十回取程甲本。全部用 OpenCC 转成简体。原文已经提交在仓库里，平时不用重跑。
 
 ### 字体
 
-线上版不引 Google Fonts，因为大陆访问不到，样式表还会拖住首屏。`tools/build-site.py` 把思源宋体、思源黑体和马善政毛笔楷按页面里实际出现的字切成子集，自托管在 `/fonts/`，三个文件合计约 1.9 MB。字体源文件第一次构建时从 [google/fonts](https://github.com/google/fonts) 下载到 `.fonts-cache/`，三款都是 OFL 授权。
+线上不引 Google Fonts。`scripts/fonts.mjs` 收集 `src/` 里实际出现的字，把思源宋体、霞鹜文楷和马善政毛笔楷裁成子集，再切成按 unicode-range 分包的 woff2，输出到 `public/fonts/`。用到的字没变时直接跳过。字体源文件第一次运行时下载到 `.fonts-cache/`。
 
-子集每次构建都会按当前文案重切，新加的字不会掉回系统字体。马善政体本身缺 8 个字，这几个字由后备字体显示。
+## 数据约定
+
+- 人物以名字作 id。关系、大事、院落住户里出现的名字都要在人物表里有。
+- 关系称谓写成 `p/q` 时，表示甲是乙的 p、乙是甲的 q；双方对称的只写一个词。
+- 涉及结局时分三层：前八十回写到的、原意（注明出处，判词、伏笔或哪一本的脂批）、续书。原意不确定时照实说。
+- 第八十回以后的情节都标“续书”。
+- 中文一律用全角标点，引号用“”。
+
+## 上线
+
+推到 `main` 后，GitHub Actions 跑 `npm run build`，通过自检才部署到 Cloudflare Pages 项目 `hongloumeng`，最后抓几页线上页面再核一遍。流程在 `.github/workflows/deploy.yml`。
+
+部署需要仓库 Secrets 里的 `CLOUDFLARE_API_TOKEN`（只给 Pages 编辑权限）和 `CLOUDFLARE_ACCOUNT_ID`。缺任何一项就只构建不部署，fork 出去的仓库读不到这两项。
 
 ## 改完怎么验
 
-先运行项目自带检查。
+`npm run build` 最后一步是 `scripts/check-site.mjs`，检查主要页面和关键文字都在、所有站内链接都指向存在的页面。另外手动看一眼：
 
-```sh
-node tools/check-data.mjs
-node build.mjs
-python tools/check-html.py index.html
-```
-
-数据检查覆盖人物和关系引用、回目范围、院落事件引用与常用别称搜索。
-
-- 在首页输入“宝二爷”，用方向键和回车打开贾宝玉。搜索没有结果时可以清除条件。
-- 复制人物链接，在新标签页打开，确认直接显示对应人物。浏览器前进、后退应恢复页签和人物。
-- 关闭人物详情后，它应退出焦点顺序；打开画像后，Esc 关闭并回到原按钮。星图节点支持方向键切换和回车打开。
-- “林黛玉＋后四十回”应显示当前筛选中的 1 件大事，并说明全部收录 17 件。
-
-- 浅色、深色主题各看一眼。
-- 把视口调到 390px 宽，在控制台确认 `document.documentElement.scrollWidth === document.documentElement.clientWidth`，五个主栏目和下层页签都点一遍，页面不能横向滚动。
-- 星图要用触屏模拟再试一遍。手机上页面里的星图只是预览，轻点进入全屏；全屏里点人开关卡片、双击进命盘、拖动人物卡片、返回键退出全屏都要走通。
-- 控制台没有报错。
+- 浅色、深色主题。
+- 390px 宽的手机视口，页面不能横向滚动。
+- 关系星图：停在名字上高亮亲友，点人进命盘，再点别人换中心，Esc 回到全景；关系链查“刘姥姥”到“林黛玉”。
+- 阅读页切换脂批的三种显示方式，左右方向键翻回。
 
 ## 许可
 
-代码与整理的人物资料按 [MIT](LICENSE) 发布。构建时下载的三款字体各自遵循 SIL Open Font License。
+代码与整理的人物资料按 [MIT](LICENSE) 发布。原文取自维基文库。字体各自遵循 SIL Open Font License。
