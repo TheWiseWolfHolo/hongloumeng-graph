@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as OpenCC from 'opencc-js';
-import { zhiIndex, zhiRaw, cleanZhi, parseNote } from './zhi.mjs';
+import { zhiIndex, zhiRaw, cleanZhi, parseNote, noConv } from './zhi.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const cache = join(root, '.text-cache');
@@ -80,8 +80,8 @@ function clean(wiki) {
   }
   s = s.replace(/<ref[^>]*\/>/g, '').replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, '');
   s = s.replace(/<references\s*\/>/g, '').replace(/^==[^=\n]+==\s*$/gm, '');
-  s = s.replace(/<section[^>]*\/>/g, '').replace(/<\/?span[^>]*>/g, '').replace(/<\/?(ul|li|div|br)[^>]*>/g, '');
-  s = s.replace(/-\{([^}]*)\}-/g, '$1');
+  s = s.replace(/<\/?onlyinclude>/g, '').replace(/<section[^>]*\/>/g, '').replace(/<\/?span[^>]*>/g, '').replace(/<\/?(ul|li|div|br)[^>]*>/g, '');
+  s = noConv(s);
   s = s.replace(/\[\[File(?::|%3A)[^\]|]*\|[^\]]*?alt=([^\]|]+)[^\]]*\]\]/g, '\u0003$1\u0004');
   s = s.replace(/\[\[File(?::|%3A)[^\]]*\]\]/g, '');
   s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, (m, label) => /回目录|一回|下一回|上一回|高續/.test(label) ? '' : label);
@@ -177,6 +177,15 @@ function parseZhi(wiki) {
     last = re.lastIndex;
     if (m[1] != null) {
       const lines = m[1].split('\n').map(l => l.replace(/^[:\s　]+/, '').trim()).filter(l => l.replace(NOTE, '').trim());
+      if (!lines.length) continue;
+      const { s: body, n } = withNotes(lines.join('\n'));
+      const b = { t: 'poem', s: body };
+      if (n.length) b.n = n;
+      blocks.push(b);
+    } else if (/<poem/.test(m[2])) {
+      /* 居中的诗，判词多是这样写的 */
+      const inner = m[2].replace(/<\/?poem[^>]*>/g, '');
+      const lines = inner.split('\n').map(l => l.replace(/^[:\s　]+/, '').trim()).filter(l => l.replace(NOTE, '').trim());
       if (!lines.length) continue;
       const { s: body, n } = withNotes(lines.join('\n'));
       const b = { t: 'poem', s: body };

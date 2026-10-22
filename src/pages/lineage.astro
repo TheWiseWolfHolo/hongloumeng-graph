@@ -1,0 +1,197 @@
+---
+import Base from '../layouts/Base.astro';
+import { layLineage } from '../lib/lineage-layout.ts';
+import { byId } from '../lib/data.ts';
+
+const L = layLineage();
+const f = (n: number) => n.toFixed(1);
+---
+<Base title="贾府世系" description="《红楼梦》宁荣二府五代世系，照旧时族谱的吊线图画法：水、代、文、玉、草五个字辈，配偶、妾室与女儿出嫁一并标出。" section="graph" sub="lineage">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">关系 · 贰</span>
+        <h1 class="ink-in" style="--d:.1s">贾府世系</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">宁荣二公是同胞兄弟，到宝玉这一辈已是第四代。图照旧时族谱的吊线法画，名字竖写，从父亲名下垂线到子女；配偶写在右边，头上标“配”“妾”，女儿出嫁标“适”。点名字进人物页。</p>
+    </header>
+
+    <div class="legend" aria-hidden="true">
+      <span><svg width="34" height="10"><path d="M2 3.2H32M2 6.8H32" class="t-tie w" /></svg>正室</span>
+      <span><svg width="34" height="10"><path d="M2 5H32" class="t-tie c" /></svg>妾</span>
+      <span><svg width="34" height="10"><path d="M2 5H32" class="t-tie l" /></svg>情缘</span>
+      <span><svg width="34" height="10"><path d="M17 0V10" class="t-link" /></svg>父子、父女</span>
+      <span class="muted">灰字的人物不在人物谱里</span>
+    </div>
+  </div>
+
+  <div class="tree-shell">
+    <div class="tree-tools" role="toolbar" aria-label="世系图操作">
+      <button type="button" data-jump="ning">宁国府</button>
+      <button type="button" data-jump="rong">荣国府</button>
+      <span class="sep"></span>
+      <button type="button" data-zoom="-1" aria-label="缩小">−</button>
+      <button type="button" data-zoom="1" aria-label="放大">＋</button>
+      <button type="button" data-fit>整幅</button>
+    </div>
+    <div class="tree-box" data-tree data-w={L.W} data-h={L.H} data-rong={L.rongLeft} tabindex="0" aria-label="世系图，可以拖动">
+      <div class="tscroll">
+        <div class="tlabels" aria-hidden="true">
+          {L.bands.map(b => <div class="tlab" data-mid={b.mid}><i>{b.nth}</i><b>{b.ch}</b><span>{b.note}</span></div>)}
+        </div>
+        <svg class="tsvg" viewBox={`0 0 ${L.W} ${L.H}`} width={L.W} height={L.H} role="img" aria-label="宁荣二府世系图">
+          {L.bands.map(b => <rect class="gen-band" x="0" y={b.y} width={L.W} height={b.h} />)}
+          <g>
+            {L.houses.map(h => <text class="tr-house" x={h.x} y={h.y} style={`--c:var(--g-${h.grp})`}>{h.name}</text>)}
+            <path class="t-tie bro" d={L.bro.d} />
+            <text class="gen-note" x={L.bro.x} y={L.bro.y}>宁荣二公，同胞兄弟</text>
+            {L.ties.map(t => <path class:list={['t-tie', t.cls]} d={t.d} />)}
+            {L.links.map(d => <path class="t-link" d={d} />)}
+          </g>
+          <g>
+            {L.cols.map(c => {
+              const linked = c.link && byId.has(c.name);
+              const inner = (
+                <>
+                  <rect class="tn-bg" x={f(c.bg.x)} y={f(c.bg.y)} width={f(c.bg.w)} height={f(c.bg.h)} rx={f(c.bg.r)} />
+                  <circle class="tn-dot" cx={c.x} cy={c.y} r={c.dotR} />
+                  {c.lab.length > 0 && <text class="tn-lab">{c.lab.map((ch, i) => <tspan x={c.x} y={f(c.y + 15 + i * 12)}>{ch}</tspan>)}</text>}
+                  <text class="nm">{c.chars.map(x => <tspan x={c.x} y={f(x.y)}>{x.c}</tspan>)}</text>
+                  {c.notes.length > 0 && <text class="sb">{c.notes.map(x => <tspan x={f(x.x)} y={f(x.y)}>{x.c}</tspan>)}</text>}
+                </>
+              );
+              const cls = ['tn', { sp: c.spouse, ghost: c.ghost, xx: !linked }];
+              return linked
+                ? <a href={`/people/${c.name}/`} class:list={cls} data-n={c.name} data-peek style={`--c:var(--g-${c.grp})`} aria-label={c.name}>{inner}</a>
+                : <g class:list={cls} data-n={c.name} style={`--c:var(--g-${c.grp})`}>{inner}</g>;
+            })}
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap gens">
+    <h2 class="gens-h">五个字辈</h2>
+    <ol>
+      {L.bands.map(b => <li><b>{b.ch}</b><span>{b.nth} · {b.label}</span><p>{b.note}</p></li>)}
+    </ol>
+    <p class="muted small">第二回冷子兴演说荣国府时，把这两府的家谱从头讲过一遍。玉字辈的“宝玉”本该从玉旁，他名里的“玉”字就是这么来的；贾蓉、贾蔷、贾兰都是草字头。</p>
+  </div>
+</Base>
+
+<script>
+  const box = document.querySelector<HTMLElement>('[data-tree]')!;
+  const svg = box.querySelector<SVGSVGElement>('svg')!;
+  const labels = box.querySelector<HTMLElement>('.tlabels')!;
+  const W = +box.dataset.w!, H = +box.dataset.h!, rongLeft = +box.dataset.rong!;
+  let scale = 1;
+  const viewW = () => box.clientWidth - labels.offsetWidth;
+  const fit = () => Math.min(1.15, (viewW() - 8) / W);
+  function apply() {
+    svg.setAttribute('width', String(Math.round(W * scale)));
+    svg.setAttribute('height', String(Math.round(H * scale)));
+    labels.style.height = Math.round(H * scale) + 'px';
+    labels.querySelectorAll<HTMLElement>('.tlab').forEach(el => { el.style.top = Math.round(+el.dataset.mid! * scale - el.offsetHeight / 2) + 'px'; });
+  }
+  /* 桌面上整幅放得下就整幅显示；手机上按可读的大小显示，先停在宝玉那一带 */
+  const f0 = fit();
+  scale = f0 >= .78 ? f0 : .8;
+  apply();
+  if (f0 < .78) {
+    const bao = svg.querySelector<SVGGraphicsElement>('[data-n="贾宝玉"] circle');
+    if (bao) box.scrollLeft = Math.max(0, +bao.getAttribute('cx')! * scale - viewW() / 2);
+  }
+  const zoom = (fn: (s: number) => number) => {
+    const mid = (box.scrollLeft + viewW() / 2) / scale;
+    scale = Math.max(.4, Math.min(1.6, fn(scale)));
+    apply();
+    box.scrollLeft = mid * scale - viewW() / 2;
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach(b => b.addEventListener('click', () => zoom(s => s + .15 * +b.dataset.zoom!)));
+  document.querySelector('[data-fit]')!.addEventListener('click', () => { scale = Math.max(.3, fit()); apply(); box.scrollLeft = 0; });
+  document.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach(b => b.addEventListener('click', () => {
+    box.scrollTo({ left: b.dataset.jump === 'ning' ? 0 : Math.max(0, rongLeft * scale - 12), behavior: 'smooth' });
+  }));
+  /* 同一个人可能在图上出现两次（比如既是女儿又是妻子），悬停时一起亮 */
+  svg.querySelectorAll<SVGElement>('.tn').forEach(n => {
+    n.addEventListener('pointerenter', () => svg.querySelectorAll(`.tn[data-n="${n.dataset.n}"]`).forEach(x => x.classList.add('hl')));
+    n.addEventListener('pointerleave', () => svg.querySelectorAll('.tn.hl').forEach(x => x.classList.remove('hl')));
+  });
+  /* 鼠标拖动平移 */
+  let down: { x: number; y: number; l: number; t: number } | null = null, moved = false;
+  box.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse') return;
+    down = { x: e.clientX, y: e.clientY, l: box.scrollLeft, t: box.scrollTop };
+    moved = false;
+  });
+  addEventListener('pointermove', e => {
+    if (!down) return;
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { moved = true; box.classList.add('drag'); }
+    box.scrollLeft = down.l - dx;
+    box.scrollTop = down.t - dy;
+  });
+  addEventListener('pointerup', () => { down = null; box.classList.remove('drag'); });
+  box.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; } }, true);
+</script>
+
+<style>
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; font: 500 12.5px/1 var(--sans); color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .tree-shell { position: relative; margin: 22px auto 0; max-width: calc(var(--wrap) + 160px); padding: 0 var(--gutter); }
+  .tree-tools { position: absolute; top: 12px; right: calc(var(--gutter) + 12px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(6px); }
+  .tree-tools button { height: 32px; min-width: 32px; padding: 0 12px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-2); }
+  .tree-tools button:hover { background: var(--paper-2); color: var(--cinnabar); }
+  .tree-tools .sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
+  .tree-box { overflow: auto; max-height: min(86vh, 1000px); border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: grab; scrollbar-width: thin; }
+  .tree-box.drag { cursor: grabbing; }
+  .tree-box.drag a { pointer-events: none; }
+  .tscroll { display: flex; width: max-content; min-width: 100%; }
+  .tlabels { position: sticky; left: 0; width: 96px; flex: none; z-index: 2; background: var(--card); border-right: 1px solid var(--line); }
+  .tlab { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; pointer-events: none; }
+  .tlab i { font: normal 500 11px/1.4 var(--sans); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
+  .tlab b { font: 400 38px/1.15 var(--brush); color: var(--cinnabar); }
+  .tlab span { font: 500 11px/1.45 var(--sans); color: var(--ink-3); padding: 0 10px; }
+  .tsvg { display: block; margin: 0 auto; }
+  .tn { cursor: pointer; outline: none; }
+  .tn.xx { cursor: default; }
+  .tn text { dominant-baseline: central; text-anchor: middle; }
+  .tn-bg { fill: var(--cinnabar-soft); opacity: 0; transition: opacity .15s; }
+  .tn:hover .tn-bg, .tn:focus-visible .tn-bg, .tn.hl .tn-bg { opacity: 1; }
+  .tn.xx .tn-bg { display: none; }
+  .tn-dot { fill: var(--c); stroke: var(--card); stroke-width: 2.2; }
+  .tn.ghost .tn-dot { fill: var(--card); stroke: var(--k-lv); stroke-width: 1.4; }
+  .tn .nm { font-family: var(--serif); font-weight: 700; font-size: 19px; fill: var(--ink); transition: fill .15s; }
+  .tn.sp .nm { font-size: 16px; font-weight: 600; fill: var(--ink-2); }
+  .tn.ghost .nm { fill: var(--k-lv); }
+  .tn.xx .nm { fill: var(--ink-3); font-weight: 400; }
+  .tn .sb { font-family: var(--serif); font-size: 11px; fill: var(--ink-3); }
+  .tn-lab { font-family: var(--serif); font-weight: 700; font-size: 10.5px; fill: var(--cinnabar); }
+  .tn.ghost .tn-lab { fill: var(--k-lv); }
+  .tn:hover .nm, .tn:focus-visible .nm, .tn.hl .nm { fill: var(--cinnabar); }
+  .t-link { fill: none; stroke: var(--ink-3); stroke-width: 1.1; opacity: .85; }
+  .t-tie { fill: none; stroke-width: 1.2; }
+  .t-tie.w { stroke: var(--gold); }
+  .t-tie.c { stroke: var(--ink-3); stroke-dasharray: 3 3; }
+  .t-tie.l { stroke: var(--k-lv); stroke-dasharray: 3 3; }
+  .t-tie.bro { stroke: var(--gold); stroke-dasharray: 6 5; }
+  .gen-band { fill: var(--paper-2); opacity: .5; }
+  .gen-note { font-family: var(--serif); font-size: 11.5px; letter-spacing: .12em; fill: var(--ink-3); text-anchor: middle; }
+  .tr-house { font-family: var(--brush); font-size: 27px; letter-spacing: .5em; text-anchor: middle; fill: var(--c); opacity: .85; }
+
+  .gens { margin-top: 44px; }
+  .gens-h { font: 400 28px/1.2 var(--brush); margin-bottom: 16px; }
+  .gens ol { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .gens li { padding: 16px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); display: grid; gap: 4px; }
+  .gens li b { font: 400 40px/1 var(--brush); color: var(--cinnabar); }
+  .gens li span { font: 600 12px/1.5 var(--sans); letter-spacing: .14em; color: var(--ink-3); }
+  .gens li p { font-size: 14px; line-height: 1.75; color: var(--ink-2); }
+  @media (max-width: 760px) {
+    .tlabels { width: 46px; }
+    .tlab b { font-size: 28px; }
+    .tlab span { display: none; }
+    .gens ol { grid-template-columns: 1fr 1fr; }
+    .tree-tools { position: static; margin-bottom: 8px; width: fit-content; margin-left: auto; }
+  }
+</style>

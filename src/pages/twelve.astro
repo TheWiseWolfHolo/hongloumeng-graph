@@ -1,0 +1,229 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Seal from '../components/Seal.astro';
+import PersonLink from '../components/PersonLink.astro';
+import { TWELVE, TWELVE_MORE, byId, noteLabel } from '../lib/data.ts';
+import { portraitImage } from '../lib/portraits.ts';
+import { loadChapter, type Block } from '../lib/render-text.ts';
+
+/* 第五回原文：判词前后挂着的脂批，以及十二支曲的曲文 */
+const ch5 = loadChapter(5);
+const plain = (s: string) => s.replace(/[^一-龥]/g, '');
+const overlap = (a: string, b: string) => { const set = new Set(a); let n = 0; for (const c of b) if (set.has(c)) n++; return n / Math.max(1, b.length); };
+function notesFor(lines: string[]) {
+  const want = plain(lines.join(''));
+  const i = ch5.blocks.findIndex(b => b.t === 'poem' && overlap(plain(b.s), want) > .7);
+  if (i < 0) return [];
+  const out: { label: string; s: string }[] = [];
+  for (let k = i - 1; k >= 0 && ch5.blocks[k].t === 'pi'; k--) out.unshift({ label: noteLabel(ch5.blocks[k] as Required<Block>), s: ch5.blocks[k].s });
+  for (const x of ch5.blocks[i].n ?? []) out.push({ label: noteLabel(x), s: x.s });
+  return out;
+}
+
+const SONG_OF: Record<string, string[]> = {
+  红楼梦引子: [], 终身误: ['薛宝钗', '贾宝玉'], 枉凝眉: ['林黛玉', '贾宝玉'], 恨无常: ['贾元春'], 分骨肉: ['贾探春'], 乐中悲: ['史湘云'],
+  世难容: ['妙玉'], 喜冤家: ['贾迎春'], 虚花悟: ['贾惜春'], 聪明累: ['王熙凤'], 留余庆: ['巧姐'], 晚韶华: ['李纨'], 好事终: ['秦可卿'], 飞鸟各投林: []
+};
+const songs: { name: string; ids: string[]; text: string; notes: { label: string; s: string }[] }[] = [];
+ch5.blocks.forEach((b, i) => {
+  const m = /^第.+支，(?:收尾·)?(.+)：$/.exec(b.s);
+  if (b.t !== 'center' || !m) return;
+  const name = m[1].replace('悮', '误').replace('寃', '冤');
+  const body = ch5.blocks[i + 1];
+  const notes: { label: string; s: string }[] = [];
+  for (let k = i + 2; k < ch5.blocks.length && ch5.blocks[k].t === 'pi'; k++) notes.push({ label: noteLabel(ch5.blocks[k] as Required<Block>), s: ch5.blocks[k].s });
+  for (const x of body.n ?? []) notes.push({ label: noteLabel(x), s: x.s });
+  songs.push({ name, ids: SONG_OF[name] ?? [], text: body.s, notes });
+});
+const songAnchor = (name: string) => `song-${songs.findIndex(s => s.name === name) + 1}`;
+
+const BOOKS = [
+  { k: 'z', name: '正册', list: TWELVE, note: '十二钗正册，记贾府和亲戚家最要紧的十二位女子。' },
+  { k: 'f', name: '副册', list: TWELVE_MORE.filter(v => v.book === '副册'), note: '副册只翻到一页，是香菱。' },
+  { k: 'y', name: '又副册', list: TWELVE_MORE.filter(v => v.book === '又副册'), note: '又副册是丫鬟一流，宝玉先翻开的就是这一本。' }
+];
+const leaves = BOOKS.map(b => ({
+  ...b,
+  list: b.list.map(v => ({
+    v,
+    pics: v.ids.map(id => ({ id, img: portraitImage(byId.get(id)!.portrait) })).filter(x => x.img),
+    notes: notesFor(v.verse),
+    songs: (v.song ?? '').match(/《([^》]+)》/g)?.map(s => s.slice(1, -1)) ?? [],
+    fates: v.ids.map(id => byId.get(id)!).filter(p => p.fate || p.xu)
+  }))
+}));
+---
+<Base title="金陵十二钗" description="《红楼梦》第五回薄命司里的判词册：金陵十二钗正册、副册、又副册的画、判词与《红楼梦》十二支曲，附脂砚斋批语。" section="people" sub="twelve">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">人物 · 贰</span>
+        <h1 class="ink-in" style="--d:.1s">金陵十二钗</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">第五回，宝玉在太虚幻境的薄命司里，看见橱上封条写着“金陵十二钗正册”。册子每页一幅画，配几句诗，写的都是这些女子的命运。宝玉看不懂，警幻也不肯说破。</p>
+    </header>
+
+    <nav class="cabinet" role="tablist" aria-label="三本册子">
+      {BOOKS.map((b, i) => (
+        <button type="button" role="tab" class="seal-tab" data-book={b.k} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`book-${b.k}`}>
+          <span class="tab-paper">金陵十二钗{b.name}</span>
+        </button>
+      ))}
+    </nav>
+
+    {leaves.map((b, bi) => (
+      <section class="book" id={`book-${b.k}`} role="tabpanel" data-pane={b.k} hidden={bi !== 0}>
+        <p class="book-note muted">{b.note}</p>
+        {b.list.map(({ v, pics, notes, songs: sg, fates }, i) => (
+          <article class="leaf reveal" id={v.ids.join('-')} style={`--c:var(--g-${byId.get(v.ids[0])!.group})`}>
+            <figure class:list={['pic', { duo: pics.length > 1, bare: !pics.length }]}>
+              {pics.map(x => <a href={`/people/${x.id}/`} class="pic-a"><Image src={x.img!} width={420} height={630} alt={`${x.id}画像`} loading="lazy" /></a>)}
+              <figcaption><span class="cap-k">画</span>{v.pic}</figcaption>
+            </figure>
+            <div class="words">
+              <div class="verse kai" aria-label={v.verse.join('，')}>
+                {v.verse.map((l, j) => <span style={`--j:${j}`}>{l}</span>)}
+              </div>
+              {notes.length > 0 && (
+                <ul class="pi">
+                  {notes.map(n => <li><b>{n.label}</b>{n.s}</li>)}
+                </ul>
+              )}
+            </div>
+            <div class="info">
+              <h2>{v.ids.map((id, j) => <>{j > 0 && <span class="and">与</span>}<PersonLink id={id} /></>)}</h2>
+              <dl>
+                {sg.length > 0 && <><dt>曲</dt><dd>{sg.map(s => <a href={`#${songAnchor(s)}`}>《{s}》</a>)}</dd></>}
+                {v.flower && <><dt>花签</dt><dd>{v.flower}<small>第六十三回</small></dd></>}
+              </dl>
+              <details class="gloss spoil" data-ch="81">
+                <summary>判词怎么读，结局如何</summary>
+                <div class="spoil-body">
+                  <p>{v.gloss}</p>
+                  {fates.map(p => (
+                    <div class="fate">
+                      {p.fate && <p><b>{p.id} · 原意</b>{p.fate}</p>}
+                      {p.xu && <p class="xu"><b>{p.id} · 续书</b>{p.xu}</p>}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </div>
+          </article>
+        ))}
+      </section>
+    ))}
+
+    <section class="songs section" id="songs">
+      <div class="section-head reveal">
+        <div><span class="eyebrow">第五回</span><h2>红楼梦十二支曲</h2></div>
+        <p class="muted small">警幻命舞女演唱的新制曲子，连引子和收尾共十四支，每支对应一位女子。宝玉听了“散漫无稽，不见得好处”。</p>
+      </div>
+      <ol class="song-list">
+        {songs.map((s, i) => (
+          <li class="song reveal" id={`song-${i + 1}`}>
+            <h3><span class="song-n">{['引', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '尾'][i]}</span>{s.name}</h3>
+            {s.ids.length > 0 && <p class="song-who">{s.ids.map(id => <PersonLink id={id} />)}</p>}
+            <p class="song-text kai">{s.text}</p>
+            {s.notes.map(n => <p class="song-pi"><b>{n.label}</b>{n.s}</p>)}
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+</Base>
+
+<script>
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-book]')];
+  const show = (k: string, push = true) => {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.book === k)));
+    document.querySelectorAll<HTMLElement>('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== k; });
+    if (push) history.replaceState(null, '', k === 'z' ? location.pathname : `#${k}`);
+    document.querySelectorAll('[data-pane]:not([hidden]) .reveal').forEach(el => el.classList.add('in'));
+  };
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.book!)));
+  /* 从人物页或搜索带锚点进来：打开对应的册子 */
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === 'f' || h === 'y') show(h, false);
+  else if (h) {
+    const el = document.getElementById(h) ?? [...document.querySelectorAll<HTMLElement>('.leaf')].find(l => l.id.split('-').includes(h));
+    const pane = el?.closest<HTMLElement>('[data-pane]');
+    if (el && pane) { show(pane.dataset.pane!, false); el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); }
+  }
+</script>
+
+<style>
+  .cabinet { display: flex; gap: 18px; justify-content: center; margin: 30px 0 10px; }
+  .seal-tab { position: relative; padding: 0; background: none; transition: transform .4s var(--ease); }
+  .tab-paper { display: grid; place-items: center; width: 66px; height: 214px; background: #f6efdf; border: 1px solid #d8c9a6; box-shadow: 0 2px 0 #e3d6b8, var(--shadow); font: 400 22px/1 var(--brush); letter-spacing: .14em; color: #6c5b45; writing-mode: vertical-rl; transition: background .3s, color .3s, box-shadow .3s; }
+  :global(:root[data-theme="dark"]) .tab-paper { background: #2a2620; border-color: #4a4235; color: #b7a78a; box-shadow: 0 2px 0 #1c1915; }
+  .seal-tab:hover { transform: translateY(-4px); }
+  .seal-tab[aria-selected="true"] .tab-paper { background: var(--cinnabar); border-color: var(--cinnabar); color: #fff6ea; box-shadow: 0 10px 30px -10px var(--cinnabar); }
+  .book-note { text-align: center; margin: 22px 0 10px; font-size: 14.5px; }
+
+  .leaf { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: clamp(20px, 3.4vw, 48px); align-items: start; padding: clamp(28px, 4vw, 52px) 0; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 60px); }
+  .leaf.flash { animation: flash 2.4s var(--ease); }
+  @keyframes flash { 0%, 30% { background: var(--gold-soft); } }
+  .pic { margin: 0; display: grid; gap: 12px; width: clamp(220px, 22vw, 290px); }
+  .pic.duo { width: clamp(320px, 34vw, 460px); }
+  .pic.duo { grid-template-columns: 1fr 1fr; }
+  .pic-a { display: block; border-radius: 3px; overflow: hidden; box-shadow: var(--shadow); outline: 8px solid var(--card); outline-offset: -1px; }
+  .pic-a :global(img) { width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; transition: transform 1s var(--ease); }
+  .pic-a:hover :global(img) { transform: scale(1.04); }
+  .pic figcaption { grid-column: 1 / -1; font: 400 15px/1.85 var(--kai); color: var(--ink-2); }
+  .pic.bare figcaption { padding: 34px 26px; border: 1px solid var(--line-2); background: var(--card); font-size: 19px; }
+  .cap-k { font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--cinnabar); margin-right: 10px; }
+
+  .words { display: grid; gap: 18px; justify-items: center; }
+  .verse { writing-mode: vertical-rl; display: flex; flex-direction: column; font-size: clamp(24px, 2.4vw, 30px); letter-spacing: .28em; line-height: 1; color: var(--ink); padding: .4em 0; border-right: 1px solid color-mix(in srgb, var(--cinnabar) 22%, transparent); min-height: 10em; }
+  .verse span { padding: .6em .42em; border-left: 1px solid color-mix(in srgb, var(--cinnabar) 22%, transparent); }
+  .verse span:nth-child(2n) { padding-top: 1.8em; }
+  @media (prefers-reduced-motion: no-preference) {
+    .leaf.in .verse span { animation: ink-in 1.2s var(--ease-ink) both; animation-delay: calc(var(--j) * .18s); }
+  }
+  .pi { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-width: 16em; }
+  .pi li { font: 14.5px/1.75 var(--kai); color: var(--cinnabar); }
+  .pi b { font: 600 11px/1 var(--sans); letter-spacing: .08em; margin-right: 8px; opacity: .8; }
+
+  .info h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: 400 34px/1.2 var(--brush); }
+  .info h2 :global(a.person) { --pc: var(--c); }
+  .and { font: 500 14px/1 var(--sans); color: var(--ink-3); }
+  .info dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 18px 0; font-size: 15.5px; line-height: 1.8; }
+  .info dt { font: 700 11.5px/1.9 var(--sans); letter-spacing: .18em; color: var(--ink-3); }
+  .info dd { margin: 0; }
+  .info dd small { margin-left: 8px; color: var(--ink-3); font: 500 11.5px/1 var(--sans); }
+  .info dd a { color: var(--cinnabar); }
+  .gloss summary { cursor: pointer; list-style: none; font: 600 13.5px/1.4 var(--sans); color: var(--cinnabar); letter-spacing: .08em; }
+  .gloss summary::before { content: '▸ '; }
+  .gloss[open] summary::before { content: '▾ '; }
+  .gloss p { margin-top: 10px; font-size: 15.5px; line-height: 1.9; color: var(--ink-2); }
+  .fate p b { display: block; font: 700 12px/1.6 var(--sans); letter-spacing: .12em; color: var(--cinnabar); }
+  .fate p.xu { color: var(--ink-3); font-size: 14.5px; }
+  .fate p.xu b { color: var(--ink-3); }
+
+  .songs { margin-top: 30px; }
+  .song-list { list-style: none; margin: 0; padding: 0; columns: 2 380px; column-gap: 48px; }
+  .song { break-inside: avoid; padding: 22px 0 24px; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 60px); }
+  .song:target { background: var(--gold-soft); }
+  .song h3 { display: flex; align-items: baseline; gap: 12px; font: 400 26px/1.2 var(--brush); }
+  .song-n { font: 400 15px/1 var(--brush); color: var(--cinnabar); border: 1px solid currentColor; border-radius: 3px; padding: 4px 4px 3px; min-width: 1.6em; text-align: center; }
+  .song-who { display: flex; gap: 12px; margin-top: 6px; font-size: 14px; }
+  .song-text { margin-top: 12px; font-size: 17.5px; line-height: 2.05; color: var(--ink); }
+  .song-pi { margin-top: 8px; font: 14px/1.75 var(--kai); color: var(--cinnabar); }
+  .song-pi b { font: 600 11px/1 var(--sans); margin-right: 8px; opacity: .8; }
+
+  @media (max-width: 1100px) {
+    }
+  @media (max-width: 900px) {
+    .leaf { grid-template-columns: auto minmax(0, 1fr); }
+    .info { grid-column: 1 / -1; }
+  }
+  @media (max-width: 600px) {
+    .leaf { grid-template-columns: 1fr; }
+    .pic, .pic.duo { width: auto; max-width: 340px; margin: 0 auto; }
+    .pic.duo { max-width: none; }
+    .cabinet { gap: 12px; }
+    .tab-paper { width: 54px; height: 180px; font-size: 18px; }
+  }
+</style>

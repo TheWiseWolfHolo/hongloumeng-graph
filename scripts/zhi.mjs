@@ -19,7 +19,16 @@ export async function zhiIndex(cache, refresh) {
     writeFileSync(file, text);
   }
   /* *[[/第一回|第　一　回]]　甄士隱夢幻識通靈　賈雨村風塵懷閨秀 */
-  return [...text.matchAll(/^\*\[\[\/(第[^|\]]+回)\|[^\]]*\]\][\s　]*(.*)$/gm)].map(m => ({ page: m[1], title: m[2].replace(/-{([^}]*)}-/g, '$1').trim() }));
+  return [...text.matchAll(/^\*\[\[\/(第[^|\]]+回)\|[^\]]*\]\][\s　]*(.*)$/gm)].map(m => ({ page: m[1], title: noConv(m[2]).trim() }));
+}
+
+/* 维基的繁简转换标记：-{字}- 照写字，-{zh:余;zh-hant:餘;…}- 取 zh 那一项 */
+export function noConv(s) {
+  return s.replace(/-\{([^}]*)\}-/g, (_, x) => {
+    if (!/zh(-[a-z]+)?:/.test(x)) return x;
+    const pick = /(?:^|;)\s*zh\s*:([^;]*)/.exec(x) ?? /zh-hans\s*:([^;]*)/.exec(x) ?? /:([^;]*)/.exec(x);
+    return pick[1].trim();
+  });
 }
 
 export async function zhiRaw(cache, n, page, refresh) {
@@ -89,7 +98,9 @@ export function cleanZhi(wiki) {
   let s = wiki.replace(/\r/g, '').replace(/﻿/g, '');
   /* 第六十七回庚辰本缺，页面并列了列藏本和程高本两种文字，取列藏本 */
   s = s.replace(/^==程高本==[\s\S]*$/m, '');
-  s = s.replace(/-\{([^}]*)\}-/g, '$1');
+  s = noConv(s);
+  s = s.replace(/<\/?br\s*\/?>/gi, '\n');
+  s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1');
   s = s.replace(/<font style="display:none">[\s\S]*?<\/font>/g, '');
   s = s.replace(/<center>([\s\S]*?)<\/center>/g, '{{center|$1}}');
   s = s.replace(/<ref[^>]*\/>/g, '').replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, '').replace(/<references\s*\/>/g, '');
