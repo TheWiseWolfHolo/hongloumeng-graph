@@ -1,0 +1,8 @@
+---
+/* 人名链接：悬停出简介卡，下划线用家族色 */
+import { byId } from '../lib/data.ts';
+interface Props { id: string; label?: string; class?: string }
+const { id, label, class: cls } = Astro.props;
+const p = byId.get(id);
+---
+{p ? <a class:list={['person', cls]} href={`/people/${id}/`} data-peek style={`--pc:var(--g-${p.group})`}>{label ?? id}</a> : <span class={cls}>{label ?? id}</span>}

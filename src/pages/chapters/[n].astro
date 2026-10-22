@@ -1,0 +1,365 @@
+---
+import Base from '../../layouts/Base.astro';
+import Seal from '../../components/Seal.astro';
+import { CHAPTERS, chapter, castOf, eventsIn, byId, huiRange, isSequel } from '../../lib/data.ts';
+import { EVENT_KINDS } from '../../data/events.ts';
+import { loadChapter, renderChapter } from '../../lib/render-text.ts';
+
+export function getStaticPaths() {
+  return CHAPTERS.map(c => ({ params: { n: String(c.n) } }));
+}
+const n = +Astro.params.n!;
+const c = chapter(n);
+const text = loadChapter(n);
+const html = renderChapter(text);
+const cast = castOf(n, 60);
+const max = cast[0]?.[1] ?? 1;
+const events = eventsIn(n);
+const prev = n > 1 ? chapter(n - 1) : null;
+const next = n < 120 ? chapter(n + 1) : null;
+const sequel = isSequel(n);
+const noteCount = text.notes ?? 0;
+const minutes = Math.max(1, Math.round(c.chars / 450));
+const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.title.join(''));
+---
+<Base title={`${c.cn} ${c.title.join(' ')}`} description={`《红楼梦》${c.cn}原文：${c.title.join('，')}。${c.summary}`.slice(0, 160)} section="chapters" sub="list" bodyClass="pg-reader">
+  <div class="read-progress" aria-hidden="true"><i data-rp></i></div>
+  <div class:list={['reader wrap', { 'is-xu': sequel, 'has-zp': noteCount > 0 }]} data-reader data-n={n} data-zp="dot">
+    <aside class="side" aria-label="本回导读">
+      <div class="side-inner">
+        <nav class="side-nav" aria-label="翻回">
+          {prev ? <a href={`/chapters/${prev.n}/`} rel="prev">← {prev.cn}</a> : <span />}
+          <a href="/chapters/">回目</a>
+          {next ? <a href={`/chapters/${next.n}/`} rel="next">{next.cn} →</a> : <span />}
+        </nav>
+        <section class="side-sec">
+          <h2>本回提要</h2>
+          <p class="sum">{c.summary}</p>
+          {noteCount > 0 && <p class="side-zp">本回脂批 <b>{noteCount}</b> 条。正文里的朱圈就是批语所在，点一下展开。</p>}
+          {sequel && <p class="side-zp xu">续书，无脂批。</p>}
+        </section>
+        {events.length > 0 && (
+          <section class="side-sec">
+            <h2>本回大事</h2>
+            <ul class="side-evs">{events.map(e => <li style={`--k:${EVENT_KINDS[e.k]}`}><b>{e.t}</b><span>{huiRange(e.c)}</span></li>)}</ul>
+          </section>
+        )}
+        <section class="side-sec">
+          <h2>登场人物 <small>{cast.length} 位</small></h2>
+          <ul class="cast">
+            {cast.map(([id, v]) => {
+              const p = byId.get(id)!;
+              return <li style={`--pc:var(--g-${p.group});--w:${Math.max(6, (v / max) * 100)}%`}><a href={`/people/${id}/`} data-peek data-cast={id}>{id}</a><span class="cv">{v}</span><i /></li>;
+            })}
+          </ul>
+          <p class="hint">悬停名字，正文里这个人会亮起来</p>
+        </section>
+      </div>
+    </aside>
+
+    <article class="page" data-page>
+      <header class="ch-head">
+        <p class="ch-meta">
+          <span class:list={['src-tag', { xu: sequel }]}>{sequel ? '续书 · 程甲本' : '脂本 · 前八十回'}</span><span>约 {(c.chars / 1000).toFixed(1)} 千字</span><span>读完约 {minutes} 分钟</span>
+        </p>
+        <h1 class="ch-cn ink-in">{c.cn}</h1>
+        <p class="couplet ink-in" style="--d:.2s"><span>{c.title[0]}</span><span>{c.title[1]}</span></p>
+        {altTitles.length > 0 && (
+          <details class="variants">
+            <summary>其他版本的回目</summary>
+            <ul>{altTitles.map(v => <li><span>{v.text}</span><small>{v.from}</small></li>)}</ul>
+          </details>
+        )}
+      </header>
+
+      {sequel && (
+        <aside class="xu-banner">
+          <b>后四十回续书</b>
+          <p>这一回不出自曹雪芹之手。程伟元、高鹗在乾隆五十六年把它和前八十回一起刊行，通常认为是他人续写。情节可作参考，人物结局和前八十回的伏笔、脂批透露的原意多有出入。</p>
+        </aside>
+      )}
+      <div class="controls" role="toolbar" aria-label="阅读设置">
+        {noteCount > 0 && (
+          <div class="ctl-group zp-modes" role="group" aria-label="脂批显示方式">
+            <span class="zp-label">脂批</span>
+            <button type="button" data-zp="off" aria-pressed="false">隐</button>
+            <button type="button" data-zp="dot" aria-pressed="true">圈</button>
+            <button type="button" data-zp="full" aria-pressed="false">显</button>
+          </div>
+        )}
+        <div class="ctl-group" role="group" aria-label="字号">
+          <button type="button" data-size="-1" aria-label="字小一点">小</button>
+          <button type="button" data-size="1" aria-label="字大一点">大</button>
+        </div>
+        <button type="button" class="ctl" data-names aria-pressed="true">人名标注</button>
+        <button type="button" class="ctl" data-vertical aria-pressed="false">竖排</button>
+      </div>
+
+      <div class="text" data-text set:html={html} />
+
+      <footer class="ch-end">
+        <Seal text="终" size={36} round />
+        <nav class="ch-pager" aria-label="上一回与下一回">
+          {prev ? <a href={`/chapters/${prev.n}/`} class="cp prev"><span class="muted small">上一回 · {prev.cn}</span><span class="cpt">{prev.title[0]}</span><span class="cpt">{prev.title[1]}</span></a> : <span />}
+          {next ? <a href={`/chapters/${next.n}/`} class="cp next"><span class="muted small">下一回 · {next.cn}</span><span class="cpt">{next.title[0]}</span><span class="cpt">{next.title[1]}</span></a> : <a href="/chapters/" class="cp next"><span class="muted small">全书完</span><span class="cpt">回到回目</span></a>}
+        </nav>
+      </footer>
+    </article>
+  </div>
+</Base>
+
+<script>
+  import { store } from '../../client/site.ts';
+  const reader = document.querySelector<HTMLElement>('[data-reader]')!;
+  const n = +reader.dataset.n!;
+  const text = document.querySelector<HTMLElement>('[data-text]')!;
+  const root = document.documentElement;
+
+  /* 字号与排法记在本机 */
+  let size = +(store.get('hlm-size') || 0);
+  const applySize = () => { text.style.setProperty('--fs-step', String(size)); };
+  document.querySelectorAll<HTMLButtonElement>('[data-size]').forEach(b => b.addEventListener('click', () => {
+    size = Math.max(-2, Math.min(4, size + +b.dataset.size!));
+    store.set('hlm-size', String(size));
+    applySize();
+  }));
+  applySize();
+
+  const namesBtn = document.querySelector<HTMLButtonElement>('[data-names]')!;
+  const setNames = (on: boolean) => { text.classList.toggle('plain', !on); namesBtn.setAttribute('aria-pressed', String(on)); store.set('hlm-names', on ? null : 'off'); };
+  namesBtn.addEventListener('click', () => setNames(namesBtn.getAttribute('aria-pressed') !== 'true'));
+  if (store.get('hlm-names') === 'off') setNames(false);
+
+  const vBtn = document.querySelector<HTMLButtonElement>('[data-vertical]')!;
+  const setVertical = (on: boolean) => {
+    reader.classList.toggle('vertical', on);
+    vBtn.setAttribute('aria-pressed', String(on));
+    store.set('hlm-vertical', on ? '1' : null);
+    if (on) text.scrollLeft = text.scrollWidth;
+  };
+  vBtn.addEventListener('click', () => setVertical(vBtn.getAttribute('aria-pressed') !== 'true'));
+  if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true);
+  /* 竖排时滚轮横着翻 */
+  text.addEventListener('wheel', e => {
+    if (!reader.classList.contains('vertical') || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    text.scrollLeft -= e.deltaY;
+  }, { passive: false });
+
+  /* 脂批：隐去、只留朱圈、全部展开 */
+  const zpBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-zp]')];
+  const setZp = (mode: string) => {
+    reader.dataset.zp = mode;
+    zpBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.zp === mode)));
+    store.set('hlm-zp', mode === 'dot' ? null : mode);
+  };
+  zpBtns.forEach(b => b.addEventListener('click', () => setZp(b.dataset.zp!)));
+  const savedZp = store.get('hlm-zp');
+  if (savedZp === 'off' || savedZp === 'full') setZp(savedZp);
+  text.addEventListener('click', e => {
+    const zb = (e.target as HTMLElement).closest<HTMLElement>('.zb');
+    if (zb) { zb.classList.toggle('open'); return; }
+    const dot = (e.target as HTMLElement).closest<HTMLButtonElement>('.zp-dot');
+    if (!dot) return;
+    const zp = dot.parentElement!;
+    const open = !zp.classList.contains('open');
+    zp.classList.toggle('open', open);
+    dot.setAttribute('aria-expanded', String(open));
+  });
+
+  /* 侧栏人名悬停，正文里同一人亮起来 */
+  const style = document.createElement('style');
+  document.head.append(style);
+  document.querySelectorAll<HTMLElement>('[data-cast]').forEach(a => {
+    a.addEventListener('pointerenter', () => { style.textContent = `.text a.nm[data-id="${a.dataset.cast}"]{background:color-mix(in srgb,var(--pc) 22%,transparent);color:var(--ink)!important;border-radius:2px}`; });
+    a.addEventListener('pointerleave', () => { style.textContent = ''; });
+  });
+
+  /* 阅读进度条，并记下读到哪里 */
+  const bar = document.querySelector<HTMLElement>('[data-rp]')!;
+  let saveT = 0;
+  const onScroll = () => {
+    let p: number;
+    if (reader.classList.contains('vertical')) {
+      /* 竖排从右往左，scrollLeft 从 0 往负数走 */
+      p = Math.min(1, Math.abs(text.scrollLeft) / Math.max(1, text.scrollWidth - text.clientWidth));
+    } else {
+      const r = text.getBoundingClientRect();
+      p = Math.min(1, Math.max(0, (innerHeight * .4 - r.top) / r.height));
+    }
+    bar.style.transform = `scaleX(${p})`;
+    clearTimeout(saveT);
+    saveT = window.setTimeout(() => store.set('hlm-last', JSON.stringify({ n, p: +p.toFixed(3) })), 400);
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  text.addEventListener('scroll', onScroll, { passive: true });
+
+  /* 从首页“接着读”进来，回到上次的位置 */
+  try {
+    const last = JSON.parse(store.get('hlm-last') || 'null');
+    const params = new URLSearchParams(location.search);
+    if (last?.n === n && last.p > .02 && last.p < .98 && !location.hash && !params.get('q') && !reader.classList.contains('vertical')) {
+      const r = text.getBoundingClientRect();
+      scrollTo({ top: scrollY + r.top + r.height * last.p - innerHeight * .4, behavior: 'instant' as ScrollBehavior });
+    }
+  } catch { /* 记录坏了就从头读 */ }
+
+  /* 从搜索进来：把原文里的这句话标出来 */
+  const q = new URLSearchParams(location.search).get('q');
+  if (q) {
+    const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+    /* 人名链接会把一句话切成几段，先按整段文字找，再落回各个文本节点 */
+    let full = '';
+    const starts: number[] = [];
+    for (const t of nodes) { starts.push(full.length); full += t.data; }
+    let first: HTMLElement | null = null;
+    let i = full.indexOf(q);
+    const marks: [number, number][] = [];
+    while (i >= 0) { marks.push([i, i + q.length]); i = full.indexOf(q, i + q.length); }
+    for (let k = nodes.length - 1; k >= 0; k--) {
+      const t = nodes[k], a = starts[k], b = a + t.data.length;
+      for (const [s, e] of [...marks].reverse()) {
+        if (e <= a || s >= b) continue;
+        const from = Math.max(s, a) - a, to = Math.min(e, b) - a;
+        const range = document.createRange();
+        range.setStart(t, from);
+        range.setEnd(t, to);
+        const m = document.createElement('mark');
+        m.className = 'hit';
+        range.surroundContents(m);
+        first = m;
+      }
+    }
+    if (first) setTimeout(() => first!.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior }), 60);
+  }
+  onScroll();
+</script>
+
+<style>
+  .read-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 60; pointer-events: none; }
+  .read-progress i { display: block; height: 100%; background: var(--cinnabar); transform: scaleX(0); transform-origin: left; transition: transform .15s linear; }
+  .reader { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); padding-top: 26px; align-items: start; }
+  .side { position: sticky; top: calc(var(--header-h) + 54px); max-height: calc(100vh - var(--header-h) - 74px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; padding-right: 6px; }
+  .side-nav { display: flex; justify-content: space-between; font: 600 13px/1 var(--sans); color: var(--ink-3); padding-bottom: 16px; border-bottom: 1px solid var(--line); letter-spacing: .04em; }
+  .side-nav a:hover { color: var(--cinnabar); }
+  .side-sec { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .side-sec h2 { font: 700 12px/1 var(--sans); letter-spacing: .26em; color: var(--ink-3); margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .side-sec h2 small { font-weight: 500; letter-spacing: .05em; }
+  .sum { font-size: 14px; line-height: 1.9; color: var(--ink-2); }
+  .side-evs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .side-evs li { display: grid; padding-left: 12px; border-left: 2px solid var(--k); }
+  .side-evs b { font-size: 14.5px; }
+  .side-evs span { font: 500 11.5px/1.6 var(--sans); color: var(--ink-3); }
+  .cast { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .cast li { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 3px 6px; font-size: 14.5px; border-radius: 3px; overflow: hidden; }
+  .cast li i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--w); background: var(--pc); opacity: .1; z-index: -1; }
+  .cast li:hover i { opacity: .22; }
+  .cast a:hover { color: var(--pc); }
+  .cv { font: 500 11.5px/1 var(--sans); color: var(--ink-3); }
+  .hint { font: 500 11.5px/1.6 var(--sans); color: var(--ink-4); margin-top: 10px; }
+
+  .page { min-width: 0; }
+  .ch-head { text-align: center; padding: 24px 0 34px; }
+  .ch-meta { display: flex; justify-content: center; gap: 18px; font: 600 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); flex-wrap: wrap; }
+  .ch-cn { font: 400 clamp(52px, 7vw, 84px)/1 var(--brush); color: var(--cinnabar); margin: 22px 0 18px; letter-spacing: .08em; }
+  .couplet { display: grid; justify-content: center; gap: 4px; font-size: clamp(21px, 2.4vw, 28px); font-weight: 700; letter-spacing: .26em; }
+  .couplet span:last-child { padding-left: 2.2em; }
+  .variants { margin-top: 18px; font: 500 13px/1.6 var(--sans); color: var(--ink-3); }
+  .variants summary { cursor: pointer; list-style: none; text-decoration: underline dotted; text-underline-offset: 4px; }
+  .variants ul { list-style: none; padding: 0; margin: 10px auto 0; display: grid; gap: 6px; max-width: 36em; text-align: left; }
+  .variants li { display: grid; grid-template-columns: auto 1fr; gap: 12px; font-family: var(--serif); font-size: 14.5px; color: var(--ink-2); }
+  .variants small { color: var(--ink-4); font-family: var(--sans); font-size: 12px; }
+
+  .controls { position: sticky; top: calc(var(--header-h) + 50px); z-index: 4; display: flex; justify-content: center; gap: 8px; margin: 0 auto 30px; width: fit-content; padding: 5px; border-radius: 999px; background: color-mix(in srgb, var(--card) 90%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(8px); transition: top .45s var(--ease); }
+  :global(.site-header.hide) ~ main .controls, :global(.site-header.hide) ~ main .side { top: 12px; }
+  .ctl-group { display: flex; }
+  .controls button { height: 32px; padding: 0 14px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-2); letter-spacing: .06em; }
+  .controls button:hover { background: var(--paper-2); }
+  .controls .ctl[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+  .text { --fs-step: 0; font-size: calc(19px + var(--fs-step) * 1.5px); line-height: 2.05; max-width: 34em; margin: 0 auto; letter-spacing: .02em; text-align: justify; }
+  .text :global(p) { text-indent: 2em; margin: 0 0 1.05em; hanging-punctuation: allow-end; }
+  .text :global(p.center) { text-indent: 0; text-align: center; font: 600 .82em/1.8 var(--sans); color: var(--ink-3); letter-spacing: .2em; margin-top: 1.6em; }
+  .text :global(.poem) { display: grid; justify-content: center; gap: .1em; margin: 1.2em 0 1.6em; font-family: var(--kai); font-size: 1.04em; color: var(--ink); text-align: left; padding: .6em 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .text :global(.fig) { display: flex; flex-direction: column; align-items: center; gap: .3em; width: fit-content; margin: 1em auto; padding: 1em 1.6em; border: 3px double var(--gold); border-radius: 50% / 40%; font-family: var(--brush); font-size: 1.2em; color: var(--gold); writing-mode: vertical-rl; flex-direction: row; letter-spacing: .3em; }
+  .text :global(a.nm) { color: inherit; background-image: linear-gradient(color-mix(in srgb, var(--pc) 55%, transparent), color-mix(in srgb, var(--pc) 55%, transparent)); background-size: 100% 1px; background-position: 0 92%; background-repeat: no-repeat; transition: color .2s, background-size .2s; }
+  .text :global(a.nm:hover) { color: var(--pc); background-size: 100% 2px; }
+  .text.plain :global(a.nm) { background-image: none; pointer-events: none; }
+  .text :global(mark.hit) { background: color-mix(in srgb, var(--gold) 38%, transparent); color: inherit; border-radius: 2px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 38%, transparent); }
+
+  .ch-end { display: grid; justify-items: center; gap: 30px; margin-top: 60px; }
+  .ch-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+  .cp { display: grid; gap: 6px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 8px; transition: border-color .2s, transform .3s var(--ease), box-shadow .3s; }
+  .cp:hover { border-color: var(--cinnabar); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .cp.next { text-align: right; }
+  .cpt { font-size: 17px; font-weight: 700; letter-spacing: .1em; }
+
+  /* ---- 脂批 ---- */
+  .src-tag { color: var(--cinnabar); }
+  .src-tag.xu { color: var(--ink-3); }
+  .side-zp { margin-top: 10px; font: 500 12.5px/1.7 var(--sans); color: var(--ink-3); }
+  .side-zp b { color: var(--cinnabar); font-size: 14px; }
+  .zp-modes { align-items: center; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--line); }
+  .zp-label { font: 700 12px/1 var(--sans); letter-spacing: .14em; color: var(--cinnabar); padding: 0 8px 0 10px; }
+  .controls .zp-modes button { padding: 0 10px; font-family: var(--kai); font-size: 14.5px; }
+  .controls .zp-modes button[aria-pressed="true"] { background: var(--cinnabar); color: #fff; }
+  .text :global(.zp) { --zc: var(--cinnabar); }
+  .text :global(.zp.late) { --zc: color-mix(in srgb, var(--cinnabar) 55%, var(--ink-3)); }
+  .text :global(.zp-dot) { display: inline-block; width: .5em; height: .5em; margin: 0 .06em; border: 1.5px solid var(--zc); border-radius: 50%; vertical-align: .55em; cursor: pointer; padding: 0; transition: transform .2s, background .2s; }
+  .text :global(.zp-dot:hover), .text :global(.zp.open .zp-dot) { background: var(--zc); transform: scale(1.25); }
+  .text :global(.zp-text) { display: none; font: .72em/1.75 var(--kai); color: var(--zc); letter-spacing: .02em; text-indent: 0; }
+  .text :global(.zp-text b) { font: 600 .82em/1 var(--sans); letter-spacing: .08em; margin-right: .5em; opacity: .75; white-space: nowrap; }
+  .text :global(.zp.open .zp-text) { display: inline; }
+  .text :global(.zp.open .zp-text)::before { content: '〔'; }
+  .text :global(.zp.open .zp-text)::after { content: '〕'; }
+  .reader[data-zp="full"] .text :global(.zp-dot) { display: none; }
+  .reader[data-zp="full"] .text :global(.zp-text) { display: inline; }
+  .reader[data-zp="full"] .text :global(.zp-text)::before { content: '〔'; }
+  .reader[data-zp="full"] .text :global(.zp-text)::after { content: '〕'; }
+  .reader[data-zp="off"] .text :global(.zp), .reader[data-zp="off"] .text :global(.zb) { display: none; }
+  .text :global(.zb) { margin: 1.4em 0; padding: .9em 1.1em; border: 1px solid color-mix(in srgb, var(--cinnabar) 30%, transparent); border-radius: 4px; background: color-mix(in srgb, var(--cinnabar) 4%, transparent); font: .8em/1.95 var(--kai); color: var(--cinnabar); text-align: left; }
+  .text :global(.zb.late) { color: color-mix(in srgb, var(--cinnabar) 55%, var(--ink-3)); border-color: var(--line-2); }
+  .text :global(.zb-label) { display: block; font: 700 .78em/1 var(--sans); letter-spacing: .2em; margin-bottom: .7em; opacity: .8; }
+  .reader[data-zp="dot"] .text :global(.zb .zb-text) { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .reader[data-zp="dot"] .text :global(.zb.open .zb-text) { display: block; }
+  /* 宽屏上眉批写在页边 */
+  @media (min-width: 1240px) {
+    .reader.has-zp:not(.vertical):not([data-zp="off"]) .page { padding-right: 13em; }
+    .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei) { float: right; clear: right; width: 11em; margin-right: -12.5em; text-indent: 0; }
+    .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei .zp-dot) { display: none; }
+    .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei .zp-text) { display: block; font-size: .7em; line-height: 1.7; padding-left: .8em; border-left: 1px solid color-mix(in srgb, var(--cinnabar) 35%, transparent); }
+    .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei .zp-text)::before, .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei .zp-text)::after { content: none; }
+    .reader:not(.vertical):not([data-zp="off"]) .text :global(.zp-mei .zp-text b) { display: block; margin-bottom: .3em; }
+  }
+  /* 续书 */
+  .xu-banner { max-width: 34em; margin: 0 auto 28px; padding: 14px 18px; border-left: 3px solid var(--ink-4); background: var(--paper-2); }
+  .xu-banner b { font: 700 13px/1 var(--sans); letter-spacing: .2em; color: var(--ink-2); }
+  .xu-banner p { margin-top: 8px; font-size: 14px; line-height: 1.85; color: var(--ink-3); }
+  .is-xu .ch-cn { color: var(--ink-3); }
+  .is-xu .text { color: var(--ink-2); }
+
+  /* 竖排：从右往左翻，像线装书 */
+  .reader.vertical { grid-template-columns: 1fr; }
+  .reader.vertical .side { display: none; }
+  .reader.vertical .text { writing-mode: vertical-rl; max-width: none; height: min(36em, calc(100vh - var(--header-h) - 190px)); overflow-x: auto; overflow-y: hidden; padding: 1.2em 1em; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); background-image: linear-gradient(to left, transparent calc(100% - 1px), color-mix(in srgb, var(--cinnabar) 12%, transparent) 0); background-size: 2.05em 100%; background-attachment: local; line-height: 2.05; scrollbar-width: thin; }
+  .reader.vertical .text :global(p) { margin: 0 0 0 1em; }
+  .reader.vertical .text :global(.poem) { border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0 .6em; margin: 0 .6em; }
+  .reader.vertical .text :global(.fig) { writing-mode: horizontal-tb; flex-direction: column; }
+  .reader.vertical .ch-head { padding-bottom: 20px; }
+
+  @media (max-width: 960px) {
+    .reader { grid-template-columns: 1fr; }
+    .side { position: static; max-height: none; order: 2; padding: 0; }
+    .side-nav { display: none; }
+    .cast { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .text { font-size: calc(18px + var(--fs-step) * 1.5px); line-height: 1.95; }
+    .couplet { font-size: 19px; letter-spacing: .14em; }
+    .ch-pager { grid-template-columns: 1fr; }
+    .cp.next { text-align: left; }
+    .controls { top: calc(var(--header-h) + 50px); }
+  }
+</style>

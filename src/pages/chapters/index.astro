@@ -1,0 +1,114 @@
+---
+import Base from '../../layouts/Base.astro';
+import { CHAPTERS, TOTAL_CHARS, castOf, eventsIn, byId, cn } from '../../lib/data.ts';
+
+/* 十回一卷，前八十回八卷，续书四卷 */
+const vols = Array.from({ length: 12 }, (_, i) => ({
+  i,
+  from: i * 10 + 1,
+  to: i * 10 + 10,
+  list: CHAPTERS.slice(i * 10, i * 10 + 10).map(c => ({ ...c, cast: castOf(c.n, 6), ev: eventsIn(c.n).filter(e => e.c[0] === c.n) }))
+}));
+const maxChars = Math.max(...CHAPTERS.map(c => c.chars));
+---
+<Base title="一百二十回" description={`《红楼梦》一百二十回回目、提要、登场人物与原文，共约 ${Math.round(TOTAL_CHARS / 10000)} 万字。`} section="chapters" sub="list">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">回目 · 壹</span>
+        <h1 class="ink-in" style="--d:.1s">一百二十回</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">前八十回用庚辰本，后四十回用程甲本，都取自维基文库的汇校本。每回附一段提要和登场最多的几个人，点进去读原文。</p>
+    </header>
+
+    <nav class="vol-nav" aria-label="按卷跳转">
+      {vols.map(v => <a href={`#v${v.i + 1}`} class:list={[{ xu: v.from > 80 }]}><b>{cn(v.from)}</b><small>至{cn(v.to)}</small></a>)}
+      <label class="jump"><span class="sr-only">跳到第几回</span><input type="number" min="1" max="120" placeholder="第几回" data-jump inputmode="numeric"></label>
+    </nav>
+
+    {vols.map(v => (
+      <section class="vol" id={`v${v.i + 1}`}>
+        <header class="vol-head reveal">
+          <span class="vol-n">{v.from > 80 ? '续' : '卷'}{cn(v.i + 1)}</span>
+          <h2>第{cn(v.from)}回至第{cn(v.to)}回</h2>
+          {v.from === 81 && <p class="xu-note">以下四十回是续书，一般认为出自高鹗、程伟元整理。人物结局和前八十回的伏笔对不上的地方，人物页里会另外注明。</p>}
+        </header>
+        <ol class="chs">
+          {v.list.map((c, i) => (
+            <li class="ch reveal" style={`--d:${i * 30}ms`} data-n={c.n}>
+              <a href={`/chapters/${c.n}/`} class="ch-link">
+                <span class="ch-cn">{c.cn}</span>
+                <span class="ch-title"><span>{c.title[0]}</span><span>{c.title[1]}</span></span>
+                <span class="ch-len" title={`约 ${(c.chars / 1000).toFixed(1)} 千字`}><i style={`--w:${(c.chars / maxChars) * 100}%`} /></span>
+              </a>
+              <div class="ch-more">
+                <p class="ch-sum spoil" data-ch={c.n}><span class="spoil-body">{c.summary}</span></p>
+                <p class="ch-cast">
+                  {c.cast.map(([id]) => <a href={`/people/${id}/`} data-peek style={`--pc:var(--g-${byId.get(id)!.group})`}>{id}</a>)}
+                  {c.ev.map(e => <span class="ch-ev">{e.t}</span>)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+</Base>
+
+<script>
+  const jump = document.querySelector<HTMLInputElement>('[data-jump]')!;
+  jump.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const n = Math.round(+jump.value);
+    if (n >= 1 && n <= 120) location.href = `/chapters/${n}/`;
+  });
+  /* 标出上次读到的那回 */
+  try {
+    const last = JSON.parse(localStorage.getItem('hlm-last') || 'null');
+    if (last?.n) document.querySelector(`.ch[data-n="${last.n}"]`)?.classList.add('last');
+  } catch { /* 没有记录就不标 */ }
+</script>
+
+<style>
+  .vol-nav { position: sticky; top: calc(var(--header-h) + 42px); z-index: 5; display: flex; gap: 4px; align-items: center; padding: 12px 0; margin: 10px 0 0; overflow-x: auto; scrollbar-width: none; background: linear-gradient(var(--paper) 85%, transparent); transition: top .45s var(--ease); }
+  :global(.site-header.hide) ~ main .vol-nav { top: 0; }
+  .vol-nav a { display: grid; justify-items: center; gap: 3px; padding: 8px 12px; border-radius: 6px; flex: none; color: var(--ink-2); }
+  .vol-nav a:hover { background: var(--paper-2); color: var(--cinnabar); }
+  .vol-nav b { font: 400 18px/1 var(--brush); }
+  .vol-nav small { font: 500 10.5px/1 var(--sans); color: var(--ink-3); }
+  .vol-nav a.xu b { color: var(--ink-3); }
+  .jump { margin-left: auto; flex: none; }
+  .jump input { width: 92px; height: 38px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); font-size: 14px; text-align: center; -moz-appearance: textfield; }
+  .jump input::-webkit-inner-spin-button { display: none; }
+  .jump input:focus { outline: none; border-color: var(--cinnabar); }
+
+  .vol { padding-top: 40px; scroll-margin-top: calc(var(--header-h) + 110px); }
+  .vol-head { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; align-items: baseline; padding-bottom: 14px; border-bottom: 1px solid var(--line-2); }
+  .vol-n { font: 400 34px/1 var(--brush); color: var(--cinnabar); }
+  .vol-head h2 { font: 600 15px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); }
+  .xu-note { grid-column: 1 / -1; margin-top: 10px; font-size: 14px; line-height: 1.85; color: var(--ink-3); max-width: 46em; padding: 10px 14px; border-left: 2px solid var(--gold); background: var(--gold-soft); }
+  .chs { list-style: none; margin: 0; padding: 0; }
+  .ch { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 8px 40px; padding: 18px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .ch.last::before { content: '上次读到'; position: absolute; left: -2px; top: -9px; font: 700 10.5px/1 var(--sans); letter-spacing: .1em; color: #fff; background: var(--cinnabar); padding: 4px 6px; border-radius: 3px; }
+  .ch-link { display: grid; grid-template-columns: 7.2em minmax(0, 1fr); gap: 4px 14px; align-items: baseline; }
+  .ch-cn { font: 400 21px/1.2 var(--brush); color: var(--ink-3); transition: color .2s; }
+  .ch-title { display: grid; gap: 2px; font-size: 18px; font-weight: 700; letter-spacing: .1em; line-height: 1.6; transition: color .2s; }
+  .ch-title span:last-child { padding-left: 1.4em; }
+  .ch-link:hover .ch-cn, .ch-link:hover .ch-title { color: var(--cinnabar); }
+  .ch-len { grid-column: 2; height: 2px; background: var(--line); margin-top: 8px; max-width: 220px; }
+  .ch-len i { display: block; width: var(--w); height: 100%; background: var(--ink-4); }
+  .ch-more { display: grid; gap: 10px; align-content: start; }
+  .ch-sum { font-size: 14.5px; line-height: 1.9; color: var(--ink-2); }
+  .ch-cast { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13.5px; }
+  .ch-cast a { color: var(--ink-2); border-bottom: 1px solid color-mix(in srgb, var(--pc) 50%, transparent); }
+  .ch-cast a:hover { color: var(--pc); }
+  .ch-ev { font: 600 11.5px/1 var(--sans); padding: 4px 8px; border-radius: 3px; background: var(--cinnabar-soft); color: var(--cinnabar); align-self: center; }
+  @media (max-width: 860px) {
+    .ch { grid-template-columns: 1fr; }
+    .vol-nav { position: static; }
+    .ch-link { grid-template-columns: 5.6em minmax(0, 1fr); }
+    .ch-cn { font-size: 18px; }
+    .ch-title { font-size: 16.5px; letter-spacing: .06em; }
+  }
+</style>

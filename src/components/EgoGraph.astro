@@ -1,0 +1,74 @@
+---
+/* 一个人的亲友圈：本人居中，亲友按关系类别围成一圈，人多时分内外两圈。 */
+import { tiesOf, byId, TYPE_ORDER, REL_TYPES, RANK, type RelType } from '../lib/data.ts';
+interface Props { id: string }
+const { id } = Astro.props;
+const me = byId.get(id)!;
+const ties = tiesOf(id)
+  .filter(t => byId.has(t.other))
+  .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || RANK[byId.get(a.other)!.tier] - RANK[byId.get(b.other)!.tier]);
+const n = ties.length;
+const two = n > 16;
+const S = 640, C = S / 2;
+const R1 = two ? 168 : 200, R2 = 262;
+const nodes = ties.map((t, i) => {
+  const a = -Math.PI / 2 + (i / Math.max(n, 1)) * Math.PI * 2;
+  const r = two ? (i % 2 ? R1 : R2) : R1;
+  const x = C + Math.cos(a) * r, y = C + Math.sin(a) * r;
+  const p = byId.get(t.other)!;
+  const right = Math.cos(a) > .25, left = Math.cos(a) < -.25;
+  const lx = x + Math.cos(a) * 12, ly = y + Math.sin(a) * 12 + (Math.sin(a) > .5 ? 10 : Math.sin(a) < -.5 ? -2 : 4);
+  /* 连线略弯，像毛笔带过 */
+  const mx = (C + x) / 2 + Math.cos(a + Math.PI / 2) * 14, my = (C + y) / 2 + Math.sin(a + Math.PI / 2) * 14;
+  return { ...t, p, x, y, lx, ly, anchor: right ? 'start' : left ? 'end' : 'middle', d: `M${C},${C} Q${mx},${my} ${x},${y}` };
+});
+const usedTypes = TYPE_ORDER.filter(t => ties.some(x => x.type === t));
+const typeColor: Record<RelType, string> = { b: 'var(--g-rong)', m: 'var(--k-lv)', in: 'var(--g-ning)', sv: 'var(--ink-3)', lv: 'var(--k-lv)', fr: 'var(--g-lin)', ri: 'var(--ink)', my: 'var(--g-myth)' };
+---
+{n > 0 && (
+<figure class="ego reveal">
+  <svg viewBox={`-60 -20 ${S + 120} ${S + 40}`} role="img" aria-label={`${id}的亲友关系图，共${n}人`}>
+    <circle cx={C} cy={C} r={R1} class="ring" />
+    {two && <circle cx={C} cy={C} r={R2} class="ring" />}
+    {nodes.map((nd, i) => (
+      <a href={`/people/${nd.other}/`} class={`nd t-${nd.type}`} style={`--tc:${typeColor[nd.type]};--gc:var(--g-${nd.p.group});--i:${i}`} data-peek>
+        <path d={nd.d} class="ln" stroke-dasharray={REL_TYPES[nd.type].dash || undefined} />
+        <circle cx={nd.x} cy={nd.y} r={nd.p.tier === 'c' ? 7 : 5} class="dot" />
+        <text x={nd.lx} y={nd.ly} text-anchor={nd.anchor} class="nm">{nd.other}<tspan class="role" dx="4">{nd.role}</tspan></text>
+      </a>
+    ))}
+    <g class="me">
+      <circle cx={C} cy={C} r="46" style={`fill:var(--g-${me.group})`} filter="url(#rough)" />
+      <text x={C} y={C + (id.length > 3 ? 7 : 10)} text-anchor="middle" style={`font-size:${id.length > 3 ? 20 : 28}px`}>{id}</text>
+    </g>
+  </svg>
+  <figcaption class="ego-legend">
+    {usedTypes.map(t => <span class={`leg leg-${t}`} style={`--tc:${typeColor[t]}`}><i />{REL_TYPES[t].name}</span>)}
+  </figcaption>
+</figure>
+)}
+
+<style>
+  .ego { margin: 0; }
+  .ego svg { width: 100%; height: auto; overflow: visible; }
+  .ring { fill: none; stroke: var(--line); stroke-dasharray: 2 6; }
+  .ln { fill: none; stroke: var(--tc); stroke-width: 1.3; opacity: .45; transition: opacity .25s, stroke-width .25s; }
+  .dot { fill: var(--gc); stroke: var(--card); stroke-width: 2.5; transition: r .25s; }
+  .nm { font: 600 17px var(--serif); fill: var(--ink); paint-order: stroke; stroke: var(--card); stroke-width: 5px; stroke-linejoin: round; }
+  .role { font: 500 12.5px var(--sans); fill: var(--ink-3); }
+  .nd { transition: opacity .25s; }
+  .nd:hover .ln { opacity: 1; stroke-width: 2.4; }
+  .nd:hover .nm { fill: var(--cinnabar); }
+  .ego svg:has(.nd:hover) .nd:not(:hover) { opacity: .28; }
+  .me text { font-family: var(--brush); fill: #fff8ec; }
+  .ego-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; margin-top: 10px; font: 500 12.5px/1.4 var(--sans); color: var(--ink-3); }
+  .leg { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+  .leg i { width: 18px; height: 2px; background: var(--tc); }
+  .ego:has(.leg-b:hover) .nd:not(.t-b), .ego:has(.leg-m:hover) .nd:not(.t-m), .ego:has(.leg-in:hover) .nd:not(.t-in),
+  .ego:has(.leg-sv:hover) .nd:not(.t-sv), .ego:has(.leg-lv:hover) .nd:not(.t-lv), .ego:has(.leg-fr:hover) .nd:not(.t-fr),
+  .ego:has(.leg-ri:hover) .nd:not(.t-ri), .ego:has(.leg-my:hover) .nd:not(.t-my) { opacity: .15; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ego.in .nd { animation: pop .7s var(--ease) backwards; animation-delay: calc(150ms + var(--i) * 22ms); }
+  }
+  @keyframes pop { from { opacity: 0; transform: translate(0, 6px); } }
+</style>

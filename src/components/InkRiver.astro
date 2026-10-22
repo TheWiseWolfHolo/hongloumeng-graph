@@ -1,0 +1,106 @@
+---
+/* 一百二十回的人物长河：原文提到最多的十几个人，每人一道墨，按回目从左往右流，
+   一回里提到得越多，这道墨越宽。数据平滑过，形状看大势，细数请进人物页。 */
+import { MENTIONS, STATS, byId, cn } from '../lib/data.ts';
+interface Props { count?: number }
+const { count = 14 } = Astro.props;
+const ids = Object.entries(STATS.totals)
+  .filter(([id]) => byId.get(id)!.tier !== 'o')
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, count)
+  .map(([id]) => id);
+const W = 1200, H = 360, N = 120;
+/* 每人一种旧颜料，按出场多少依次取：胭脂、黛、赭、石青、石绿、藕荷、泥金…… */
+const INKS = ['#b2343a', '#2e4a5c', '#a86a2e', '#3d6f99', '#4f8068', '#86699c', '#b58b3a', '#7f3b52', '#5c6b4a', '#c46a55', '#3a5960', '#9b7c5c', '#6a5a8c', '#8d4a2f'];
+/* 高斯平滑 */
+const smooth = (arr: number[], s = 1.6) => arr.map((_, i) => {
+  let sum = 0, wsum = 0;
+  for (let k = -5; k <= 5; k++) {
+    const j = i + k;
+    if (j < 0 || j >= arr.length) continue;
+    const w = Math.exp(-(k * k) / (2 * s * s));
+    sum += arr[j] * w; wsum += w;
+  }
+  return sum / wsum;
+});
+/* 由里往外排，最大的居中，河面才像两岸对称 */
+const sorted = [...ids];
+const order: string[] = [];
+sorted.forEach((id, i) => (i % 2 ? order.push(id) : order.unshift(id)));
+const series = order.map(id => smooth(MENTIONS[id]));
+const totals = Array.from({ length: N }, (_, i) => series.reduce((a, s) => a + s[i], 0));
+const maxT = Math.max(...totals);
+const k = (H * .92) / maxT;
+const x = (i: number) => (i / (N - 1)) * W;
+const layers = order.map((id, li) => {
+  const top: number[] = [], bot: number[] = [];
+  for (let i = 0; i < N; i++) {
+    const below = series.slice(0, li).reduce((a, s) => a + s[i], 0);
+    const y0 = H / 2 - (totals[i] * k) / 2 + below * k;
+    top.push(y0);
+    bot.push(y0 + series[li][i] * k);
+  }
+  /* 平滑曲线：取相邻点的中点做二次贝塞尔 */
+  const curve = (ys: number[], rev = false) => {
+    const pts = ys.map((y, i) => [x(i), y]);
+    if (rev) pts.reverse();
+    let d = '';
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      d += ` Q${x0.toFixed(1)} ${y0.toFixed(1)} ${((x0 + x1) / 2).toFixed(1)} ${((y0 + y1) / 2).toFixed(1)}`;
+    }
+    const last = pts[pts.length - 1];
+    return d + ` L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
+  };
+  const d = `M0 ${top[0].toFixed(1)}${curve(top)} L${W} ${bot[N - 1].toFixed(1)}${curve(bot, true)} Z`;
+  /* 在最宽处写名字 */
+  let best = 0, bw = 0;
+  for (let i = 4; i < N - 4; i++) { const w = bot[i] - top[i]; if (w > bw) { bw = w; best = i; } }
+  const p = byId.get(id)!;
+  return { id, d, color: INKS[sorted.indexOf(id) % INKS.length], lx: x(best), ly: (top[best] + bot[best]) / 2, bw, total: STATS.totals[id], peak: best + 1 };
+});
+---
+<figure class="river reveal">
+  <div class="river-box">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`原文提到最多的${count}个人在一百二十回里的出场变化`}>
+      <line x1={x(79.5)} x2={x(79.5)} y1="0" y2={H} class="xu" />
+      {layers.map((l, i) => (
+        <a href={`/people/${l.id}/`} class="lyr" style={`--c:${l.color};--i:${i}`} data-name={l.id} data-total={l.total}>
+          <title>{`${l.id}，前八十回提到 ${l.total} 次，最浓在第${cn(l.peak)}回前后`}</title>
+          <path d={l.d} />
+        </a>
+      ))}
+    </svg>
+    <div class="xu-veil" aria-hidden="true"><span>续书</span></div>
+    <div class="labels" aria-hidden="true">
+      {layers.filter(l => l.bw > 22).map(l => (
+        <span style={`left:${(l.lx / W) * 100}%;top:${(l.ly / H) * 100}%;--c:${l.color}`} data-for={l.id}>{l.id}</span>
+      ))}
+    </div>
+  </div>
+  <div class="river-axis" aria-hidden="true">
+    {[1, 20, 40, 60, 80, 100, 120].map(n => <span style={`left:${(x(n - 1) / W) * 100}%`}>{cn(n)}</span>)}
+  </div>
+</figure>
+
+<style>
+  .river { margin: 0; }
+  .river-box { position: relative; height: clamp(240px, 32vw, 400px); }
+  .river svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .lyr path { fill: var(--c); opacity: .5; mix-blend-mode: multiply; transition: opacity .3s; }
+  :global(:root[data-theme="dark"]) .lyr path { mix-blend-mode: screen; opacity: .42; }
+  .river svg:has(.lyr:hover) .lyr:not(:hover) path { opacity: .1; }
+  .lyr:hover path { opacity: .85; }
+  .xu { stroke: var(--line-2); stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+  .xu-veil { position: absolute; top: -6px; bottom: -6px; right: 0; width: calc(100% * 40.5 / 119); background: color-mix(in srgb, var(--paper) 58%, transparent); pointer-events: none; border-left: 1px dashed var(--line-2); }
+  .xu-veil span { position: absolute; top: 4px; left: 10px; font: 600 11px/1 var(--sans); letter-spacing: .3em; color: var(--ink-3); }
+  .labels { position: absolute; inset: 0; pointer-events: none; }
+  .labels span { position: absolute; transform: translate(-50%, -50%); font: 400 clamp(13px, 1.4vw, 18px)/1 var(--brush); color: var(--ink); writing-mode: vertical-rl; letter-spacing: .1em; text-shadow: 0 0 6px var(--paper), 0 0 2px var(--paper); transition: opacity .3s; }
+  .river:has(.lyr:hover) .labels span { opacity: .25; }
+  .river-axis { position: relative; height: 22px; margin-top: 10px; font: 500 11.5px/1 var(--sans); color: var(--ink-3); border-top: 1px solid var(--line); }
+  .river-axis span { position: absolute; top: 8px; transform: translateX(-50%); }
+  @media (prefers-reduced-motion: no-preference) {
+    .river.in .lyr path { animation: flow 1.6s var(--ease-ink) backwards; animation-delay: calc(var(--i) * 60ms); }
+  }
+  @keyframes flow { from { opacity: 0; transform: scaleY(.2); transform-origin: 50% 50%; } }
+</style>

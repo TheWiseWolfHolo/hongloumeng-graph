@@ -1,10 +1,12 @@
 // 从维基文库取《红楼梦》一百二十回原文，转成简体，按段落与诗词拆好，写进 src/data/text/。
-// 底本是维基文库的汇校本：前八十回以庚辰本为底本，后四十回以程甲本为底本，不含批语。
+// 前八十回用《脂砚斋重评石头记》（庚辰、己卯、甲戌三本汇集），连同批语一起；回目也用脂本的。
+// 后四十回是续书，用维基文库汇校本里的程甲本。各回的回目异文取自汇校本的校注。
 // 用法 node scripts/build-text.mjs [--refresh]；原始 wikitext 缓存在 .text-cache/，--refresh 重新下载。
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as OpenCC from 'opencc-js';
+import { zhiIndex, zhiRaw, cleanZhi, parseNote } from './zhi.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const cache = join(root, '.text-cache');
@@ -133,6 +135,86 @@ function parse(n, wiki) {
   return { title, variants, blocks };
 }
 
+/* 脂本一回：正文分段，批语挂在所在段落的第几个字后面；单独成行的批语（多是回前回后的总批）自成一块 */
+function parseZhi(wiki) {
+  const { s, notes } = cleanZhi(wiki);
+  const blocks = [];
+  const NOTE = /\u0007(\d+)\u0008/g;
+  const note = id => parseNote(toS(notes[id]));
+  /* 把带占位符的一段转成 { s, n }，n 是挂在文字上的批语 */
+  const withNotes = text => {
+    const conv = toS(text).replace(/[ \t]+/g, '');
+    let out = '', at = 0;
+    const n = [];
+    for (const m of conv.matchAll(NOTE)) {
+      out += conv.slice(at, m.index);
+      n.push({ at: out.length, ...note(+m[1]) });
+      at = m.index + m[0].length;
+    }
+    out += conv.slice(at);
+    return { s: out, n };
+  };
+  const pushLines = text => {
+    for (const line of text.split('\n')) {
+      const t = line.trim();
+      if (!t) continue;
+      if (!t.replace(NOTE, '').trim()) {
+        for (const m of t.matchAll(NOTE)) { const x = note(+m[1]); if (x.s) blocks.push({ t: 'pi', ...x }); }
+        continue;
+      }
+      const { s: body, n } = withNotes(t);
+      /* 段首的空格去掉后，批语位置跟着往前挪 */
+      const lead = body.length - body.trimStart().length;
+      const b = { t: 'p', s: body.trim() };
+      if (n.length) b.n = n.map(x => ({ ...x, at: Math.min(b.s.length, Math.max(0, x.at - lead)) }));
+      blocks.push(b);
+    }
+  };
+  const re = /<poem[^>]*>([\s\S]*?)<\/poem>|\u0001CENTER([\s\S]*?)\u0002/g;
+  let last = 0, m;
+  while ((m = re.exec(s))) {
+    pushLines(s.slice(last, m.index));
+    last = re.lastIndex;
+    if (m[1] != null) {
+      const lines = m[1].split('\n').map(l => l.replace(/^[:\s　]+/, '').trim()).filter(l => l.replace(NOTE, '').trim());
+      if (!lines.length) continue;
+      const { s: body, n } = withNotes(lines.join('\n'));
+      const b = { t: 'poem', s: body };
+      if (n.length) b.n = n;
+      blocks.push(b);
+    } else {
+      const c = m[2].replace(NOTE, '').trim();
+      /* 回目那一行不进正文，挂在回目上的批语照留 */
+      for (const x of m[2].matchAll(NOTE)) { const y = note(+x[1]); if (y.s) blocks.push({ t: 'pi', ...y }); }
+      if (c && !/^第.+回/.test(c)) blocks.push({ t: 'center', s: toS(c) });
+    }
+  }
+  pushLines(s.slice(last));
+  /* 抄本录入时常在批语处断行，段尾不是句末标点的，和下一段接起来 */
+  const merged = [];
+  for (const b of blocks) {
+    const prev = merged[merged.length - 1];
+    /* 没写出处的批语多是上一条的续行 */
+    if (b.t === 'pi' && !b.src.length && prev?.t === 'pi') { prev.s += '\n' + b.s; continue; }
+    if (b.t === 'p' && prev?.t === 'p' && !/[。！？”’…：」』）】]$/.test(prev.s)) {
+      const off = prev.s.length;
+      prev.s += b.s;
+      if (b.n) prev.n = [...(prev.n ?? []), ...b.n.map(x => ({ ...x, at: x.at + off }))];
+      continue;
+    }
+    merged.push(b);
+  }
+  /* 正文前后单独成行的批语，就是回前、回后的总批 */
+  const first = merged.findIndex(b => b.t !== 'pi');
+  const lastText = merged.length - 1 - [...merged].reverse().findIndex(b => b.t !== 'pi');
+  merged.forEach((b, i) => {
+    if (b.t !== 'pi' || b.kind === '回前' || b.kind === '回后') return;
+    if (i < first) b.kind = '回前';
+    else if (i > lastText) b.kind = '回后';
+  });
+  return merged;
+}
+
 const NUM = '零一二三四五六七八九';
 const cn = n => {
   if (n <= 10) return n === 10 ? '十' : NUM[n];
@@ -154,7 +236,9 @@ const toS = s => fixQuotes(zhu(t2s(s)).replace(/煕/g, '熙'));
 /* 回目用人民文学出版社通行本的写法，下面几回和底本的回目不同 */
 const TITLE_FIX = {
   7: '送宫花贾琏戏熙凤 宴宁府宝玉会秦钟',
-  18: '皇恩重元妃省父母 天伦乐宝玉呈才藻',
+  /* 底本把省亲一段分在第十八回，回目跟着底本走 */
+  17: '会芳园试才题对额 贾宝玉机敏动诸宾',
+  18: '林黛玉误剪香囊袋 贾元春归省庆元宵',
   30: '宝钗借扇机带双敲 龄官划蔷痴及局外',
   39: '村姥姥是信口开合 情哥哥偏寻根究底',
   41: '栊翠庵茶品梅花雪 怡红院劫遇母蝗虫',
@@ -166,20 +250,35 @@ const TITLE_FIX = {
   102: '宁国府骨肉病灾祲 大观园符水驱妖孽'
 };
 const index = [];
-let total = 0;
+const zIndex = await zhiIndex(cache, refresh);
+if (zIndex.length !== 80) throw new Error(`脂本目录只解析出 ${zIndex.length} 回`);
+let total = 0, noteTotal = 0;
+const countChars = blocks => blocks.filter(b => b.t !== 'pi').reduce((a, b) => a + b.s.replace(/[\s“”‘’，。：；！？、《》（）—…·]/g, '').length, 0);
 for (let n = 1; n <= 120; n++) {
   const parsed = parse(n, await raw(n));
   const head = toS(parsed.title).replace(/^第[^回]+回\s*/, '').trim();
   const variants = parsed.variants.map(v => ({ text: toS(v.text), from: t2s(v.from) }));
-  /* 通行的人文社本前八十回回目多从庚辰本，这里有庚辰本异文时取庚辰本 */
+  /* 人文社通行本的回目：有庚辰本异文时取庚辰本，个别回另行指定 */
   const gengchen = n <= 80 && variants.find(v => /庚辰本/.test(v.from) && !/庚辰本(作|无)/.test(v.from.split(/[，。]/)[0]));
-  const couplet = (TITLE_FIX[n] ?? (gengchen ? gengchen.text : head)).split(/[\s　]+/).filter(Boolean);
-  const blocks = parsed.blocks.map(b => ({ t: b.t, s: toS(b.s).replace(/[ \t]+/g, '') })).filter(b => b.s);
-  const chars = blocks.reduce((a, b) => a + b.s.replace(/[\s“”‘’，。：；！？、《》（）—…·]/g, '').length, 0);
+  const common = (TITLE_FIX[n] ?? (gengchen ? gengchen.text : head)).split(/[\s　]+/).filter(Boolean);
+  let couplet = common, blocks, source;
+  if (n <= 80) {
+    const z = zIndex[n - 1];
+    couplet = toS(z.title).split(/[\s　]+/).filter(Boolean);
+    blocks = parseZhi(await zhiRaw(cache, n, z.page, refresh));
+    source = '脂本';
+    if (couplet.join('') !== common.join('')) variants.unshift({ text: common.join(' '), from: '人民文学出版社通行本' });
+  } else {
+    blocks = parsed.blocks.map(b => ({ t: b.t, s: toS(b.s).replace(/[ 	]+/g, '') })).filter(b => b.s);
+    source = '程甲本';
+  }
+  const chars = countChars(blocks);
+  const notes = blocks.reduce((a, b) => a + (b.t === 'pi' ? 1 : b.n?.length ?? 0), 0);
   total += chars;
-  const data = { n, cn: `第${cn(n)}回`, title: couplet, wikiTitle: head.split(/[\s　]+/).filter(Boolean), variants, chars, blocks };
+  noteTotal += notes;
+  const data = { n, cn: `第${cn(n)}回`, title: couplet, wikiTitle: head.split(/[\s　]+/).filter(Boolean), source, variants, chars, notes, blocks };
   writeFileSync(join(out, `${pad(n)}.json`), JSON.stringify(data));
-  index.push({ n, cn: data.cn, title: couplet, chars });
+  index.push({ n, cn: data.cn, title: couplet, chars, notes });
 }
 writeFileSync(join(root, 'src', 'data', 'chapters.json'), JSON.stringify(index, null, 1));
-console.log(`一百二十回写好，正文约 ${total} 字`);
+console.log(`一百二十回写好，正文约 ${total} 字，脂批 ${noteTotal} 条`);

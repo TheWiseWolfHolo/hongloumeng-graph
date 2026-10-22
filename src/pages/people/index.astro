@@ -1,0 +1,188 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import Seal from '../../components/Seal.astro';
+import Spark from '../../components/Spark.astro';
+import { PEOPLE, BOOKS, STATS, peopleByGroup, namesOf, tiesOf, spanOf, huiName } from '../../lib/data.ts';
+import { portraitImage } from '../../lib/portraits.ts';
+
+const groups = peopleByGroup();
+const rank = [...PEOPLE].filter(p => p.tier !== 'o').sort((a, b) => (STATS.totals[b.id] ?? 0) - (STATS.totals[a.id] ?? 0));
+const top = rank.slice(0, 24);
+const max = STATS.totals[top[0].id];
+---
+<Base title="人物谱" description={`《红楼梦》${PEOPLE.length} 位人物与信物：按家族排开，可按姓名、别称、身份查找，看每人在一百二十回原文里出场多少。`} section="people" sub="index">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">人物 · 壹</span>
+        <h1 class="ink-in" style="--d:.1s">人物谱</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">书里有名有姓的人七百多，这里收了 {PEOPLE.length} 位，按家族排开。名字下面那一行小墨迹，是这个人在一百二十回里出场的疏密，越往右越靠后，虚线以后是续书。次数只算前八十回。</p>
+    </header>
+
+    <div class="tools-bar" data-filter>
+      <label class="find">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input type="search" placeholder="姓名、别称或身份，比如“颦儿”“丫鬟”" data-f-q aria-label="筛选人物">
+      </label>
+      <div class="chips" role="group" aria-label="按家族筛选">
+        <button class="chip on" type="button" data-f-g="" aria-pressed="true">全部</button>
+        {groups.map(({ g, info }) => <button class="chip" type="button" data-f-g={g} aria-pressed="false" style={`--c:var(--g-${g})`}><span class="dot" />{info.name}</button>)}
+      </div>
+      <div class="view" role="group" aria-label="排列方式">
+        <button type="button" class="on" data-view="group" aria-pressed="true">按家族</button>
+        <button type="button" data-view="rank" aria-pressed="false">按出场</button>
+      </div>
+    </div>
+    <p class="count muted small" data-f-count aria-live="polite">共 {PEOPLE.length} 位</p>
+
+    <div class="by-group" data-pane="group">
+      {groups.map(({ g, info, list }) => (
+        <section class="grp" id={g} data-grp={g} style={`--gc:var(--g-${g})`}>
+          <header class="grp-head reveal">
+            <Seal text={info.seal} size={42} color={`var(--g-${g})`} />
+            <div><h2>{info.name}</h2><p class="muted small">{info.hint}</p></div>
+            <span class="grp-n">{list.length}</span>
+          </header>
+          <ul class="grid">
+            {list.map((p, i) => {
+              const img = portraitImage(p.portrait);
+              const span = spanOf(p.id);
+              return (
+                <li class:list={['pc reveal', `t-${p.tier}`]} style={`--d:${Math.min(i, 12) * 30}ms`} data-q={[p.id, ...namesOf(p), p.title, p.bio].join(' ')} data-g={g}>
+                  <a href={`/people/${p.id}/`} data-peek>
+                    {img ? <Image src={img} width={96} height={128} alt="" class="thumb" loading="lazy" style={`view-transition-name:pic-${PEOPLE.indexOf(p)}`} />
+                      : <span class="thumb name-thumb" aria-hidden="true">{p.id.slice(-1)}</span>}
+                    <span class="pc-main">
+                      <span class="pc-name" style={`view-transition-name:nm-${PEOPLE.indexOf(p)}`}>{p.id}</span>
+                      <span class="pc-title">{p.title}</span>
+                      <span class="pc-meta">
+                        <Spark id={p.id} color={`var(--g-${g})`} />
+                        <span>{STATS.totals[p.id] ? `${STATS.totals[p.id]} 次` : span ? '只见于续书' : '原文未直呼'}</span>
+                      </span>
+                    </span>
+                    {p.book && <span class="pc-book" title={BOOKS[p.book]}>{p.book === 'z' ? '正' : p.book === 'f' ? '副' : '又副'}</span>}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      <p class="empty" data-f-empty hidden>没有找到。换个叫法试试，或者 <button type="button" class="link" data-f-reset>清除筛选</button></p>
+    </div>
+
+    <section class="by-rank" data-pane="rank" hidden>
+      <p class="muted small rank-note">按前八十回原文里被提到的次数排，含别称与常见称呼，比如“凤姐”“老太太”。前二十四位：</p>
+      <ol class="rank">
+        {top.map((p, i) => (
+          <li class="reveal" style={`--w:${(STATS.totals[p.id] / max) * 100}%;--gc:var(--g-${p.group});--d:${i * 25}ms`}>
+            <span class="r-n">{i + 1}</span>
+            <a href={`/people/${p.id}/`} class="r-name" data-peek>{p.id}</a>
+            <span class="r-bar"><i /></span>
+            <span class="r-v">{STATS.totals[p.id]}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+</Base>
+
+<script>
+  import { observeReveal } from '../../client/site.ts';
+  const root = document.querySelector<HTMLElement>('[data-filter]')!;
+  const q = root.querySelector<HTMLInputElement>('[data-f-q]')!;
+  const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-f-g]')];
+  const cards = [...document.querySelectorAll<HTMLElement>('.pc')];
+  const groups = [...document.querySelectorAll<HTMLElement>('.grp')];
+  const count = document.querySelector('[data-f-count]')!;
+  const empty = document.querySelector<HTMLElement>('[data-f-empty]')!;
+  let g = '';
+  const norm = (s: string) => s.normalize('NFKC').toLowerCase().replace(/\s+/g, '');
+  const qs = cards.map(c => norm(c.dataset.q!));
+  function apply() {
+    const v = norm(q.value);
+    let n = 0;
+    cards.forEach((c, i) => {
+      const ok = (!g || c.dataset.g === g) && (!v || qs[i].includes(v));
+      c.hidden = !ok;
+      if (ok) { n++; c.classList.add('in'); }
+    });
+    groups.forEach(s => { s.hidden = !s.querySelector('.pc:not([hidden])'); });
+    count.textContent = n === cards.length ? `共 ${n} 位` : `找到 ${n} 位`;
+    empty.hidden = n > 0;
+    const url = new URL(location.href);
+    v ? url.searchParams.set('q', q.value) : url.searchParams.delete('q');
+    g ? url.searchParams.set('g', g) : url.searchParams.delete('g');
+    history.replaceState(null, '', url);
+  }
+  q.addEventListener('input', apply);
+  chips.forEach(c => c.addEventListener('click', () => {
+    g = c.dataset.fG!;
+    chips.forEach(x => { x.classList.toggle('on', x === c); x.setAttribute('aria-pressed', String(x === c)); });
+    apply();
+  }));
+  document.querySelector('[data-f-reset]')?.addEventListener('click', () => { q.value = ''; g = ''; chips[0].click(); });
+  const params = new URLSearchParams(location.search);
+  if (params.get('q')) q.value = params.get('q')!;
+  if (params.get('g')) chips.find(c => c.dataset.fG === params.get('g'))?.click(); else if (q.value) apply();
+  /* 两种排法 */
+  const views = [...document.querySelectorAll<HTMLButtonElement>('[data-view]')];
+  views.forEach(b => b.addEventListener('click', () => {
+    views.forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+    document.querySelectorAll<HTMLElement>('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.view; });
+    observeReveal();
+  }));
+</script>
+
+<style>
+  .tools-bar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; padding: 20px 0 12px; margin-top: 8px; }
+  .find { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); flex: 1 1 280px; max-width: 380px; color: var(--ink-3); }
+  .find:focus-within { border-color: var(--cinnabar); }
+  .find input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 15.5px; color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .view { margin-left: auto; display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); }
+  .view button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-3); letter-spacing: .06em; }
+  .view button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  .count { margin: 4px 0 10px; }
+
+  .grp { padding-top: 34px; }
+  .grp-head { display: flex; align-items: center; gap: 16px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .grp-head h2 { font: 400 32px/1.1 var(--brush); letter-spacing: .08em; }
+  .grp-n { margin-left: auto; font: 300 32px/1 var(--serif); color: var(--gc); opacity: .7; }
+  .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+  .pc a { position: relative; display: flex; gap: 14px; align-items: center; height: 100%; padding: 12px 14px 12px 12px; border-radius: 8px; border: 1px solid transparent; transition: background .25s, border-color .25s, transform .35s var(--ease), box-shadow .35s; }
+  .pc a:hover { background: var(--card); border-color: var(--line); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .thumb { width: 48px; height: 64px; flex: none; object-fit: cover; border-radius: 4px; box-shadow: 0 0 0 1px var(--line); }
+  .name-thumb { display: grid; place-items: center; font: 400 28px/1 var(--brush); color: var(--gc); background: color-mix(in srgb, var(--gc) 10%, var(--card)); }
+  .t-s .name-thumb { font-size: 22px; opacity: .8; }
+  .pc-main { display: grid; gap: 2px; min-width: 0; }
+  .pc-name { font-size: 18.5px; font-weight: 700; letter-spacing: .04em; width: fit-content; }
+  .t-c .pc-name { font-size: 20px; }
+  .pc-title { font: 400 12.5px/1.5 var(--sans); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-meta { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--sans); color: var(--ink-4); margin-top: 4px; }
+  .pc-meta :global(.spark) { width: 96px; height: 14px; }
+  .pc-book { position: absolute; top: 10px; right: 10px; font: 400 13px/1 var(--brush); color: var(--cinnabar); border: 1px solid currentColor; border-radius: 3px; padding: 3px 3px 2px; writing-mode: vertical-rl; letter-spacing: .1em; }
+  .empty { padding: 60px 0; text-align: center; color: var(--ink-3); }
+
+  .rank-note { margin: 20px 0 16px; }
+  .rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .rank li { display: grid; grid-template-columns: 2.4em 7em minmax(0, 1fr) 4em; align-items: center; gap: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .r-n { font: 400 22px/1 var(--brush); color: var(--ink-4); text-align: right; }
+  .r-name { font-size: 18px; font-weight: 700; }
+  .r-name:hover { color: var(--cinnabar); }
+  .r-bar { height: 10px; position: relative; }
+  .r-bar i { position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--gc); border-radius: 0 5px 5px 0; opacity: .8; transform-origin: left; }
+  .rank li.in .r-bar i { animation: grow 1.1s var(--ease-ink) both; animation-delay: var(--d); }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .r-v { font: 600 14px/1 var(--sans); color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    .view { margin-left: 0; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 0 var(--gutter); }
+    .grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .pc a { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px; }
+    .pc-meta :global(.spark) { width: 72px; }
+    .rank li { grid-template-columns: 1.8em 5em minmax(0, 1fr) 3em; gap: 8px; }
+  }
+</style>

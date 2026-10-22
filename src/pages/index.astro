@@ -1,0 +1,400 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Seal from '../components/Seal.astro';
+import InkMountains from '../components/InkMountains.astro';
+import InkRiver from '../components/InkRiver.astro';
+import { PEOPLE, EDGES, CHAPTERS, TOTAL_CHARS, TOTAL_NOTES, GARDEN, STATS, byId, verseOf, huiName } from '../lib/data.ts';
+import { FAMOUS_NOTES } from '../data/famous-notes.ts';
+import { portraitImage } from '../lib/portraits.ts';
+
+const TWELVE_ORDER = ['林黛玉', '薛宝钗', '贾元春', '贾探春', '史湘云', '妙玉', '贾迎春', '贾惜春', '王熙凤', '巧姐', '李纨', '秦可卿', '香菱', '晴雯', '袭人'];
+const twelve = TWELVE_ORDER.map(id => {
+  const p = byId.get(id)!;
+  const v = verseOf(id);
+  /* 钗黛共用一首判词，各取属于自己的那两句 */
+  const lines = id === '林黛玉' ? ['堪怜咏絮才', '玉带林中挂'] : id === '薛宝钗' ? ['可叹停机德', '金簪雪里埋'] : v!.verse.slice(-2);
+  return { p, img: portraitImage(p.portrait)!, lines, book: p.book === 'z' ? '正册' : p.book === 'f' ? '副册' : '又副册' };
+});
+const homes = GARDEN.filter(g => g.kind === 'home').length;
+const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary]);
+const quick = ['宝玉', '颦儿', '凤辣子', '刘姥姥', '晴雯'];
+---
+<Base section="home" bodyClass="pg-home">
+  <section class="hero">
+    <div class="hero-sky" aria-hidden="true">
+      <div class="moon"></div>
+      <InkMountains class="hero-mtn" />
+      <div class="mist"></div>
+      <canvas class="petals" data-petals></canvas>
+    </div>
+    <div class="wrap hero-grid">
+      <div class="hero-main">
+        <p class="hero-eyebrow ink-in"><span>曹雪芹</span><i></i><span>一百二十回</span><i></i><span>人物与原文</span></p>
+        <h1 class="hero-title ink-in" style="--d:.15s"><span>红</span><span>楼</span><span>梦</span><Seal text="石头记" size={56} class="hero-seal" /></h1>
+        <p class="hero-lede ink-in" style="--d:.45s">记不清谁是谁的亲戚，想再读一个人的故事，或者翻到原文里的某一句，都从这里开始。</p>
+        <form class="hero-search ink-in" style="--d:.6s" data-search-form role="search">
+          <label class="sr-only" for="hero-q">寻人或查原文</label>
+          <input id="hero-q" type="search" placeholder="寻一个人，或原文里的一句话" autocomplete="off">
+          <button class="btn" type="submit">寻</button>
+        </form>
+        <p class="hero-quick ink-in" style="--d:.7s"><span class="muted">试试</span>{quick.map(q => <button type="button" data-quick={q}>{q}</button>)}</p>
+      </div>
+      <div class="hero-poem kai" aria-label="满纸荒唐言，一把辛酸泪。都云作者痴，谁解其中味？">
+        {['满纸荒唐言', '一把辛酸泪', '都云作者痴', '谁解其中味'].map((l, i) => <span class="pl" style={`--d:${.6 + i * .35}s`}>{[...l].map((c, j) => <i style={`--j:${j}`}>{c}</i>)}</span>)}
+        <Seal text="梦" size={30} class="poem-seal" round />
+      </div>
+    </div>
+    <dl class="hero-stats wrap ink-in" style="--d:1s">
+      <div><dt>人物与信物</dt><dd>{PEOPLE.length}</dd></div>
+      <div><dt>关系</dt><dd>{EDGES.length}</dd></div>
+      <div><dt>回目</dt><dd>{CHAPTERS.length}</dd></div>
+      <div><dt>原文</dt><dd>{Math.round(TOTAL_CHARS / 10000)}<small>万字</small></dd></div>
+      <div class="st-zhi"><dt>脂批</dt><dd>{TOTAL_NOTES}<small>条</small></dd></div>
+    </dl>
+    <a class="scroll-cue" href="#open" aria-label="往下看"><span></span></a>
+  </section>
+
+  <section class="section wrap" id="open">
+    <div class="section-head reveal"><div><span class="eyebrow">开卷</span><h2>从哪里读起</h2></div></div>
+    <div class="doors">
+      <a class="door reveal" href="/people/" style="--d:0ms">
+        <span class="door-num">壹</span>
+        <span class="door-art" aria-hidden="true"><span class="ppl">{['贾', '林', '薛', '王', '史'].map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span></span>
+        <h3>人物谱</h3>
+        <p>{PEOPLE.length} 位人物，按家族排开，每人一页：画像、判词、亲友、经历和原文里的身影。</p>
+        <span class="link">翻人物谱</span>
+      </a>
+      <a class="door reveal" href="/graph/" style="--d:80ms">
+        <span class="door-num">贰</span>
+        <span class="door-art" aria-hidden="true">
+          <svg viewBox="0 0 160 100"><g class="net">{[[80, 50], [36, 28], [124, 24], [30, 74], [128, 76], [80, 12], [84, 90]].map(([x, y], i) => <><line x1="80" y1="50" x2={x} y2={y} style={`--i:${i}`} /><circle cx={x} cy={y} r={i ? 4 : 8} style={`--i:${i}`} /></>)}</g></svg>
+        </span>
+        <h3>关系星图</h3>
+        <p>{EDGES.length} 条关系连成一张网，可以只看一个人的命盘，也能查两人之间隔着谁。</p>
+        <span class="link">看关系</span>
+      </a>
+      <a class="door reveal" href="/garden/" style="--d:160ms">
+        <span class="door-num">叁</span>
+        <span class="door-art" aria-hidden="true">
+          <svg viewBox="0 0 160 100"><path class="water" d="M10 70 C40 50 60 80 90 62 S140 48 150 58" /><g class="roofs"><path d="M24 40 h26 l-4 -6 h-18 z M28 40 v10 h18 v-10" /><path d="M100 30 h30 l-5 -7 h-20 z M104 30 v12 h22 v-12" /><path d="M64 78 h22 l-3 -5 h-16 z M67 78 v8 h16 v-8" /></g></svg>
+        </span>
+        <h3>大观园</h3>
+        <p>{homes} 处院落、六处名胜，跟着贾政和宝玉从正门走一遍，看谁住在哪里。</p>
+        <span class="link">进园子</span>
+      </a>
+      <a class="door reveal" href="/chapters/" style="--d:240ms">
+        <span class="door-num">肆</span>
+        <span class="door-art" aria-hidden="true"><span class="book">{['第', '一', '回'].map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span></span>
+        <h3>一百二十回</h3>
+        <p>每回有提要和登场人物，点进去读原文，书里的人名都能点开。</p>
+        <span class="link">读原文</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section wrap today-wrap">
+    <div class="today card reveal" data-today>
+      <div class="today-label"><span class="eyebrow" data-today-eyebrow>今日一回</span></div>
+      <a class="today-body" href="/chapters/1/" data-today-link>
+        <span class="today-cn brush" data-today-cn>第一回</span>
+        <span class="today-title" data-today-title>{CHAPTERS[0].title.join('　')}</span>
+        <span class="today-sum" data-today-sum>{CHAPTERS[0].summary}</span>
+        <span class="link" data-today-go>读这一回</span>
+      </a>
+      <button type="button" class="today-shuffle" data-today-shuffle aria-label="换一回">换一回</button>
+    </div>
+    <figure class="zhu reveal" data-zhu>
+      <span class="eyebrow">朱批一则</span>
+      <blockquote class="zhu-s kai" data-zhu-s>{FAMOUS_NOTES[0].s}</blockquote>
+      <figcaption>
+        <a href={`/chapters/${FAMOUS_NOTES[0].n}/`} data-zhu-link><b data-zhu-label>{huiName(FAMOUS_NOTES[0].n)} · {FAMOUS_NOTES[0].label}</b></a>
+        <span data-zhu-about>{FAMOUS_NOTES[0].about}</span>
+      </figcaption>
+      <button type="button" class="today-shuffle" data-zhu-next aria-label="换一则">换一则</button>
+    </figure>
+  </section>
+
+  <section class="section twelve-sec">
+    <div class="wrap section-head reveal">
+      <div><span class="eyebrow">金陵十二钗</span><h2>画中人，书中命</h2></div>
+      <a class="link" href="/twelve/">翻判词册</a>
+    </div>
+    <div class="rail" data-rail tabindex="0" aria-label="金陵十二钗画像，可以左右拖动">
+      {twelve.map((t, i) => (
+        <a class="lady" href={`/people/${t.p.id}/`} style={`--i:${i}`}>
+          <span class="lady-frame">
+            <Image src={t.img} width={300} height={450} alt={`${t.p.id}画像`} loading={i < 5 ? 'eager' : 'lazy'} />
+            <span class="lady-verse kai" aria-hidden="true">{t.lines.map(l => <span>{l}</span>)}</span>
+          </span>
+          <span class="lady-name"><b>{t.p.id}</b><small>{t.book}</small></span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head reveal">
+      <div><span class="eyebrow">原文里的人</span><h2>一百二十回，谁在场</h2></div>
+      <p class="muted small river-note">前八十回原文里提到最多的十四个人，每道墨是一个人，越宽说明那几回提得越多。右边罩着淡墨的是续书四十回，只作参照。悬停看是谁，点开进人物页。</p>
+    </div>
+    <InkRiver />
+    <div class="pairs reveal">
+      <h3 class="pairs-h">原文里最常在一段里同时出现的人</h3>
+      <ol>
+        {STATS.topPairs.filter(([a, b]) => byId.get(a)!.tier !== 'o' && byId.get(b)!.tier !== 'o').slice(0, 8).map(([a, b, n], i) => (
+          <li style={`--d:${i * 40}ms`}><a href={`/people/${a}/`} data-peek>{a}</a><span class="amp">与</span><a href={`/people/${b}/`} data-peek>{b}</a><span class="pn">{n} 段</span></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <script is:inline type="application/json" id="chapter-data" set:html={JSON.stringify(chapterData)} />
+  <script is:inline type="application/json" id="zhu-data" set:html={JSON.stringify(FAMOUS_NOTES.map(x => ({ ...x, hui: huiName(x.n) })))} />
+</Base>
+
+<script>
+  /* 快捷人名 */
+  document.querySelectorAll<HTMLButtonElement>('[data-quick]').forEach(b => b.addEventListener('click', () => {
+    const input = document.querySelector<HTMLInputElement>('#hero-q')!;
+    input.value = b.dataset.quick!;
+    input.form!.requestSubmit();
+  }));
+
+  /* 远山随滚动缓缓上移 */
+  const hero = document.querySelector<HTMLElement>('.hero')!;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced) {
+    let ticking = false;
+    addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const t = Math.min(1, scrollY / innerHeight);
+        hero.style.setProperty('--scroll', String(t));
+        ticking = false;
+      });
+    }, { passive: true });
+  }
+
+  /* 落花：几十片桃瓣慢慢飘，看不见时停 */
+  const cv = document.querySelector<HTMLCanvasElement>('[data-petals]');
+  if (cv && !reduced) {
+    const ctx = cv.getContext('2d')!;
+    let w = 0, h = 0, dpr = Math.min(2, devicePixelRatio || 1), run = true;
+    const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size();
+    addEventListener('resize', size);
+    const N = innerWidth < 700 ? 14 : 26;
+    const ps = Array.from({ length: N }, () => ({ x: Math.random() * w, y: Math.random() * h, r: 3 + Math.random() * 4, vx: .15 + Math.random() * .35, vy: .25 + Math.random() * .45, a: Math.random() * 6.28, va: (Math.random() - .5) * .02, o: .35 + Math.random() * .4 }));
+    const dark = () => document.documentElement.dataset.theme === 'dark';
+    const io = new IntersectionObserver(([e]) => { run = e.isIntersecting; if (run) requestAnimationFrame(tick); });
+    io.observe(cv);
+    function tick() {
+      if (!run) return;
+      ctx.clearRect(0, 0, w, h);
+      const col = dark() ? '230,170,170' : '196,90,90';
+      for (const p of ps) {
+        p.x += p.vx + Math.sin(p.a) * .3; p.y += p.vy; p.a += p.va;
+        if (p.y > h + 10) { p.y = -10; p.x = Math.random() * w; }
+        if (p.x > w + 10) p.x = -10;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.a);
+        ctx.scale(1, .55 + .45 * Math.abs(Math.sin(p.a * 1.7)));
+        ctx.fillStyle = `rgba(${col},${p.o})`;
+        ctx.beginPath();
+        ctx.moveTo(0, -p.r);
+        ctx.bezierCurveTo(p.r, -p.r * .6, p.r * .7, p.r * .6, 0, p.r);
+        ctx.bezierCurveTo(-p.r * .7, p.r * .6, -p.r, -p.r * .6, 0, -p.r);
+        ctx.fill();
+        ctx.restore();
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* 今日一回，或者接着上次读 */
+  const data: [number, string, string, string][] = JSON.parse(document.getElementById('chapter-data')!.textContent!);
+  const box = document.querySelector<HTMLElement>('[data-today]')!;
+  const set = (n: number, label: string, go: string) => {
+    const c = data[n - 1];
+    box.querySelector<HTMLAnchorElement>('[data-today-link]')!.href = `/chapters/${n}/`;
+    box.querySelector('[data-today-eyebrow]')!.textContent = label;
+    box.querySelector('[data-today-cn]')!.textContent = c[1];
+    box.querySelector('[data-today-title]')!.textContent = c[2];
+    box.querySelector('[data-today-sum]')!.textContent = c[3];
+    box.querySelector('[data-today-go]')!.textContent = go;
+  };
+  let last: { n: number } | null = null;
+  try { last = JSON.parse(localStorage.getItem('hlm-last') || 'null'); } catch { /* 读不到就当没读过 */ }
+  const day = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5);
+  if (last?.n) set(last.n, '接着读', '回到上次读到的地方');
+  else set((day % 120) + 1, '今日一回', '读这一回');
+  box.querySelector('[data-today-shuffle]')!.addEventListener('click', () => {
+    box.classList.remove('flip');
+    void box.offsetWidth;
+    box.classList.add('flip');
+    set(1 + Math.floor(Math.random() * 120), '随手翻到', '读这一回');
+  });
+
+  /* 朱批一则，按日子轮换 */
+  const notes: { n: number; label: string; s: string; about: string; hui: string }[] = JSON.parse(document.getElementById('zhu-data')!.textContent!);
+  const zhu = document.querySelector<HTMLElement>('[data-zhu]')!;
+  let zi = day % notes.length;
+  const showZhu = () => {
+    const x = notes[zi];
+    zhu.querySelector('[data-zhu-s]')!.textContent = x.s;
+    zhu.querySelector('[data-zhu-label]')!.textContent = `${x.hui} · ${x.label}`;
+    zhu.querySelector<HTMLAnchorElement>('[data-zhu-link]')!.href = `/chapters/${x.n}/`;
+    zhu.querySelector('[data-zhu-about]')!.textContent = x.about;
+  };
+  showZhu();
+  zhu.querySelector('[data-zhu-next]')!.addEventListener('click', () => {
+    zi = (zi + 1) % notes.length;
+    zhu.classList.remove('flip');
+    void zhu.offsetWidth;
+    zhu.classList.add('flip');
+    showZhu();
+  });
+
+  /* 十二钗画卷：鼠标可以按住拖 */
+  const rail = document.querySelector<HTMLElement>('[data-rail]')!;
+  let down = false, sx = 0, sl = 0, moved = false;
+  rail.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; down = true; moved = false; sx = e.clientX; sl = rail.scrollLeft; rail.classList.add('drag'); });
+  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx; if (Math.abs(dx) > 4) moved = true; rail.scrollLeft = sl - dx; });
+  addEventListener('pointerup', () => { down = false; rail.classList.remove('drag'); });
+  rail.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; } }, true);
+</script>
+
+<style>
+  .hero { position: relative; min-height: calc(100svh - var(--header-h)); display: grid; grid-template-rows: 1fr auto; overflow: hidden; isolation: isolate; }
+  .hero-sky { position: absolute; inset: 0 0 128px 0; z-index: -1; pointer-events: none; }
+  .hero-sky::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 110px; background: linear-gradient(transparent, var(--paper) 85%); }
+  .moon { position: absolute; right: 12%; top: 9%; width: clamp(120px, 18vw, 260px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 38%, color-mix(in srgb, var(--cinnabar) 22%, transparent), color-mix(in srgb, var(--cinnabar) 6%, transparent) 62%, transparent 70%); transform: translateY(calc(var(--scroll, 0) * 60px)); }
+  :global(:root[data-theme="dark"]) .moon { background: radial-gradient(circle at 40% 38%, rgba(240, 225, 190, .3), rgba(240, 225, 190, .06) 62%, transparent 70%); }
+  .hero-sky :global(.hero-mtn) { position: absolute; left: 0; right: 0; bottom: 0; height: 64%; }
+  .mist { position: absolute; left: -20%; right: -20%; bottom: 14%; height: 24%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--paper) 85%, transparent) 30%, transparent 55%, color-mix(in srgb, var(--paper) 80%, transparent) 80%, transparent); filter: blur(18px); animation: mist 38s linear infinite alternate; }
+  @keyframes mist { to { transform: translateX(12%); } }
+  .petals { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px; align-items: center; align-self: center; padding-top: clamp(28px, 5vh, 64px); padding-bottom: 20px; }
+  .hero-eyebrow { display: flex; align-items: center; gap: 12px; font: 600 12.5px/1 var(--sans); letter-spacing: .36em; color: var(--ink-2); }
+  .hero-eyebrow i { width: 4px; height: 4px; border-radius: 50%; background: var(--cinnabar); }
+  .hero-title { position: relative; display: flex; align-items: flex-end; gap: .04em; margin: 26px 0 26px -.04em; font: 400 clamp(108px, 17vw, 236px)/.95 var(--brush); letter-spacing: 0; color: var(--ink); }
+  .hero-title span { display: inline-block; }
+  .hero-title :global(.hero-seal) { --s: clamp(46px, 5.5vw, 70px) !important; font-size: calc(var(--s) * .32); writing-mode: vertical-rl; letter-spacing: .05em; line-height: 1.05; margin: 0 0 .25em .3em; align-self: flex-end; transform: rotate(2deg); }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-title span { animation: brush-in 1.4s var(--ease-ink) both; }
+    .hero-title span:nth-child(2) { animation-delay: .18s; }
+    .hero-title span:nth-child(3) { animation-delay: .36s; }
+    .hero-title :global(.hero-seal) { animation: stamp .55s cubic-bezier(.3, 1.6, .5, 1) 1.2s both; }
+  }
+  @keyframes brush-in { from { opacity: 0; filter: blur(14px); transform: translateY(10px) scale(1.06); clip-path: inset(0 0 100% 0); } 60% { opacity: 1; filter: blur(1px); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes stamp { from { opacity: 0; transform: scale(2.2) rotate(-12deg); } to { opacity: 1; transform: scale(1) rotate(2deg); } }
+  .hero-lede { font-size: clamp(17px, 1.5vw, 19px); line-height: 2; color: var(--ink-2); max-width: 26em; }
+  .hero-search { display: flex; gap: 8px; margin-top: 30px; max-width: 520px; padding: 6px 6px 6px 22px; border: 1px solid var(--line-2); border-radius: 999px; background: color-mix(in srgb, var(--card) 86%, transparent); box-shadow: var(--shadow); backdrop-filter: blur(6px); transition: border-color .2s, box-shadow .3s; }
+  .hero-search:focus-within { border-color: var(--cinnabar); box-shadow: 0 0 0 4px var(--cinnabar-soft), var(--shadow); }
+  .hero-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 17px; }
+  .hero-search .btn { height: 46px; width: 64px; font: 400 22px/1 var(--brush); letter-spacing: 0; }
+  .hero-quick { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 14px; padding-left: 22px; }
+  .hero-quick button { color: var(--ink-2); border-bottom: 1px dashed var(--line-2); transition: color .2s, border-color .2s; }
+  .hero-quick button:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
+  .hero-poem { position: relative; display: flex; flex-direction: column; gap: 22px; writing-mode: vertical-rl; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: .42em; color: var(--ink); padding: 26px 22px; align-self: center; margin-bottom: 8vh; }
+  .hero-poem .pl:nth-child(2n) { margin-top: 1.6em; }
+  .hero-poem i { font-style: normal; display: inline-block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-poem i { animation: ink-drop .9s var(--ease-ink) both; animation-delay: calc(var(--d) + var(--j) * 70ms); }
+  }
+  @keyframes ink-drop { from { opacity: 0; filter: blur(6px); transform: translateY(-6px); } }
+  .hero-poem :global(.poem-seal) { position: absolute; bottom: -14px; left: 0; writing-mode: horizontal-tb; }
+  .hero-stats { display: flex; gap: clamp(20px, 5vw, 64px); padding: 18px 0 48px; margin: 0 auto; }
+  .hero-stats dt { font: 600 11.5px/1 var(--sans); letter-spacing: .28em; color: var(--ink-3); }
+  .hero-stats dd { margin: 10px 0 0; font: 300 clamp(30px, 3.6vw, 44px)/1 var(--serif); color: var(--ink); font-variant-numeric: oldstyle-nums; }
+  .hero-stats small { font-size: 14px; margin-left: 4px; color: var(--ink-3); }
+  .scroll-cue { position: absolute; right: var(--gutter); bottom: 40px; width: 1px; height: 46px; background: var(--line-2); overflow: hidden; }
+  .scroll-cue span { position: absolute; left: 0; top: -40%; width: 1px; height: 40%; background: var(--cinnabar); animation: cue 2.2s var(--ease) infinite; }
+  @keyframes cue { to { top: 110%; } }
+
+  .doors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .door { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 24px; min-height: 340px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; transition: transform .45s var(--ease), box-shadow .45s, border-color .3s; }
+  .door:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--line-2); }
+  .door-num { font: 400 15px/1 var(--brush); color: var(--cinnabar); }
+  .door-art { height: 110px; display: grid; place-items: center; margin: 4px 0 8px; }
+  .door h3 { font: 400 32px/1.1 var(--brush); letter-spacing: .06em; }
+  .door p { font-size: 14.5px; line-height: 1.85; color: var(--ink-2); flex: 1; }
+  .ppl { display: flex; gap: 6px; }
+  .ppl i { font: 400 26px/1 var(--brush); font-style: normal; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line-2); color: var(--ink-2); transition: transform .5s var(--ease), background .3s, color .3s; transition-delay: calc(var(--i) * 40ms); }
+  .door:hover .ppl i { transform: translateY(calc(-6px + var(--i) * 3px * (var(--i) - 2) / 2)); background: var(--cinnabar); color: #fff; border-color: transparent; }
+  .net line { stroke: var(--line-2); stroke-width: 1.2; transition: stroke .3s; }
+  .net circle { fill: var(--ink-3); transition: fill .3s, r .3s; }
+  .net circle:first-of-type { fill: var(--cinnabar); }
+  .door:hover .net line { stroke: var(--cinnabar); }
+  .door:hover .net circle { fill: var(--cinnabar); }
+  .water { fill: none; stroke: var(--g-lin); stroke-width: 2.5; opacity: .5; stroke-dasharray: 6 5; animation: water 3s linear infinite; }
+  @keyframes water { to { stroke-dashoffset: -22; } }
+  .roofs path { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-linejoin: round; }
+  .door:hover .roofs path { stroke: var(--cinnabar); }
+  .book { display: flex; flex-direction: column; align-items: center; padding: 12px 18px; border: 1px solid var(--line-2); border-radius: 2px; background: var(--paper); box-shadow: 4px 4px 0 var(--paper-3); transition: transform .5s var(--ease); }
+  .book i { font: 400 22px/1.2 var(--brush); font-style: normal; }
+  .door:hover .book { transform: rotate(-4deg) translateY(-4px); }
+
+  .today-wrap { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+  .today { position: relative; display: grid; grid-template-columns: 1fr; gap: 14px; padding: clamp(24px, 4vw, 40px); overflow: hidden; }
+  .zhu { position: relative; margin: 0; padding: clamp(24px, 4vw, 40px); border-radius: 8px; background: color-mix(in srgb, var(--cinnabar) 5%, var(--card)); border: 1px solid color-mix(in srgb, var(--cinnabar) 22%, var(--line)); display: grid; gap: 14px; align-content: start; }
+  .zhu .eyebrow { color: var(--cinnabar); }
+  .zhu-s { margin: 0; font-size: clamp(18px, 1.7vw, 21px); line-height: 2; color: var(--cinnabar); }
+  .zhu figcaption { display: grid; gap: 6px; font-size: 13.5px; line-height: 1.8; color: var(--ink-3); }
+  .zhu figcaption b { font: 700 12.5px/1.4 var(--sans); letter-spacing: .1em; color: var(--ink-2); }
+  .zhu figcaption a:hover b { color: var(--cinnabar); }
+  .zhu.flip .zhu-s { animation: ink-in .7s var(--ease-ink); }
+  .today::after { content: '回'; position: absolute; right: -10px; bottom: -60px; font: 400 240px/1 var(--brush); color: var(--ink); opacity: .04; pointer-events: none; }
+  .today-body { display: grid; gap: 10px; }
+  .today-cn { font-size: 44px; line-height: 1; color: var(--cinnabar); }
+  .today-title { font-size: clamp(20px, 2.4vw, 28px); font-weight: 700; letter-spacing: .1em; }
+  .today-sum { font-size: 16px; line-height: 2; color: var(--ink-2); max-width: 46em; }
+  .today-shuffle { position: absolute; top: 20px; right: 22px; font: 600 13px/1 var(--sans); color: var(--ink-3); padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 999px; }
+  .today-shuffle:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
+  .today.flip .today-body { animation: ink-in .7s var(--ease-ink); }
+
+  .twelve-sec { overflow: hidden; }
+  .rail { --pad: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: var(--pad); padding: 8px var(--pad) 26px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; cursor: grab; }
+  .rail.drag { cursor: grabbing; scroll-snap-type: none; }
+  .rail.drag a { pointer-events: none; }
+  .lady { flex: none; width: clamp(180px, 19vw, 236px); scroll-snap-align: start; user-select: none; -webkit-user-drag: none; }
+  .lady-frame { position: relative; display: block; aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+  .lady-frame :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease), filter .6s; -webkit-user-drag: none; }
+  .lady:hover .lady-frame :global(img) { transform: scale(1.06); filter: brightness(.72) saturate(.9); }
+  .lady-verse { position: absolute; inset: 0; display: flex; gap: 12px; justify-content: center; align-items: center; writing-mode: vertical-rl; font-size: 21px; letter-spacing: .3em; color: #fff8ec; text-shadow: 0 1px 8px rgba(0, 0, 0, .5); opacity: 0; transition: opacity .5s; }
+  .lady:hover .lady-verse { opacity: 1; }
+  .lady-verse span:nth-child(2) { margin-top: 1.4em; }
+  .lady-name { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
+  .lady-name b { font: 400 26px/1 var(--brush); }
+  .lady-name small { font: 600 11px/1 var(--sans); color: var(--cinnabar); letter-spacing: .2em; }
+
+  .river-note { max-width: 30em; }
+  .pairs { margin-top: 36px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .pairs-h { font: 600 13px/1.8 var(--sans); color: var(--ink-3); letter-spacing: .12em; }
+  .pairs ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; counter-reset: p; }
+  .pairs li { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 16.5px; counter-increment: p; }
+  .pairs li::before { content: counter(p); font: 400 18px/1 var(--brush); color: var(--cinnabar); width: 1.3em; }
+  .pairs a:hover { color: var(--cinnabar); }
+  .amp { font-size: 13px; color: var(--ink-3); }
+  .pn { margin-left: auto; font: 500 12px/1 var(--sans); color: var(--ink-3); }
+
+  @media (max-width: 1000px) {
+    .doors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .hero-grid { grid-template-columns: minmax(0, 1fr); padding-top: 28px; }
+    .scroll-cue { display: none; }
+    .hero-poem { display: none; }
+    .hero-title :global(.hero-seal) { margin-left: .15em; }
+    .hero-title { font-size: clamp(80px, 23vw, 140px); margin-top: 18px; }
+    .hero-stats { flex-wrap: wrap; gap: 18px 28px; }
+    .doors { grid-template-columns: 1fr; }
+    .door { min-height: 0; }
+    .today-wrap { grid-template-columns: 1fr; }
+    .pairs { grid-template-columns: 1fr; }
+  }
+</style>

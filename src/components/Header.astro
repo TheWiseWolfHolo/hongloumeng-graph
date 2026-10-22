@@ -1,0 +1,93 @@
+---
+interface Props { section: string; sub: string }
+const { section, sub } = Astro.props;
+
+const NAV = [
+  { key: 'home', label: '卷首', href: '/' },
+  { key: 'people', label: '人物', href: '/people/', subs: [{ key: 'index', label: '人物谱', href: '/people/' }, { key: 'twelve', label: '金陵十二钗', href: '/twelve/' }] },
+  { key: 'relations', label: '关系', href: '/graph/', subs: [{ key: 'graph', label: '关系星图', href: '/graph/' }, { key: 'lineage', label: '贾府世系', href: '/lineage/' }, { key: 'families', label: '四大家族', href: '/families/' }, { key: 'love', label: '情缘与风波', href: '/love/' }] },
+  { key: 'garden', label: '大观园', href: '/garden/' },
+  { key: 'chapters', label: '回目', href: '/chapters/', subs: [{ key: 'list', label: '一百二十回', href: '/chapters/' }, { key: 'timeline', label: '大事眉批', href: '/timeline/' }] }
+];
+const current = NAV.find(n => n.key === section);
+---
+<header class="site-header" data-header>
+  <div class="hd wrap">
+    <a class="brand" href="/" aria-label="红楼梦人物关系图谱 首页">
+      <img src="/img/icon.svg" width="34" height="34" alt="" class="brand-seal">
+      <span class="brand-text"><b>红楼梦</b><small>人物 · 关系 · 原文</small></span>
+    </a>
+    <nav class="nav" aria-label="主栏目">
+      {NAV.map(n => (
+        <a href={n.href} class:list={['nav-a', { on: n.key === section }]} aria-current={n.key === section ? 'page' : undefined}>{n.label}</a>
+      ))}
+    </nav>
+    <div class="tools">
+      <button class="tool search-open" type="button" data-search-open aria-label="搜索人物、回目与原文">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="search-label">寻人 · 查回目</span>
+        <kbd>/</kbd>
+      </button>
+      <button class="tool" type="button" data-progress-open aria-haspopup="dialog" aria-label="阅读进度：防剧透">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 4.5h9.5a3 3 0 0 1 3 3V20l-4.2-2.6L9 20V4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span class="tool-badge" data-progress-badge hidden></span>
+      </button>
+      <button class="tool" type="button" data-theme-toggle aria-label="切换夜读">
+        <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+      <button class="tool menu-open" type="button" data-menu-open aria-label="打开目录" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+  {current?.subs && (
+    <nav class="subnav wrap" aria-label={`${current.label}下的页面`}>
+      {current.subs.map(s => (
+        <a href={s.href} class:list={{ on: s.key === sub }} aria-current={s.key === sub ? 'page' : undefined}>{s.label}</a>
+      ))}
+    </nav>
+  )}
+</header>
+
+<div class="menu" id="menu" data-menu hidden>
+  <div class="menu-inner">
+    <button class="menu-close" type="button" data-menu-close aria-label="关闭目录">合上</button>
+    <nav aria-label="全部栏目">
+      {NAV.map((n, i) => (
+        <div class="menu-group" style={`--d:${i * 60}ms`}>
+          <a class="menu-a brush" href={n.href}>{n.label}</a>
+          {n.subs && <div class="menu-subs">{n.subs.map(s => <a href={s.href}>{s.label}</a>)}</div>}
+        </div>
+      ))}
+      <div class="menu-group" style="--d:320ms"><a class="menu-a brush" href="/about/">凡例</a></div>
+    </nav>
+  </div>
+</div>
+
+<dialog class="palette" data-palette aria-label="搜索">
+  <form method="dialog" class="pal-box" role="search">
+    <div class="pal-input">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input type="search" data-pal-q placeholder="人名、别称、第几回，或原文里的一句话" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="pal-list" aria-autocomplete="list">
+      <button type="submit" class="pal-esc" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="pal-list" id="pal-list" role="listbox" data-pal-list></div>
+    <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd> 挑选</span><span><kbd>Enter</kbd> 打开</span><span>输入两个字以上会同时查原文</span></div>
+  </form>
+</dialog>
+
+<dialog class="progress" data-progress aria-labelledby="progress-title">
+  <form method="dialog" class="prog-box">
+    <h2 id="progress-title" class="brush">读到第几回</h2>
+    <p class="muted small">设好以后，人物结局、回目提要和大事里超出这一回的内容会先遮住，点开才显示。只存在这台设备的浏览器里。</p>
+    <div class="prog-row">
+      <input type="range" min="1" max="120" value="120" data-prog-range aria-label="读到第几回">
+      <output data-prog-out class="brush">全书</output>
+    </div>
+    <div class="prog-actions">
+      <button type="button" class="btn ghost" data-prog-off>不遮，全都看</button>
+      <button type="submit" class="btn" data-prog-save>就到这一回</button>
+    </div>
+  </form>
+</dialog>

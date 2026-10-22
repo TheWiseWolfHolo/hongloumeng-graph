@@ -1,0 +1,49 @@
+---
+/* 一百二十回的出场墨迹：每回一笔，提到得越多，墨越浓、笔越长。第八十回后隔一道线，是续书。 */
+import { MENTIONS, cn, chapter } from '../lib/data.ts';
+interface Props { id: string; color?: string; height?: number; compact?: boolean }
+const { id, color = 'var(--ink)', height = 96, compact = false } = Astro.props;
+const m = MENTIONS[id] ?? new Array(120).fill(0);
+const max = Math.max(1, ...m);
+const W = 1200, H = height, base = H;
+const colW = W / 120;
+const bars = m.map((v, i) => {
+  const t = v ? Math.sqrt(v / max) : 0;
+  const h = v ? 6 + t * (base - 8) : 2;
+  return { n: i + 1, v, h, t };
+});
+const peak = bars.reduce((a, b) => (b.v > a.v ? b : a), bars[0]);
+---
+<figure class:list={["strip", { compact }]} style={`--c:${color};--h:${height}px`}>
+  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${id}在一百二十回里被提到的次数，最多的是第${cn(peak.n)}回，${peak.v}次`}>
+    <rect x={colW * 80} y="0" width={colW * 40} height={base} class="xu-bg" />
+    <line x1={colW * 80} x2={colW * 80} y1="0" y2={base} class="xu" />
+    {bars.map(b => (
+      <a href={`/chapters/${b.n}/`} class:list={['bar', { zero: !b.v, xu: b.n > 80 }]} aria-label={`${chapter(b.n).cn}，提到${b.v}次`}>
+        <title>{`${chapter(b.n).cn}　${chapter(b.n).title.join(' ')}　提到 ${b.v} 次`}</title>
+        <rect x={(b.n - 1) * colW} y="0" width={colW} height={base} class="hit" />
+        <rect x={(b.n - 1) * colW + colW * .22} y={base - b.h} width={colW * .56} height={b.h}  style={`opacity:${b.v ? .28 + b.t * .72 : .18}`} class="ink" />
+      </a>
+    ))}
+  </svg>
+  {!compact && <div class="ticks" aria-hidden="true">{[1, 20, 40, 60, 80, 100, 120].map(n => <span style={`left:${((n - .5) / 120) * 100}%`}>{cn(n)}</span>)}</div>}
+  {!compact && <figcaption><span>前八十回</span><span class="xu-cap">后四十回 · 续书，非原作</span></figcaption>}
+</figure>
+
+<style>
+  .strip { margin: 0; }
+  .strip svg { width: 100%; height: var(--h); overflow: visible; }
+  .strip .ink { fill: var(--c); transition: fill .2s; }
+  .strip .zero .ink { fill: var(--ink-4); }
+  .strip .hit { fill: transparent; }
+  .strip .bar:hover .ink { fill: var(--cinnabar); opacity: 1 !important; }
+  .strip .bar:hover .hit { fill: var(--cinnabar-soft); }
+  .strip .xu { stroke: var(--line-2); stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+  .strip .xu-bg { fill: var(--paper-2); opacity: .6; }
+  .strip .bar.xu .ink { fill: var(--ink-4); }
+  .strip .xu-cap { color: var(--ink-4); }
+  .ticks { position: relative; height: 18px; margin-top: 6px; font: 500 11px/1 var(--sans); color: var(--ink-3); }
+  .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 500 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); margin-top: 8px; }
+  .strip figcaption span:last-child { padding-left: 10px; border-left: 1px dashed var(--line-2); }
+</style>

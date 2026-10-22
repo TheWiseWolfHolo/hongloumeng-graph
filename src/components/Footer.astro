@@ -1,0 +1,20 @@
+---
+import { PEOPLE, EDGES, TOTAL_CHARS } from '../lib/data.ts';
+---
+<footer class="site-footer">
+  <div class="wrap ft">
+    <div class="ft-poem kai" aria-hidden="true">
+      <span>满纸荒唐言</span><span>一把辛酸泪</span><span>都云作者痴</span><span>谁解其中味</span>
+    </div>
+    <div class="ft-main">
+      <p class="ft-title"><span class="seal" style="--s:26px">石</span><b>红楼梦人物关系图谱</b></p>
+      <p class="ft-text">收录 {PEOPLE.length} 位人物与信物、{EDGES.length} 条关系，原文一百二十回约 {Math.round(TOTAL_CHARS / 1000) / 10} 万字。前八十回出自曹雪芹，后四十回通常认为是续书，凡标“续书”的情节都出自后四十回，标“批语”的推断来自脂砚斋批语与判词。</p>
+      <p class="ft-text">原文取自维基文库的汇校本，前八十回以庚辰本为底本，后四十回以程甲本为底本，转为简体。人物画像为 AI 工笔设色创作，只供欣赏，不作服饰考证。</p>
+      <nav class="ft-links" aria-label="页脚链接">
+        <a href="/about/">凡例与出处</a>
+        <a href="https://github.com/TheWiseWolfHolo/hongloumeng-graph" rel="noopener">源码</a>
+        <a href="/chapters/1/">从第一回读起</a>
+      </nav>
+    </div>
+  </div>
+</footer>

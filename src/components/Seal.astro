@@ -1,0 +1,5 @@
+---
+interface Props { text: string; size?: number; color?: string; outline?: boolean; round?: boolean; class?: string; title?: string }
+const { text, size = 30, color, outline = false, round = false, class: cls, title } = Astro.props;
+---
+<span class:list={['seal', cls, { outline, round }]} style={`--s:${size}px;${color ? `--seal-bg:${color};` : ''}`} title={title} aria-hidden={title ? undefined : 'true'}>{text}</span>

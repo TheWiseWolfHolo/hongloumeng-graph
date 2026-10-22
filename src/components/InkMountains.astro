@@ -1,0 +1,72 @@
+---
+/* 水墨远山：几层山脊用中点位移随机生成，固定种子，每次构建形状一样。远山淡、近山浓。 */
+interface Props { seed?: number; class?: string }
+const { seed = 7, class: cls } = Astro.props;
+function rng(a: number) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const W = 1600, H = 520;
+function ridge(r: () => number, base: number, amp: number, rough: number, peaks: [number, number][]) {
+  const n = 128;
+  const pts = new Array(n + 1).fill(0);
+  pts[0] = base + (r() - .5) * amp * .4;
+  pts[n] = base + (r() - .5) * amp * .4;
+  const step = (lo: number, hi: number, a: number) => {
+    if (hi - lo < 2) return;
+    const mid = (lo + hi) >> 1;
+    pts[mid] = (pts[lo] + pts[hi]) / 2 + (r() - .5) * a;
+    step(lo, mid, a * rough);
+    step(mid, hi, a * rough);
+  };
+  step(0, n, amp);
+  /* 主峰抬高 */
+  for (let i = 0; i <= n; i++) {
+    const x = i / n;
+    for (const [px, ph] of peaks) pts[i] -= ph * Math.exp(-((x - px) ** 2) / .006);
+  }
+  let d = `M0 ${H} L0 ${pts[0].toFixed(1)}`;
+  for (let i = 1; i <= n; i++) {
+    const x0 = ((i - 1) / n) * W, x1 = (i / n) * W, xm = (x0 + x1) / 2;
+    d += ` Q${x0.toFixed(1)} ${pts[i - 1].toFixed(1)} ${xm.toFixed(1)} ${((pts[i - 1] + pts[i]) / 2).toFixed(1)}`;
+  }
+  d += ` L${W} ${pts[n].toFixed(1)} L${W} ${H} Z`;
+  return d;
+}
+const r = rng(seed);
+const layers = [
+  { d: ridge(r, 250, 120, .58, [[.72, 120], [.18, 50]]), o: .16, blur: 6, y: .02 },
+  { d: ridge(r, 320, 110, .55, [[.32, 90], [.86, 60]]), o: .24, blur: 3, y: .05 },
+  { d: ridge(r, 390, 90, .6, [[.6, 70]]), o: .38, blur: 1.2, y: .1 },
+  { d: ridge(r, 455, 60, .62, [[.12, 40], [.9, 30]]), o: .6, blur: 0, y: .16 }
+];
+---
+<svg class:list={['mountains', cls]} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="mtn-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--mtn)" stop-opacity="1" />
+      <stop offset=".55" stop-color="var(--mtn)" stop-opacity=".55" />
+      <stop offset="1" stop-color="var(--mtn)" stop-opacity="0" />
+    </linearGradient>
+    <filter id="mtn-edge" x="-2%" y="-10%" width="104%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".012 .06" numOctaves="3" seed={seed} />
+      <feDisplacementMap in="SourceGraphic" scale="14" />
+    </filter>
+    {layers.map((l, i) => l.blur ? <filter id={`mtn-b${i}`}><feGaussianBlur stdDeviation={l.blur} /></filter> : null)}
+  </defs>
+  {layers.map((l, i) => (
+    <g class="mtn-layer" style={`--py:${l.y}`}>
+      <path d={l.d} fill="url(#mtn-fade)" opacity={l.o} filter={l.blur ? `url(#mtn-b${i})` : 'url(#mtn-edge)'} />
+    </g>
+  ))}
+</svg>
+
+<style>
+  .mountains { --mtn: var(--ink); width: 100%; height: 100%; display: block; }
+  :global(:root[data-theme="dark"]) .mountains { --mtn: #9fb2c0; }
+  .mtn-layer { transform: translate3d(0, calc(var(--scroll, 0) * var(--py) * -160px), 0); will-change: transform; }
+</style>
