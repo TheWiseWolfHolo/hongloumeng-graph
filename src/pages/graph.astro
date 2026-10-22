@@ -4,8 +4,7 @@ import { layWheel, R } from '../lib/graph-layout.ts';
 import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE, EDGES } from '../lib/data.ts';
 
 const W = layWheel();
-const TYPE_COLOR: Record<string, string> = { b: 'var(--g-rong)', m: 'var(--gold)', in: 'var(--g-ning)', sv: 'var(--ink-3)', lv: 'var(--k-lv)', fr: 'var(--g-lin)', ri: 'var(--ink)', my: 'var(--g-myth)' };
-const HALF = R + 150;
+const HALF = R + 172;
 const rad = (d: number) => (d * Math.PI) / 180;
 const pt = (deg: number, r: number) => `${(Math.cos(rad(deg)) * r).toFixed(1)} ${(Math.sin(rad(deg)) * r).toFixed(1)}`;
 /* 家族名写在外圈弧上；下半圈的弧反着走，字才不会倒 */
@@ -15,57 +14,89 @@ const arc = (a0: number, a1: number, r: number) => {
   const large = a1 - a0 > 180 ? 1 : 0;
   return bottom ? `M${pt(a1, r)}A${r} ${r} 0 ${large} 0 ${pt(a0, r)}` : `M${pt(a0, r)}A${r} ${r} 0 ${large} 1 ${pt(a1, r)}`;
 };
-let ticks = '';
-for (let d = 0; d < 360; d += 2) ticks += `M${pt(d, R + 132)}L${pt(d, R + 132 - (d % 10 ? 4 : 10))}`;
 const flip = (a: number) => a > 90 && a < 270;
+/* 镜缘上的回纹，每隔六度一个 */
+const HUI = Array.from({ length: 60 }, (_, i) => i * 6);
+const RIM_POEM = '满纸荒唐言　一把辛酸泪　都云作者痴　谁解其中味　';
 const client = {
-  p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name]])),
+  p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name, p.tier]])),
   t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role])])),
   types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name])),
   order: TYPE_ORDER,
-  color: TYPE_COLOR,
-  R
+  R, HALF
 };
 ---
-<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系画成一张圆盘：九个家族沿圆周排开，关系线成束穿过。点一个人，盘面变成以他为中心的命盘。`} section="relations" sub="graph" bodyClass="pg-graph">
+<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系，画成一面“风月宝鉴”。镜背是全景，九个家族沿镜缘排开；点一个人，镜子翻到正面，照出他的亲友。`} section="relations" sub="graph" bodyClass="pg-graph">
   <div class="gwrap">
     <div class="stage" data-stage>
-      <svg class="gsvg" data-svg viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="人物关系星图">
-        <g data-vp>
-          <g class="deco">
-            <circle class="rim" r={R + 132} />
-            <path class="ticks" d={ticks} />
-            <circle class="rim thin" r={R + 88} />
-            {W.sectors.map(s => (
-              <g class="sec" data-sector={s.g} style={`--gc:var(--g-${s.g})`}>
-                <path class="sec-arc" d={arc(s.a0, s.a1, R + 110)} id={`arc-${s.g}`} />
-                <text class="sec-name" dy="0.36em"><textPath href={`#arc-${s.g}`} startOffset="50%">{GROUPS[s.g].name}</textPath></text>
+      <div class="mirror" data-mirror>
+        <div class="face back">
+          <svg class="gsvg" data-backface viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="人物关系全景">
+            <defs>
+              <radialGradient id="bronze" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#3b4a43" /><stop offset=".55" stop-color="#26322d" /><stop offset="1" stop-color="#161d1a" /></radialGradient>
+              <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8a86a" /><stop offset=".35" stop-color="#7d6338" /><stop offset=".6" stop-color="#b8955a" /><stop offset="1" stop-color="#4a3a20" /></linearGradient>
+              <radialGradient id="knob" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#e8cf91" /><stop offset=".45" stop-color="#a5834a" /><stop offset="1" stop-color="#4b3b1f" /></radialGradient>
+              <clipPath id="disc-clip"><circle r={R + 150} /></clipPath>
+              <path id="hui" d="M-5 4V-4H5V3H-2V-1H2" />
+              <path id="poem-ring" d={`M0 ${-(R + 136)}A${R + 136} ${R + 136} 0 1 1 -0.1 ${-(R + 136)}`} />
+            </defs>
+            <g data-vp>
+              <g class="disc">
+                <circle class="rim-outer" r={R + 168} />
+                <circle class="field" r={R + 150} />
+                <image data-patina x={-(R + 150)} y={-(R + 150)} width={(R + 150) * 2} height={(R + 150) * 2} clip-path="url(#disc-clip)" preserveAspectRatio="none" />
+                <circle class="ring" r={R + 150} />
+                <text class="poem"><textPath href="#poem-ring" textLength={(2 * Math.PI * (R + 136) * .99).toFixed(0)} lengthAdjust="spacing">{RIM_POEM + RIM_POEM}</textPath></text>
+                <circle class="ring" r={R + 124} />
+                {HUI.map(a => <use href="#hui" class="hui" transform={`rotate(${a}) translate(0 ${-(R + 116)})`} />)}
+                <circle class="ring" r={R + 108} />
+                {W.sectors.map(s => (
+                  <g class="sec" data-sector={s.g} style={`--gc:var(--g-${s.g})`}>
+                    <path class="sec-arc" d={arc(s.a0 + .6, s.a1 - .6, R + 92)} id={`arc-${s.g}`} />
+                    <text class="sec-name" dy="0.35em"><textPath href={`#arc-${s.g}`} startOffset="50%">{GROUPS[s.g].name}</textPath></text>
+                  </g>
+                ))}
+                <circle class="ring faint" r={R + 78} />
+                <circle class="beads" r={R * .4} />
               </g>
-            ))}
-            <g class="core-deco">
-              <circle class="rim dash" r={R * .3} />
-              <path id="poem-ring" class="none" d={`M0 ${-R * .2}A${R * .2} ${R * .2} 0 1 1 -0.1 ${-R * .2}`} />
-              <text class="poem"><textPath href="#poem-ring">满纸荒唐言　一把辛酸泪　都云作者痴　谁解其中味　</textPath></text>
-              <rect class="seal-r" x="-34" y="-34" width="68" height="68" rx="6" />
-              <text class="seal-t" y="-4">红楼</text><text class="seal-t" y="26">人物</text>
+              <g class="edges">
+                {W.links.map(l => <path class:list={['e', `t-${l.type}`, { x: l.cross }]} d={l.d} data-a={l.a} data-b={l.b} />)}
+              </g>
+              <g class="nodes">
+                {W.nodes.map(n => (
+                  <g class:list={['n', `tier-${n.tier}`]} data-id={n.id} transform={`translate(${n.x} ${n.y})`} style={`--d:${(((n.a + 90) % 360) / 360 * 1.2).toFixed(2)}s`} tabindex="0" role="button" aria-label={n.id}>
+                    <circle class="hit" r={n.tier === 'c' ? 14 : 9} />
+                    <circle class="dot" r={n.r} />
+                    <text class="lb" x={flip(n.a) ? -(n.r + 7) : n.r + 7} dy="0.36em" text-anchor={flip(n.a) ? 'end' : 'start'} transform={`rotate(${flip(n.a) ? n.a + 180 : n.a})`}>{n.id}</text>
+                  </g>
+                ))}
+              </g>
+              <g class="knob" aria-hidden="true">
+                <circle class="knob-base" r="74" />
+                {[45, 135, 225, 315].map(a => <path class="petal" transform={`rotate(${a})`} d="M0 -30C14 -40 20 -58 0 -70C-20 -58 -14 -40 0 -30Z" />)}
+                {['风', '月', '宝', '鉴'].map((c, i) => <text class="knob-ch" transform={`rotate(${i * 90}) translate(0 -50) rotate(${-i * 90})`} dy="0.36em">{c}</text>)}
+                <circle class="knob-ball" r="24" />
+                <circle class="knob-hole" r="24" />
+              </g>
             </g>
-          </g>
-          <g class="edges" data-edges>
-            {W.links.map((l, i) => <path class:list={['e', `t-${l.type}`, { x: l.cross }]} d={l.d} data-a={l.a} data-b={l.b} style={`--tc:${TYPE_COLOR[l.type]};--i:${i}`} stroke-dasharray={REL_TYPES[l.type].dash || undefined} />)}
-          </g>
-          <g class="ego" data-ego></g>
-          <g class="nodes">
-            {W.nodes.map(n => (
-              <g class:list={['n', `tier-${n.tier}`]} data-id={n.id} data-a={n.a} data-r={n.r} transform={`translate(${n.x} ${n.y})`} style={`--gc:var(--g-${n.group})`} tabindex="0" role="button" aria-label={n.id}>
-                <circle class="hit" r="11" />
-                <circle class="dot" r={n.r} />
-                <text class="lb" x={flip(n.a) ? -(n.r + 6) : n.r + 6} dy="0.35em" text-anchor={flip(n.a) ? 'end' : 'start'} transform={`rotate(${flip(n.a) ? n.a + 180 : n.a})`}>{n.id}</text>
-                <text class="role" y={n.r + 30}></text>
-              </g>
-            ))}
-          </g>
-        </g>
-      </svg>
+          </svg>
+          <div class="sheen" aria-hidden="true"></div>
+        </div>
+        <div class="face front">
+          <svg class="gsvg" data-front viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="命盘">
+            <defs>
+              <radialGradient id="silver" cx="40%" cy="35%" r="72%"><stop offset="0" stop-color="#faf6ec" /><stop offset=".6" stop-color="#e7dfcb" /><stop offset="1" stop-color="#c9bc9a" /></radialGradient>
+              <linearGradient id="rim2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8a86a" /><stop offset=".35" stop-color="#7d6338" /><stop offset=".6" stop-color="#b8955a" /><stop offset="1" stop-color="#4a3a20" /></linearGradient>
+            </defs>
+            <g data-fvp>
+              <circle class="rim-outer f" r={R + 168} />
+              <circle class="mface" r={R + 150} />
+              <g data-ego></g>
+            </g>
+          </svg>
+          <div class="sheen" aria-hidden="true"></div>
+        </div>
+      </div>
 
       <div class="hud top">
         <div class="modes" role="tablist" aria-label="看法">
@@ -74,7 +105,7 @@ const client = {
         </div>
         <label class="find" data-find-all>
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-          <input list="g-names" placeholder="找一个人" data-q aria-label="找一个人">
+          <input list="g-names" placeholder="照一个人" data-q aria-label="找一个人">
         </label>
         <form class="chain-form" data-chain-form hidden>
           <input list="g-names" placeholder="从" data-from aria-label="从谁">
@@ -82,22 +113,18 @@ const client = {
           <input list="g-names" placeholder="到" data-to aria-label="到谁">
           <button type="submit" class="btn">查</button>
         </form>
-        <button type="button" class="back" data-back hidden>← 回到全景</button>
-        <p class="status" data-status>停在名字上看他的亲友，点一下进入命盘</p>
+        <button type="button" class="flipback" data-back hidden>← 翻回镜背</button>
+        <p class="status" data-status>停在名字上看他的亲友，点一下把镜子翻过来</p>
         <datalist id="g-names">{PEOPLE.map(p => <option value={p.id} />)}</datalist>
       </div>
 
       <div class="hud left legend" data-legend>
-        {TYPE_ORDER.map(t => (
-          <button type="button" class="lg" data-type={t} aria-pressed="true" style={`--tc:${TYPE_COLOR[t]}`}>
-            <svg width="22" height="8" aria-hidden="true"><path d="M1 4H21" stroke="var(--tc)" stroke-width="2" stroke-dasharray={REL_TYPES[t].dash || undefined} /></svg>{REL_TYPES[t].name}
-          </button>
-        ))}
+        {TYPE_ORDER.map(t => <button type="button" class={`lg t-${t}`} data-type={t} aria-pressed="true"><i />{REL_TYPES[t].name}</button>)}
       </div>
 
       <div class="hud right zoom">
-        <button type="button" data-z="1.3" aria-label="放大">＋</button>
-        <button type="button" data-z="0.77" aria-label="缩小">−</button>
+        <button type="button" data-z="1.35" aria-label="放大">＋</button>
+        <button type="button" data-z="0.74" aria-label="缩小">−</button>
         <button type="button" data-z="0" aria-label="复位">复位</button>
         <button type="button" data-full aria-label="全屏">全屏</button>
       </div>
@@ -111,287 +138,309 @@ const client = {
 <script>
   import { esc } from '../client/site.ts';
   type Tie = [string, string, string];
-  const D: { p: Record<string, [string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string>; order: string[]; color: Record<string, string>; R: number } = JSON.parse(document.getElementById('g-data')!.textContent!);
-  const R = D.R;
+  const D: { p: Record<string, [string, string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string>; order: string[]; R: number; HALF: number } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const { R, HALF } = D;
   const NS = 'http://www.w3.org/2000/svg';
   const stage = document.querySelector<HTMLElement>('[data-stage]')!;
-  const svg = document.querySelector<SVGSVGElement>('[data-svg]')!;
-  const vp = svg.querySelector<SVGGElement>('[data-vp]')!;
-  const egoG = svg.querySelector<SVGGElement>('[data-ego]')!;
+  const mirror = document.querySelector<HTMLElement>('[data-mirror]')!;
+  const back = document.querySelector<SVGSVGElement>('[data-backface]')!;
+  const front = document.querySelector<SVGSVGElement>('[data-front]')!;
+  const egoG = front.querySelector<SVGGElement>('[data-ego]')!;
   const panel = document.querySelector<HTMLElement>('[data-panel]')!;
   const status = document.querySelector<HTMLElement>('[data-status]')!;
   const backBtn = document.querySelector<HTMLButtonElement>('[data-back]')!;
-  const edges = [...svg.querySelectorAll<SVGPathElement>('.e')];
+  const edges = [...back.querySelectorAll<SVGPathElement>('.e')];
+  const nodes = new Map([...back.querySelectorAll<SVGGElement>('.n')].map(g => [g.dataset.id!, g]));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
   const rad = (d: number) => (d * Math.PI) / 180;
+  type P = [number, number];
 
-  /* ---------- 节点：全景位置、当前位置 ---------- */
-  type N = { id: string; g: SVGGElement; lb: SVGTextElement; role: SVGTextElement; a: number; r: number; wx: number; wy: number; x: number; y: number; mode: string };
-  const nodes = new Map<string, N>();
-  svg.querySelectorAll<SVGGElement>('.n').forEach(g => {
-    const a = +g.dataset.a!, r = +g.dataset.r!;
-    const wx = Math.cos(rad(a)) * R, wy = Math.sin(rad(a)) * R;
-    nodes.set(g.dataset.id!, { id: g.dataset.id!, g, lb: g.querySelector('.lb')!, role: g.querySelector('.role')!, a, r, wx, wy, x: wx, y: wy, mode: `r${Math.round(a)}` });
-  });
-  function place(n: N, x: number, y: number) {
-    n.x = x; n.y = y;
-    n.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
-  }
-  /* 名字两种摆法：横着写在点下面，或者顺着半径写（a 是所在的角度） */
-  function labelMode(n: N, mode: 'flat' | number) {
-    const key = mode === 'flat' ? 'flat' : `r${Math.round(mode)}`;
-    if (n.mode === key) return;
-    n.mode = key;
-    if (mode === 'flat') {
-      n.lb.setAttribute('transform', ''); n.lb.setAttribute('x', '0'); n.lb.setAttribute('text-anchor', 'middle'); n.lb.setAttribute('dy', `${n.r + 15}`);
-    } else {
-      const a = ((mode % 360) + 360) % 360, f = a > 90 && a < 270;
-      n.lb.setAttribute('transform', `rotate(${f ? a + 180 : a})`); n.lb.setAttribute('x', String(f ? -(n.r + 6) : n.r + 6));
-      n.lb.setAttribute('text-anchor', f ? 'end' : 'start'); n.lb.setAttribute('dy', '0.35em');
+  /* ---------- 铜锈：用画布随手点出斑驳的锈色，铺在镜背上 ---------- */
+  {
+    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const x = c.getContext('2d')!;
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 160; i++) {
+      const cx = rnd() * 512, cy = rnd() * 512, r = 10 + rnd() * 70;
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+      const green = rnd() < .6;
+      g.addColorStop(0, green ? `rgba(110,160,130,${.05 + rnd() * .12})` : `rgba(150,110,60,${.04 + rnd() * .1})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2);
     }
+    const img = x.getImageData(0, 0, 512, 512);
+    for (let i = 0; i < img.data.length; i += 4) { const n = (rnd() - .5) * 26; img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n; }
+    x.putImageData(img, 0, 0);
+    back.querySelector('[data-patina]')!.setAttribute('href', c.toDataURL('image/webp', .8));
   }
 
-  /* ---------- 视口：平移与缩放 ---------- */
-  const HALF = R + 150;
-  let view = { x: 0, y: 0, k: 1 };
-  const draw = () => vp.setAttribute('transform', `translate(${view.x.toFixed(2)} ${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
-  const unit = () => { const r = svg.getBoundingClientRect(); return (HALF * 2) / Math.min(r.width, r.height); };
-  /* 有面板时把圆盘挪到空出来的那一侧 */
-  function fitView() {
-    const w = stage.clientWidth, h = stage.clientHeight, u = unit();
-    const zoom = focusId && egoR ? Math.min(1.5, HALF / egoR) : 1;
-    if (panel.hidden) return { x: 0, y: 0, k: zoom };
-    if (w > 900) { const free = w - 380; const k = Math.min(1, free / Math.min(w, h)) * zoom; return { k, x: -(w - free) / 2 * u, y: 0 }; }
-    const free = h * .54; const k = Math.min(1, free / Math.min(w, h)) * zoom; return { k, x: 0, y: -(h - free) / 2 * u };
-  }
-  let anim = 0;
-  function animateView(target: typeof view, ms = 700) {
-    cancelAnimationFrame(anim);
-    if (reduced || !ms) { view = target; draw(); return; }
-    const from = { ...view }, t0 = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
-      view = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, k: from.k + (target.k - from.k) * e };
-      draw();
-      if (t < 1) anim = requestAnimationFrame(tick);
-    };
-    anim = requestAnimationFrame(tick);
-  }
-  function zoomAt(cx: number, cy: number, f: number) {
-    const k = Math.max(.5, Math.min(6, view.k * f)), r = k / view.k;
-    view = { k, x: cx - (cx - view.x) * r, y: cy - (cy - view.y) * r };
-    draw();
-  }
-  const toSvg = (cx: number, cy: number) => {
-    const b = svg.getBoundingClientRect(), u = unit();
-    return [(cx - b.left - b.width / 2) * u, (cy - b.top - b.height / 2) * u];
+  /* ---------- 镜子的姿态：翻面、随鼠标微倾、反光 ---------- */
+  let flipDeg = 0, tiltX = 0, tiltY = 0, wantX = 0, wantY = 0, sink = 0;
+  const pose = () => { mirror.style.transform = `translateZ(${-sink}px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${(flipDeg + tiltY).toFixed(2)}deg)`; };
+  let tiltRaf = 0;
+  const tiltLoop = () => {
+    tiltX += (wantX - tiltX) * .08; tiltY += (wantY - tiltY) * .08;
+    pose();
+    if (Math.abs(wantX - tiltX) + Math.abs(wantY - tiltY) > .01) tiltRaf = requestAnimationFrame(tiltLoop); else tiltRaf = 0;
   };
-  stage.addEventListener('wheel', e => { e.preventDefault(); const [x, y] = toSvg(e.clientX, e.clientY); zoomAt(x, y, Math.exp(-e.deltaY * .0016)); }, { passive: false });
-  const pts = new Map<number, { x: number; y: number }>();
-  let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false, pinch = 0;
+  if (!coarse && !reduced) {
+    stage.addEventListener('pointermove', e => {
+      if (dragging) return;
+      const b = mirror.getBoundingClientRect();
+      const nx = (e.clientX - b.left) / b.width - .5, ny = (e.clientY - b.top) / b.height - .5;
+      wantX = Math.max(-1, Math.min(1, ny)) * -5; wantY = Math.max(-1, Math.min(1, nx)) * 5 * (flipDeg > 90 ? -1 : 1);
+      mirror.style.setProperty('--sx', `${(nx + .5) * 100}%`); mirror.style.setProperty('--sy', `${(ny + .5) * 100}%`);
+      if (!tiltRaf) tiltRaf = requestAnimationFrame(tiltLoop);
+    });
+    stage.addEventListener('pointerleave', () => { wantX = wantY = 0; if (!tiltRaf) tiltRaf = requestAnimationFrame(tiltLoop); });
+  }
+  let flipRaf = 0;
+  function flipTo(deg: number, onHalf?: () => void) {
+    cancelAnimationFrame(flipRaf);
+    if (reduced) { onHalf?.(); flipDeg = deg; pose(); syncFace(); return; }
+    const from = flipDeg, t0 = performance.now(), ms = 1100;
+    let halfDone = false;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / ms);
+      const e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      flipDeg = from + (deg - from) * e;
+      sink = Math.sin(Math.PI * t) * 160;
+      if (!halfDone && t >= .5) { halfDone = true; onHalf?.(); syncFace(); }
+      pose();
+      if (t < 1) flipRaf = requestAnimationFrame(step); else { sink = 0; pose(); syncFace(); }
+    };
+    flipRaf = requestAnimationFrame(step);
+  }
+  const syncFace = () => mirror.classList.toggle('flipped', flipDeg > 90);
+
+  /* ---------- 缩放与平移：改 viewBox，字始终清楚 ---------- */
+  const views = { back: { x: 0, y: 0, k: 1 }, front: { x: 0, y: 0, k: 1 } };
+  const cur = () => (focusId ? 'front' : 'back') as 'back' | 'front';
+  const applyView = (which: 'back' | 'front') => {
+    const v = views[which], half = HALF / v.k;
+    (which === 'back' ? back : front).setAttribute('viewBox', `${(v.x - half).toFixed(1)} ${(v.y - half).toFixed(1)} ${(half * 2).toFixed(1)} ${(half * 2).toFixed(1)}`);
+    if (which === 'back') back.classList.toggle('zoomed', v.k > 1.45);
+  };
+  const unitPx = () => (HALF * 2 / views[cur()].k) / mirror.getBoundingClientRect().width;
+  let zRaf = 0;
+  function zoomTo(k: number, ms = 300) {
+    const which = cur(), v = views[which];
+    k = Math.max(1, Math.min(5, k));
+    const target = { k, x: k === 1 ? 0 : v.x, y: k === 1 ? 0 : v.y };
+    cancelAnimationFrame(zRaf);
+    const from = { ...v }, t0 = performance.now();
+    const step = (now: number) => {
+      const t = reduced ? 1 : Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
+      v.k = from.k + (target.k - from.k) * e; v.x = from.x + (target.x - from.x) * e; v.y = from.y + (target.y - from.y) * e;
+      applyView(which);
+      if (t < 1) zRaf = requestAnimationFrame(step);
+    };
+    zRaf = requestAnimationFrame(step);
+  }
+  stage.addEventListener('wheel', e => {
+    if ((e.target as Element).closest('.panel')) return;
+    e.preventDefault();
+    const which = cur(), v = views[which], b = mirror.getBoundingClientRect(), u = unitPx();
+    const px = v.x + (e.clientX - b.left - b.width / 2) * u, py = v.y + (e.clientY - b.top - b.height / 2) * u;
+    const k = Math.max(1, Math.min(5, v.k * Math.exp(-e.deltaY * .0018)));
+    const r = v.k / k;
+    v.x = k === 1 ? 0 : px - (px - v.x) * r; v.y = k === 1 ? 0 : py - (py - v.y) * r; v.k = k;
+    applyView(which);
+  }, { passive: false });
+  let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false, dragging = false;
   stage.addEventListener('pointerdown', e => {
     if ((e.target as Element).closest('.hud, .panel')) return;
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size === 1) { drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; moved = false; }
-    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
+    const v = views[cur()];
+    drag = { x: e.clientX, y: e.clientY, vx: v.x, vy: v.y }; moved = false;
   });
   stage.addEventListener('pointermove', e => {
-    if (!pts.has(e.pointerId)) return;
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size === 2) {
-      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      const [x, y] = toSvg((a.x + b.x) / 2, (a.y + b.y) / 2);
-      if (pinch) zoomAt(x, y, d / pinch);
-      pinch = d; moved = true; return;
-    }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!moved && Math.abs(dx) + Math.abs(dy) > 5) { moved = true; stage.classList.add('dragging'); try { stage.setPointerCapture(e.pointerId); } catch {} }
+    if (!moved && Math.abs(dx) + Math.abs(dy) > 6 && views[cur()].k > 1) { moved = dragging = true; stage.classList.add('dragging'); }
     if (!moved) return;
-    const u = unit();
-    view.x = drag.vx + dx * u; view.y = drag.vy + dy * u;
-    draw();
+    const v = views[cur()], u = unitPx();
+    v.x = drag.vx - dx * u; v.y = drag.vy - dy * u;
+    applyView(cur());
   });
-  const up = (e: PointerEvent) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; stage.classList.remove('dragging'); } };
+  const up = () => { drag = null; dragging = false; stage.classList.remove('dragging'); };
   stage.addEventListener('pointerup', up);
   stage.addEventListener('pointercancel', up);
   document.querySelectorAll<HTMLButtonElement>('[data-z]').forEach(b => b.addEventListener('click', () => {
     const f = +b.dataset.z!;
-    if (!f) { animateView(fitView()); return; }
-    animateView({ k: view.k * f, x: view.x * f, y: view.y * f }, 300);
+    zoomTo(f ? views[cur()].k * f : 1);
   }));
   document.querySelector('[data-full]')!.addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else stage.requestFullscreen?.().catch(() => stage.classList.toggle('pseudo-full'));
   });
 
-  /* ---------- 全景里的高亮 ---------- */
+  /* ---------- 镜背上的高亮 ---------- */
   const hidden = new Set<string>();
   const typeOf = (p: SVGPathElement) => p.classList[1].slice(2);
   const ties = (id: string) => (D.t[id] ?? []).filter(t => !hidden.has(t[1]));
-  function light(ids: Set<string>, onEdges: (p: SVGPathElement) => boolean) {
-    svg.classList.add('lit');
-    nodes.forEach((n, id) => n.g.classList.toggle('on', ids.has(id)));
-    edges.forEach(p => p.classList.toggle('on', onEdges(p)));
+  function light(ids: Set<string>, onEdge: (p: SVGPathElement) => boolean) {
+    back.classList.add('lit');
+    nodes.forEach((g, id) => g.classList.toggle('on', ids.has(id)));
+    edges.forEach(p => p.classList.toggle('on', onEdge(p)));
   }
   function unlight() {
-    svg.classList.remove('lit', 'chain');
-    nodes.forEach(n => n.g.classList.remove('on', 'core'));
-    edges.forEach(p => p.classList.remove('on', 'trace'));
+    back.classList.remove('lit', 'chain');
+    nodes.forEach(g => g.classList.remove('on', 'core'));
+    edges.forEach(p => p.classList.remove('on'));
   }
-  let focusId: string | null = null, chainOn = false, egoR = 0;
+  let focusId: string | null = null, chainOn = false;
   const DEFAULT_STATUS = status.textContent!;
   function hover(id: string | null) {
-    if (focusId || chainOn) {
-      if (focusId && id) { status.textContent = `${id}　${D.p[id][1]}`; egoG.querySelectorAll<SVGPathElement>('path').forEach(p => p.classList.toggle('hot', p.dataset.b === id || p.dataset.a === id)); }
-      else if (focusId) egoG.querySelectorAll('path.hot').forEach(p => p.classList.remove('hot'));
-      return;
-    }
+    if (focusId || chainOn) return;
     if (!id) { unlight(); status.textContent = DEFAULT_STATUS; return; }
     const ts = ties(id);
     light(new Set([id, ...ts.map(t => t[0])]), p => (p.dataset.a === id || p.dataset.b === id) && !hidden.has(typeOf(p)));
-    nodes.get(id)!.g.classList.add('core');
+    nodes.get(id)!.classList.add('core');
     status.textContent = `${id}　${D.p[id][1]}　·　${ts.length} 位亲友`;
   }
-  nodes.forEach((n, id) => {
-    n.g.addEventListener('pointerenter', () => hover(id));
-    n.g.addEventListener('pointerleave', () => { if (!focusId) n.g.classList.remove('core'); hover(null); });
-    n.g.addEventListener('click', () => { if (!moved) focus(id); });
-    n.g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
+  nodes.forEach((g, id) => {
+    g.addEventListener('pointerenter', () => hover(id));
+    g.addEventListener('pointerleave', () => hover(null));
+    g.addEventListener('click', () => { if (!moved) focus(id); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
   });
-  svg.querySelectorAll<SVGGElement>('[data-sector]').forEach(s => s.addEventListener('click', () => {
-    if (focusId || moved) return;
+  back.querySelectorAll<SVGGElement>('[data-sector]').forEach(s => s.addEventListener('click', e => {
+    e.stopPropagation();
+    if (moved || chainOn) return;
     const g = s.dataset.sector!;
     const ids = new Set([...nodes.keys()].filter(id => D.p[id][0] === g));
-    light(ids, p => ids.has(p.dataset.a!) && ids.has(p.dataset.b!));
+    light(ids, p => ids.has(p.dataset.a!) || ids.has(p.dataset.b!));
     status.textContent = `${s.textContent}　${ids.size} 人`;
   }));
 
-  /* ---------- 变形：全景与命盘之间 ---------- */
-  let morphRaf = 0;
-  function morph(target: Map<string, [number, number]>, ms = 900, done?: () => void) {
-    cancelAnimationFrame(morphRaf);
-    const from = new Map([...nodes].map(([id, n]) => [id, [n.x, n.y] as [number, number]]));
-    const t0 = performance.now();
-    const ease = (t: number) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    const step = (now: number) => {
-      const t = reduced ? 1 : Math.min(1, (now - t0) / ms);
-      nodes.forEach((n, id) => {
-        const [fx, fy] = from.get(id)!, [tx, ty] = target.get(id)!;
-        /* 各人起步略有先后，沿弧线走，看起来像在盘上散开 */
-        const e = ease(Math.min(1, Math.max(0, t * 1.25 - (n.a % 60) / 60 * .25)));
-        const lift = Math.sin(e * Math.PI) * .12;
-        place(n, fx + (tx - fx) * e - (ty - fy) * lift, fy + (ty - fy) * e + (tx - fx) * lift);
-      });
-      if (t < 1) morphRaf = requestAnimationFrame(step); else done?.();
-    };
-    morphRaf = requestAnimationFrame(step);
+  /* ---------- 镜面：命盘 ---------- */
+  /* 和构建时同一套笔触：沿曲线采样，两头细、中段粗 */
+  function taper(pts: P[], wMax: number, wMin = .4) {
+    const L: P[] = [], Rt: P[] = [];
+    pts.forEach((p, i) => {
+      const q0 = pts[Math.max(0, i - 1)], q1 = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = q1[0] - q0[0], dy = q1[1] - q0[1];
+      const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+      const w = wMin + (wMax - wMin) * Math.pow(Math.sin(Math.PI * i / (pts.length - 1)), .7);
+      L.push([p[0] - dy * w, p[1] + dx * w]); Rt.push([p[0] + dy * w, p[1] - dx * w]);
+    });
+    return 'M' + [...L, ...Rt.reverse()].map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L') + 'Z';
   }
-
-  /* 命盘：本人居中，第一圈是亲友（按关系分段），第二圈是亲友的亲友，其余退到外沿 */
-  function egoLayout(id: string) {
-    const pos = new Map<string, [number, number]>();
-    const first = ties(id).sort((a, b) => D.order.indexOf(a[1]) - D.order.indexOf(b[1]));
-    const ring1 = first.map(t => t[0]);
-    const r1 = Math.min(R * .62, Math.max(R * .36, ring1.length * 46 / (2 * Math.PI)));
-    const ang1 = new Map<string, number>();
-    ring1.forEach((o, i) => { const a = -90 + (i + .5) * 360 / ring1.length; ang1.set(o, a); pos.set(o, [Math.cos(rad(a)) * r1, Math.sin(rad(a)) * r1]); });
-    const seen = new Set([id, ...ring1]);
-    const second: { id: string; a: number; via: string; t: Tie }[] = [];
-    for (const o of ring1) for (const t of ties(o)) {
-      if (seen.has(t[0])) continue;
-      seen.add(t[0]);
-      second.push({ id: t[0], a: ang1.get(o)!, via: o, t });
-    }
-    second.sort((a, b) => a.a - b.a);
-    const r2 = Math.min(R * .98, Math.max(r1 + 130, second.length * 17 / (2 * Math.PI)));
-    /* 第二圈按引荐人的方向排序后均匀铺满一圈，再整体转一个角度，让每人离引荐人最近 */
-    const m = second.length, even = 360 / Math.max(m, 1);
-    let off = 0;
-    if (m) off = second.reduce((acc, s, i) => { let d = s.a - (-90 + i * even); d = ((d + 540) % 360) - 180; return acc + d; }, 0) / m;
-    const angs = second.map((_, i) => m < 8 ? second[i].a : -90 + i * even + off);
-    second.forEach((s, i) => pos.set(s.id, [Math.cos(rad(angs[i])) * r2, Math.sin(rad(angs[i])) * r2]));
-    pos.set(id, [0, 0]);
-    nodes.forEach((n, nid) => { if (!pos.has(nid)) pos.set(nid, [Math.cos(rad(n.a)) * (R + 70), Math.sin(rad(n.a)) * (R + 70)]); });
-    return { pos, first, second, r1, r2, angs };
-  }
-  function drawEgo(L: ReturnType<typeof egoLayout>) {
+  const quad = (a: P, c: P, b: P, n = 14): P[] => Array.from({ length: n + 1 }, (_, i) => { const t = i / n, u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; });
+  const mk = (tag: string, attrs: Record<string, string | number>, parent: Element = egoG) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, String(attrs[k]));
+    parent.appendChild(e); return e;
+  };
+  function drawEgo(id: string) {
     egoG.innerHTML = '';
-    const mk = (tag: string, attrs: Record<string, string | number>) => {
-      const e = document.createElementNS(NS, tag);
-      for (const k in attrs) e.setAttribute(k, String(attrs[k]));
-      egoG.appendChild(e); return e;
-    };
-    mk('circle', { r: L.r1, class: 'ring' });
-    if (L.second.length) mk('circle', { r: L.r2, class: 'ring two' });
-    /* 关系分段：在第一圈内侧标出“血亲”“主仆”…… */
-    const n1 = L.first.length;
+    egoG.classList.remove('show');
+    const first = ties(id).sort((a, b) => D.order.indexOf(a[1]) - D.order.indexOf(b[1]));
+    const n1 = first.length;
+    const r1 = Math.min(R * .7, Math.max(R * .5, n1 * 62 / (2 * Math.PI)));
+    const pos = new Map<string, P>([[id, [0, 0]]]);
+    const ang = new Map<string, number>();
+    /* 人多时第一圈内外交错，名字才不会挤在一起 */
+    const stagger = n1 > 12;
+    first.forEach(([o], i) => { const a = -90 + (i + .5) * 360 / n1, rr = stagger ? (i % 2 ? r1 + 40 : r1 - 22) : r1; ang.set(o, a); pos.set(o, [Math.cos(rad(a)) * rr, Math.sin(rad(a)) * rr]); });
+    const seen = new Set([id, ...first.map(t => t[0])]);
+    const second: { id: string; a: number; via: string; t: Tie }[] = [];
+    for (const [o] of first) for (const t of ties(o)) { if (seen.has(t[0])) continue; seen.add(t[0]); second.push({ id: t[0], a: ang.get(o)!, via: o, t }); }
+    second.sort((a, b) => a.a - b.a);
+    const m = second.length, even = 360 / Math.max(m, 1);
+    const r2 = Math.min(R * 1.2, Math.max(r1 + (stagger ? 200 : 165), m * 22 / (2 * Math.PI)));
+    let off = 0;
+    if (m) off = second.reduce((acc, s, i) => acc + ((((s.a - (-90 + i * even)) + 540) % 360) - 180), 0) / m;
+    const a2 = second.map((s, i) => (m < 8 ? s.a : -90 + i * even + off));
+    second.forEach((s, i) => pos.set(s.id, [Math.cos(rad(a2[i])) * r2, Math.sin(rad(a2[i])) * r2]));
+
+    mk('circle', { r: r1, class: 'ering' });
+    if (m) mk('circle', { r: r2, class: 'ering two' });
+    /* 第一圈按关系分段，段名写在圈里 */
     let i0 = 0;
     for (let i = 1; i <= n1; i++) {
-      if (i < n1 && L.first[i][1] === L.first[i0][1]) continue;
-      const a0 = -90 + i0 * 360 / n1, a1 = -90 + i * 360 / n1, rr = L.r1 * .55;
-      const t = L.first[i0][1];
-      if (n1 > 1) mk('path', { class: 'seg', d: `M${Math.cos(rad(a0 + 1)) * rr} ${Math.sin(rad(a0 + 1)) * rr}A${rr} ${rr} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${Math.cos(rad(a1 - 1)) * rr} ${Math.sin(rad(a1 - 1)) * rr}`, style: `--tc:${D.color[t]}` });
-      const am = (a0 + a1) / 2, lr = rr - 16;
-      mk('text', { class: 'seg-t', x: (Math.cos(rad(am)) * lr).toFixed(1), y: (Math.sin(rad(am)) * lr).toFixed(1), style: `--tc:${D.color[t]}` }).textContent = D.types[t];
+      if (i < n1 && first[i][1] === first[i0][1]) continue;
+      const t = first[i0][1], a0 = -90 + i0 * 360 / n1, a1 = -90 + i * 360 / n1, rr = r1 * .58;
+      if (n1 > 1) mk('path', { class: `eseg t-${t}`, d: `M${Math.cos(rad(a0 + 1.5)) * rr} ${Math.sin(rad(a0 + 1.5)) * rr}A${rr} ${rr} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${Math.cos(rad(a1 - 1.5)) * rr} ${Math.sin(rad(a1 - 1.5)) * rr}` });
+      const am = (a0 + a1) / 2, lr = rr - 18;
+      mk('text', { class: `eseg-t t-${t}`, x: (Math.cos(rad(am)) * lr).toFixed(1), y: (Math.sin(rad(am)) * lr).toFixed(1) }).textContent = D.types[t];
       i0 = i;
     }
-    L.first.forEach(([o, t], i) => {
-      const [x, y] = L.pos.get(o)!;
-      mk('path', { class: 'l1', d: `M0 0Q${(x * .5 - y * .08).toFixed(1)} ${(y * .5 + x * .08).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`, style: `--tc:${D.color[t]};--i:${i}`, 'data-b': o, pathLength: 1 });
+    const lines = mk('g', { class: 'elines' });
+    second.forEach((s, i) => {
+      const a = pos.get(s.via)!, b = pos.get(s.id)!;
+      mk('path', { class: `el two t-${s.t[1]}`, d: taper(quad(a, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], b, 6), 1.3, .3), 'data-a': s.via, 'data-b': s.id, style: `--i:${i}` }, lines);
     });
-    L.second.forEach((s, i) => {
-      const [ax, ay] = L.pos.get(s.via)!, [bx, by] = L.pos.get(s.id)!;
-      mk('path', { class: 'l2', d: `M${ax.toFixed(1)} ${ay.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`, style: `--tc:${D.color[s.t[1]]};--i:${i}`, 'data-a': s.via, 'data-b': s.id, pathLength: 1 });
+    first.forEach(([o, t], i) => {
+      const b = pos.get(o)!;
+      mk('path', { class: `el one t-${t}`, d: taper(quad([0, 0], [b[0] * .5 - b[1] * .1, b[1] * .5 + b[0] * .1], b), 3.4, .5), 'data-a': id, 'data-b': o, style: `--i:${i}` }, lines);
     });
+    const dots = mk('g', {});
+    const person = (pid: string, ring: 1 | 2, i: number, role?: string, a = 0) => {
+      const [x, y] = pos.get(pid)!;
+      const g = mk('g', { class: `en r${ring}`, 'data-id': pid, tabindex: 0, role: 'button', 'aria-label': pid, style: `--x:${x.toFixed(1)}px;--y:${y.toFixed(1)}px;--i:${i};--gc:var(--g-${D.p[pid][0]})` }, dots);
+      mk('circle', { r: ring === 1 ? 14 : 10, class: 'hit' }, g);
+      mk('circle', { r: ring === 1 ? (D.p[pid][3] === 'c' ? 10 : 7.5) : 4.5, class: 'dot' }, g);
+      if (ring === 1) {
+        mk('text', { class: 'lb', y: 31 }, g).textContent = pid;
+        if (role) mk('text', { class: 'role', y: 51 }, g).textContent = role;
+      } else {
+        const aa = ((a % 360) + 360) % 360, fl = aa > 90 && aa < 270;
+        mk('text', { class: 'lb', x: fl ? -8 : 8, dy: '0.36em', 'text-anchor': fl ? 'end' : 'start', transform: `rotate(${fl ? aa + 180 : aa})` }, g).textContent = pid;
+      }
+      g.addEventListener('click', e => { e.stopPropagation(); focus(pid); });
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(pid); } });
+      g.addEventListener('pointerenter', () => { egoG.querySelectorAll<SVGPathElement>('.el').forEach(p => p.classList.toggle('hot', p.dataset.a === pid || p.dataset.b === pid)); status.textContent = `${pid}　${D.p[pid][1]}`; });
+      g.addEventListener('pointerleave', () => egoG.querySelectorAll('.el.hot').forEach(p => p.classList.remove('hot')));
+    };
+    second.forEach((s, i) => person(s.id, 2, i, undefined, a2[i]));
+    first.forEach(([o, , role], i) => person(o, 1, i, role));
+    /* 镜缘刻上本人的名号 */
+    const [, title, gname] = D.p[id];
+    const ring = `${gname}　${id}　${title}　`;
+    mk('path', { id: 'ego-rim', d: `M0 ${-(R + 132)}A${R + 132} ${R + 132} 0 1 1 -0.1 ${-(R + 132)}`, fill: 'none' });
+    const rt = mk('text', { class: 'erim' });
+    mk('textPath', { href: '#ego-rim', textLength: (2 * Math.PI * (R + 132) * .99).toFixed(0), lengthAdjust: 'spacing' }, rt).textContent = ring.repeat(Math.max(2, Math.round(64 / [...ring].length)));
+    /* 正中是本人，一方朱印 */
+    const me = mk('g', { class: 'me' });
+    mk('circle', { r: 64, class: 'me-ring' }, me);
+    mk('circle', { r: 54, class: 'me-disc' }, me);
+    const len = [...id].length;
+    mk('text', { class: 'me-t', dy: '0.36em', style: `font-size:${len > 3 ? 23 : len > 2 ? 30 : 36}px` }, me).textContent = id;
+    requestAnimationFrame(() => requestAnimationFrame(() => egoG.classList.add('show')));
   }
 
   function focus(id: string, instant = false) {
     if (!D.p[id]) return;
     const was = focusId;
-    unlight();
-    focusId = id; chainOn = false;
-    const L = egoLayout(id);
-    const r1Set = new Set(L.first.map(t => t[0])), r2Set = new Set(L.second.map(s => s.id));
-    svg.classList.add('mode-ego');
-    egoG.classList.remove('show');
-    nodes.forEach((n, nid) => {
-      n.g.classList.toggle('core', nid === id);
-      n.g.classList.toggle('r1', r1Set.has(nid));
-      n.g.classList.toggle('r2', r2Set.has(nid));
-      n.g.classList.toggle('rest', nid !== id && !r1Set.has(nid) && !r2Set.has(nid));
-      labelMode(n, nid === id || r1Set.has(nid) ? 'flat' : r2Set.has(nid) ? L.angs[L.second.findIndex(s => s.id === nid)] : n.a);
-      n.role.textContent = '';
-    });
-    L.first.forEach(([o, , role]) => { nodes.get(o)!.role.textContent = role; });
-    nodes.get(id)!.lb.setAttribute('dy', '0.36em'); nodes.get(id)!.mode = 'core';
-    egoR = L.r2 + 130;
-    morph(L.pos, instant ? 0 : was ? 750 : 1000, () => { drawEgo(L); requestAnimationFrame(() => egoG.classList.add('show')); });
+    unlight(); chainOn = false;
+    focusId = id;
+    views.front = { x: 0, y: 0, k: 1 }; applyView('front');
+    if (was) { egoG.classList.remove('show'); setTimeout(() => drawEgo(id), reduced ? 0 : 260); }
+    else if (instant || reduced) { drawEgo(id); flipDeg = 180; pose(); syncFace(); }
+    else { egoG.classList.remove('show'); egoG.innerHTML = ''; flipTo(180, () => drawEgo(id)); }
     renderPanel(id);
     backBtn.hidden = false;
     status.textContent = `${id}　${D.p[id][1]}`;
     const url = new URL(location.href); url.search = ''; url.searchParams.set('focus', id); history.replaceState(null, '', url);
-    animateView(fitView(), instant ? 0 : 800);
   }
-  function toWheel() {
+  function toBack() {
     if (!focusId && !chainOn) return;
     const wasEgo = !!focusId;
     focusId = null; chainOn = false;
-    egoG.classList.remove('show'); egoG.innerHTML = '';
-    svg.classList.remove('mode-ego');
-    nodes.forEach(n => { n.g.classList.remove('core', 'r1', 'r2', 'rest'); n.role.textContent = ''; labelMode(n, n.a); });
-    if (wasEgo) morph(new Map([...nodes].map(([id, n]) => [id, [n.wx, n.wy] as [number, number]])), 800);
     unlight();
     panel.hidden = true; stage.classList.remove('has-panel'); backBtn.hidden = true;
     status.textContent = DEFAULT_STATUS;
     history.replaceState(null, '', location.pathname);
-    animateView(fitView());
+    if (wasEgo) flipTo(0, () => egoG.classList.remove('show'));
   }
-  backBtn.addEventListener('click', toWheel);
-  addEventListener('keydown', e => { if (e.key === 'Escape' && (focusId || chainOn)) toWheel(); });
+  backBtn.addEventListener('click', toBack);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && (focusId || chainOn)) toBack(); });
   stage.addEventListener('click', e => {
-    if (moved || (e.target as Element).closest('.n, .hud, .panel, [data-sector]')) return;
-    if (focusId || chainOn) toWheel(); else unlight();
+    if (moved || (e.target as Element).closest('.n, .en, .hud, .panel, [data-sector]')) return;
+    if (focusId || chainOn) toBack(); else { unlight(); status.textContent = DEFAULT_STATUS; }
   });
 
   const groupColor = (id: string) => `var(--g-${D.p[id][0]})`;
@@ -401,12 +450,12 @@ const client = {
     const byType = new Map<string, Tie[]>();
     ts.forEach(t => { if (!byType.has(t[1])) byType.set(t[1], []); byType.get(t[1])!.push(t); });
     panel.innerHTML = `
-      <button type="button" class="pn-x" data-close aria-label="回到全景">×</button>
+      <button type="button" class="pn-x" data-close aria-label="翻回镜背">×</button>
       <p class="pn-g" style="--gc:var(--g-${group})">${esc(gname)}</p>
       <h2>${esc(id)}</h2>
       <p class="pn-t">${esc(title)}</p>
       <p class="pn-n">${ts.length} 位亲友</p>
-      ${[...byType].map(([t, list]) => `<div class="pn-sec"><h3 style="--tc:${D.color[t]}">${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}" style="--gc:${groupColor(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
+      ${[...byType].map(([t, list]) => `<div class="pn-sec"><h3 class="t-${t}">${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}" style="--gc:${groupColor(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
       <div class="pn-acts"><a class="btn" href="/people/${encodeURIComponent(id)}/">进人物页</a><button type="button" class="btn ghost" data-chain-from="${esc(id)}">从这里查关系链</button></div>`;
     panel.hidden = false;
     stage.classList.add('has-panel');
@@ -414,13 +463,12 @@ const client = {
   }
   panel.addEventListener('click', e => {
     const t = e.target as HTMLElement;
-    if (t.closest('[data-close]')) { toWheel(); return; }
+    if (t.closest('[data-close]')) { toBack(); return; }
     const go = t.closest<HTMLElement>('[data-go]');
     if (go) { focus(go.dataset.go!); return; }
     const cf = t.closest<HTMLElement>('[data-chain-from]');
-    if (cf) { const from = cf.dataset.chainFrom!; toWheel(); setMode('chain'); fromIn.value = from; toIn.focus(); }
+    if (cf) { const from = cf.dataset.chainFrom!; toBack(); setMode('chain'); fromIn.value = from; toIn.focus(); }
   });
-  panel.addEventListener('pointerover', e => { const go = (e.target as HTMLElement).closest<HTMLElement>('[data-go]'); if (go && focusId) hover(go.dataset.go!); });
 
   /* ---------- 找人 ---------- */
   const q = document.querySelector<HTMLInputElement>('[data-q]')!;
@@ -434,10 +482,10 @@ const client = {
     hidden.has(t) ? hidden.delete(t) : hidden.add(t);
     b.setAttribute('aria-pressed', String(!hidden.has(t)));
     edges.forEach(p => p.classList.toggle('off', hidden.has(typeOf(p))));
-    if (focusId) focus(focusId);
+    if (focusId) { drawEgo(focusId); renderPanel(focusId); }
   }));
 
-  /* ---------- 关系链：两人之间最短的一条路，沿着全景里的线描红 ---------- */
+  /* ---------- 关系链：两人之间最短的一条路，在镜背上描红 ---------- */
   const form = document.querySelector<HTMLFormElement>('[data-chain-form]')!;
   const fromIn = form.querySelector<HTMLInputElement>('[data-from]')!, toIn = form.querySelector<HTMLInputElement>('[data-to]')!;
   const findAll = document.querySelector<HTMLElement>('[data-find-all]')!;
@@ -445,37 +493,35 @@ const client = {
     document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
     form.hidden = m !== 'chain';
     findAll.hidden = m === 'chain';
-    if (m === 'chain') { if (focusId) { fromIn.value = focusId; toWheel(); } fromIn.value ? toIn.focus() : fromIn.focus(); }
+    if (m === 'chain') { if (focusId) { fromIn.value = focusId; toBack(); } fromIn.value ? toIn.focus() : fromIn.focus(); }
   }
   document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode!)));
   function bfs(a: string, b: string) {
     const prev = new Map<string, [string, Tie] | null>([[a, null]]);
     const queue = [a];
     while (queue.length) {
-      const cur = queue.shift()!;
-      if (cur === b) break;
-      for (const t of ties(cur)) { if (prev.has(t[0])) continue; prev.set(t[0], [cur, t]); queue.push(t[0]); }
+      const c = queue.shift()!;
+      if (c === b) break;
+      for (const t of ties(c)) { if (prev.has(t[0])) continue; prev.set(t[0], [c, t]); queue.push(t[0]); }
     }
     if (!prev.has(b)) return null;
     const steps: { from: string; to: string; tie: Tie }[] = [];
-    for (let cur = b; prev.get(cur); cur = prev.get(cur)![0]) steps.unshift({ from: prev.get(cur)![0], to: cur, tie: prev.get(cur)![1] });
+    for (let c = b; prev.get(c); c = prev.get(c)![0]) steps.unshift({ from: prev.get(c)![0], to: c, tie: prev.get(c)![1] });
     return steps;
   }
   const closeBtn = '<button type="button" class="pn-x" data-close aria-label="关闭">×</button>';
   function chain(a: string, b: string) {
-    if (focusId) toWheel();
-    const show = (html: string) => { panel.innerHTML = closeBtn + html; panel.hidden = false; stage.classList.add('has-panel'); animateView(fitView()); };
+    if (focusId) toBack();
+    const show = (html: string) => { panel.innerHTML = closeBtn + html; panel.hidden = false; stage.classList.add('has-panel'); };
     if (!D.p[a] || !D.p[b]) { show(`<p class="pn-empty">人物谱里找不到${esc(!D.p[a] ? a || '起点' : b || '终点')}。</p>`); return; }
     const steps = a === b ? [] : bfs(a, b);
-    if (!steps) { unlight(); show(`<p class="pn-empty">${esc(a)}和${esc(b)}之间，在现有的关系里连不上。</p>`); return; }
     unlight();
+    if (!steps) { show(`<p class="pn-empty">${esc(a)}和${esc(b)}之间，在现有的关系里连不上。</p>`); return; }
     chainOn = true;
     const ids = new Set([a, ...steps.map(s => s.to)]);
-    const on = (p: SVGPathElement) => steps.some(s => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from));
-    light(ids, on);
-    svg.classList.add('chain');
-    edges.filter(on).forEach(p => p.classList.add('trace'));
-    nodes.get(a)!.g.classList.add('core'); nodes.get(b)!.g.classList.add('core');
+    light(ids, p => steps.some(s => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from)));
+    back.classList.add('chain');
+    nodes.get(a)!.classList.add('core'); nodes.get(b)!.classList.add('core');
     show(`<p class="pn-g">关系链</p>
       <h2 class="chain-h">${esc(a)}<small>到</small>${esc(b)}</h2>
       <p class="pn-n">中间隔着 ${Math.max(0, steps.length - 1)} 个人</p>
@@ -489,134 +535,152 @@ const client = {
   }
   form.addEventListener('submit', e => { e.preventDefault(); chain(fromIn.value.trim(), toIn.value.trim()); });
 
-  /* ---------- 起步：线从圆周往里一根根画进去 ---------- */
-  draw();
+  /* ---------- 起步 ---------- */
   const params = new URLSearchParams(location.search);
-  if (!reduced && !params.size) {
-    edges.forEach(p => p.setAttribute('pathLength', '1'));
-    svg.classList.add('drawing');
-    setTimeout(() => { svg.classList.remove('drawing'); edges.forEach(p => p.removeAttribute('pathLength')); }, 2600);
-  }
   if (params.get('from') && params.get('to')) { setMode('chain'); fromIn.value = params.get('from')!; toIn.value = params.get('to')!; chain(fromIn.value, toIn.value); }
   else if (params.get('focus')) focus(params.get('focus')!, true);
-  addEventListener('resize', () => { view = fitView(); draw(); });
+  if (!reduced && !params.size) stage.classList.add('enter');
+  pose();
 </script>
 
 <style>
-  .gwrap { padding: 0 var(--gutter); max-width: calc(var(--wrap) + 240px); margin: 18px auto 0; }
-  .stage { position: relative; height: calc(100svh - var(--header-h) - 70px); min-height: 560px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 50%, var(--card) 0 38%, var(--paper) 75%); touch-action: none; cursor: grab; user-select: none; }
+  .gwrap { padding: 0 var(--gutter); max-width: calc(var(--wrap) + 240px); margin: 14px auto 0; }
+  .stage {
+    position: relative; height: calc(100svh - var(--header-h) - 60px); min-height: 600px; overflow: hidden; touch-action: none; user-select: none;
+    container-type: size; perspective: 1800px; border-radius: 10px;
+    background: radial-gradient(ellipse 60% 55% at 50% 52%, color-mix(in srgb, var(--paper-2) 70%, transparent), transparent 70%), var(--paper);
+    /* 镜子的配色不跟随站点主题 */
+    --e-b: #d9785a; --e-m: #e2bf73; --e-in: #c19a6a; --e-sv: #a8b8ac; --e-lv: #ea92a3; --e-fr: #93c1ca; --e-ri: #efe4cc; --e-my: #b3a5e0;
+  }
   .stage.dragging { cursor: grabbing; }
   .stage:fullscreen, .stage.pseudo-full { position: fixed; inset: 0; z-index: 100; height: 100%; border-radius: 0; }
-  .gsvg { width: 100%; height: 100%; display: block; overflow: visible; }
 
-  /* 盘面装饰 */
-  .rim { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
-  .rim.thin { stroke: var(--line); }
-  .rim.dash { stroke-dasharray: 2 6; }
-  .ticks { stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
-  .sec-arc { fill: none; stroke: var(--gc); stroke-width: 28; opacity: .1; transition: opacity .3s; }
+  /* 镜子本体：正方形，居中；有面板时让到左边 */
+  .mirror { position: absolute; left: 50%; top: 50%; width: min(96cqw, 96cqh); aspect-ratio: 1; translate: -50% -50%; transform-style: preserve-3d; transition: left .6s var(--ease), top .6s var(--ease), width .6s var(--ease); }
+  .has-panel .mirror { left: calc((100cqw - 372px) / 2); width: min(calc(100cqw - 392px), 96cqh); }
+  .face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; box-shadow: 0 40px 70px -30px rgb(30 20 5 / .55), 0 14px 26px -12px rgb(30 20 5 / .4); }
+  .face.front { transform: rotateY(180deg); }
+  .gsvg { width: 100%; height: 100%; display: block; }
+  .sheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at var(--sx, 35%) var(--sy, 28%), rgb(255 248 225 / .2), transparent 42%); mix-blend-mode: screen; }
+  .front .sheen { background: radial-gradient(circle at var(--sx, 35%) var(--sy, 28%), rgb(255 255 255 / .55), transparent 45%); mix-blend-mode: soft-light; }
+  /* 开场只动透明度和大小；滤镜会把三维的镜子压平，翻面时背面就藏不住 */
+  .enter .mirror { animation: rise 1.4s var(--ease) backwards; }
+  @keyframes rise { from { opacity: 0; scale: .9; } }
+
+  /* 镜背 */
+  .rim-outer { fill: none; stroke: url(#rim); stroke-width: 40; }
+  .rim-outer.f { stroke: url(#rim2); }
+  .field { fill: url(#bronze); }
+  [data-patina] { opacity: .9; mix-blend-mode: screen; }
+  .ring { fill: none; stroke: #b9965c; stroke-opacity: .55; stroke-width: 1.2; }
+  .ring.faint { stroke-opacity: .2; stroke-dasharray: 1 5; }
+  .beads { fill: none; stroke: #c9a76a; stroke-opacity: .28; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 11; }
+  .hui { fill: none; stroke: #c9a76a; stroke-opacity: .5; stroke-width: 1.4; }
+  .poem { font: 15px var(--display); fill: #d8bd84; fill-opacity: .7; }
   .sec { cursor: pointer; }
-  .sec:hover .sec-arc { opacity: .22; }
-  .sec-name { font: 700 22px var(--display); fill: var(--gc); text-anchor: middle; letter-spacing: .3em; }
-  .none { fill: none; }
-  .poem { font: 15px var(--kai); fill: var(--ink-3); letter-spacing: .35em; opacity: .75; }
-  .seal-r { fill: var(--cinnabar); }
-  .seal-t { font: 700 26px var(--display); fill: #fff6ea; text-anchor: middle; }
-  .core-deco, .sec, .ticks, .rim { transition: opacity .6s var(--ease); }
-  .mode-ego .core-deco, .mode-ego .sec { opacity: 0; pointer-events: none; }
-  .mode-ego .ticks, .mode-ego .rim { opacity: .4; }
+  .sec-arc { fill: none; stroke: color-mix(in srgb, var(--gc) 35%, #b8955a); stroke-width: 26; stroke-opacity: .3; transition: stroke-opacity .3s; }
+  .sec:hover .sec-arc { stroke-opacity: .6; }
+  .sec-name { font: 700 19px var(--display); fill: #f3e6c4; text-anchor: middle; letter-spacing: .4em; }
 
-  /* 关系线 */
-  .e { fill: none; stroke: var(--tc); stroke-width: 1; opacity: .22; transition: opacity .35s, stroke-width .35s; vector-effect: non-scaling-stroke; }
-  .e.x { opacity: .3; }
+  .e { stroke: none; fill: var(--ec); opacity: .34; transition: opacity .35s; }
+  .e.x { opacity: .42; }
   .e.off { display: none; }
-  .drawing .e { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: drawin 1.4s var(--ease) forwards; animation-delay: calc(var(--i) * 3ms + .2s); }
-  @keyframes drawin { to { stroke-dashoffset: 0; } }
-  .lit .e { opacity: .04; }
-  .lit .e.on { opacity: .95; stroke-width: 2; }
-  .chain .e.on { stroke: var(--cinnabar); stroke-width: 3; }
-  .e.trace { animation: pulse 1.6s var(--ease) 2; }
-  @keyframes pulse { 50% { stroke-width: 5; } }
-  .mode-ego .edges { opacity: 0; pointer-events: none; }
-  .edges { transition: opacity .5s; }
+  .t-b { --ec: var(--e-b); } .t-m { --ec: var(--e-m); } .t-in { --ec: var(--e-in); } .t-sv { --ec: var(--e-sv); }
+  .t-lv { --ec: var(--e-lv); } .t-fr { --ec: var(--e-fr); } .t-ri { --ec: var(--e-ri); } .t-my { --ec: var(--e-my); }
+  .enter .e { animation: ink 1.6s var(--ease) both; animation-delay: .5s; }
+  @keyframes ink { from { opacity: 0; } }
+  .lit .e { opacity: .07; }
+  .lit .e.on { opacity: 1; }
+  .chain .e.on { fill: #ff8a63; filter: drop-shadow(0 0 4px rgb(255 140 90 / .8)); }
 
-  /* 人物 */
   .n { cursor: pointer; outline: none; }
   .hit { fill: transparent; }
-  .dot { fill: var(--gc); stroke: var(--card); stroke-width: 1.5; transition: r .4s var(--ease), opacity .4s; }
-  .tier-c .dot { stroke: color-mix(in srgb, var(--gc) 40%, var(--card)); stroke-width: 3; }
-  .lb { font: 500 12.5px var(--serif); fill: var(--ink-2); transition: opacity .4s, fill .3s; pointer-events: none; }
-  .tier-c .lb { font-weight: 700; font-size: 14.5px; fill: var(--ink); }
-  .tier-s .lb, .tier-o .lb { font-size: 11.5px; fill: var(--ink-3); }
-  .n:hover .lb, .n:focus-visible .lb { fill: var(--gc); }
-  .n:hover .dot, .n:focus-visible .dot { opacity: .8; }
-  .lit .n { opacity: .25; }
+  .dot { fill: #e6c983; }
+  .tier-c .dot { fill: #f4dd9f; stroke: #8a6c35; stroke-width: 2; filter: drop-shadow(0 0 5px rgb(244 214 140 / .6)); }
+  .tier-s .dot, .tier-o .dot { fill: #c9ad73; }
+  .lb { font: 500 14px var(--serif); fill: #e9dcbc; pointer-events: none; transition: opacity .3s, fill .3s; }
+  .tier-c .lb { font: 700 21px var(--display); fill: #fbf0d4; }
+  .tier-m .lb { font-size: 14.5px; }
+  .tier-s .lb, .tier-o .lb { font-size: 12px; opacity: 0; }
+  .zoomed .tier-s .lb, .zoomed .tier-o .lb, .lit .n.on .lb { opacity: 1; }
+  .enter .n { animation: ink .8s var(--ease) both; animation-delay: calc(.2s + var(--d)); }
+  .n:hover .lb, .n:focus-visible .lb, .n.core .lb { fill: #ffd27a; }
+  .lit .n { opacity: .3; }
   .lit .n.on { opacity: 1; }
-  .lit .n.on .lb { fill: var(--ink); font-weight: 700; }
-  .n.core .lb { fill: var(--cinnabar) !important; }
-  .role { font: 500 11.5px var(--label); fill: var(--ink-3); text-anchor: middle; pointer-events: none; }
+  .knob { pointer-events: none; }
+  .knob-base { fill: #1f2925; stroke: #b9965c; stroke-opacity: .6; stroke-width: 1.4; }
+  .petal { fill: #2f3d36; stroke: #c9a76a; stroke-opacity: .7; stroke-width: 1.2; }
+  .knob-ch { font: 700 17px var(--display); fill: #e2c88d; text-anchor: middle; }
+  .knob-ball { fill: url(#knob); filter: drop-shadow(0 4px 6px rgb(0 0 0 / .6)); }
+  .knob-hole { fill: none; stroke: #3b2e17; stroke-opacity: .5; stroke-width: 1; }
 
-  /* 命盘 */
-  .mode-ego .n { opacity: 1; }
-  .mode-ego .n.rest { opacity: .2; }
-  .mode-ego .n.rest .lb { opacity: 0; }
-  .mode-ego .n.rest .dot { r: 2px; }
-  .mode-ego .n.r1 .lb { font-size: 16px; font-weight: 700; fill: var(--ink); }
-  .mode-ego .n.r1 .dot { r: 7px; }
-  .mode-ego .n.r2 .lb { font-size: 12.5px; fill: var(--ink-2); }
-  .mode-ego .n.core .dot { r: 38px; stroke: var(--card); stroke-width: 4; filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); }
-  .mode-ego .n.core .lb { font: 700 24px var(--display); fill: #fff6ea !important; }
-  .ego { opacity: 0; transition: opacity .5s; pointer-events: none; }
-  .ego.show { opacity: 1; }
-  .ego :global(.ring) { fill: none; stroke: var(--line-2); stroke-dasharray: 2 5; vector-effect: non-scaling-stroke; }
-  .ego :global(.ring.two) { stroke: var(--line); }
-  .ego :global(.seg) { fill: none; stroke: var(--tc); stroke-width: 3; stroke-linecap: round; opacity: .55; }
-  .ego :global(.seg-t) { font: 700 11px var(--label); fill: var(--tc); text-anchor: middle; dominant-baseline: middle; letter-spacing: .14em; }
-  .ego :global(.l1), .ego :global(.l2) { fill: none; stroke: var(--tc); vector-effect: non-scaling-stroke; transition: opacity .3s, stroke-width .3s; }
-  .ego :global(.l1) { stroke-width: 1.6; opacity: .7; }
-  .ego :global(.l2) { stroke-width: 1; opacity: .3; }
-  .ego.show :global(.l1), .ego.show :global(.l2) { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: drawin .8s var(--ease) forwards; animation-delay: calc(var(--i) * 18ms); }
-  .ego.show :global(.l2) { animation-delay: calc(.35s + var(--i) * 6ms); }
-  .ego :global(path.hot) { opacity: 1; stroke-width: 3; }
+  /* 镜面：命盘 */
+  .mface { fill: url(#silver); }
+  [data-ego] :global(.ering) { fill: none; stroke: #8f7a4f; stroke-opacity: .45; stroke-dasharray: 2 6; }
+  [data-ego] :global(.ering.two) { stroke-opacity: .25; }
+  [data-ego] :global(.eseg) { fill: none; stroke: var(--ec); stroke-width: 4; stroke-linecap: round; filter: brightness(.7); }
+  [data-ego] :global(.eseg-t) { font: 700 15px var(--label); fill: var(--ec); filter: brightness(.6); text-anchor: middle; dominant-baseline: middle; letter-spacing: .16em; }
+  [data-ego] :global(.el) { fill: var(--ec); filter: brightness(.62) saturate(1.3); transition: opacity .3s; }
+  [data-ego] :global(.el.one) { opacity: .75; }
+  [data-ego] :global(.el.two) { opacity: .32; }
+  [data-ego] :global(.el.hot) { opacity: 1; }
+  [data-ego] :global(.en) { cursor: pointer; outline: none; transform: translate(0, 0); opacity: 0; transition: transform .9s var(--ease), opacity .6s; transition-delay: calc(var(--i) * 22ms); }
+  [data-ego] :global(.en.r2) { transition-delay: calc(.25s + var(--i) * 6ms); }
+  [data-ego]:global(.show) :global(.en) { transform: translate(var(--x), var(--y)); opacity: 1; }
+  [data-ego] :global(.elines) { opacity: 0; transition: opacity .8s .5s; }
+  [data-ego]:global(.show) :global(.elines) { opacity: 1; }
+  [data-ego] :global(.en .dot) { fill: var(--gc); stroke: #fbf6ea; stroke-width: 2; }
+  [data-ego] :global(.erim) { font: 700 17px var(--display); fill: #8a7448; fill-opacity: .55; }
+  [data-ego] :global(.en .lb) { font: 700 21px var(--serif); fill: #2a2118; text-anchor: middle; paint-order: stroke; stroke: #f3ecdc; stroke-width: 4px; stroke-linejoin: round; opacity: 1; }
+  [data-ego] :global(.en.r2 .lb) { font: 500 15.5px var(--serif); fill: #4a3f30; stroke-width: 3px; }
+  [data-ego] :global(.en .role) { font: 700 14px var(--label); fill: #7a6a50; text-anchor: middle; paint-order: stroke; stroke: #f3ecdc; stroke-width: 3px; }
+  [data-ego] :global(.en:hover .lb) { fill: #a3321f; }
+  [data-ego] :global(.me) { opacity: 0; transform: scale(.4); transition: opacity .6s, transform .9s var(--ease); }
+  [data-ego]:global(.show) :global(.me) { opacity: 1; transform: scale(1); }
+  [data-ego] :global(.me-ring) { fill: none; stroke: #a3321f; stroke-width: 2; stroke-dasharray: 3 4; }
+  [data-ego] :global(.me-disc) { fill: #a3321f; filter: drop-shadow(0 6px 10px rgb(80 20 10 / .35)); }
+  [data-ego] :global(.me-t) { font-family: var(--display); font-weight: 700; fill: #fff4e2; text-anchor: middle; }
 
-  /* 浮在盘上的工具 */
+  /* 浮在四周的工具 */
   .hud { position: absolute; z-index: 3; display: flex; gap: 6px; align-items: center; }
-  .hud.top { top: 14px; left: 14px; right: 14px; flex-wrap: wrap; pointer-events: none; }
+  .hud.top { top: 12px; left: 12px; right: 12px; flex-wrap: wrap; pointer-events: none; }
   .hud.top > * { pointer-events: auto; }
-  .modes, .zoom, .legend, .find, .chain-form, .back { background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
+  .modes, .zoom, .legend, .find, .chain-form, .flipback { background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
   .modes { display: flex; padding: 3px; }
-  .modes button { padding: 8px 16px; border-radius: 999px; font: 600 13px/1 var(--label); color: var(--ink-3); letter-spacing: .1em; }
+  .modes button { padding: 8px 16px; border-radius: 999px; font: 700 13px/1 var(--label); color: var(--ink-3); letter-spacing: .14em; }
   .modes button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
   .find { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; color: var(--ink-3); }
-  .find input, .chain-form input { border: 0; background: none; outline: none; font-size: 15px; width: 140px; color: var(--ink); }
-  .chain-form { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 14px; font: 600 12px var(--label); color: var(--ink-3); }
+  .find input, .chain-form input { border: 0; background: none; outline: none; font-size: 15px; width: 130px; color: var(--ink); }
+  .chain-form { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 14px; font: 700 12px var(--label); color: var(--ink-3); }
   .chain-form input { width: 96px; }
   .chain-form .btn { height: 32px; padding: 0 16px; }
-  .chain-form[hidden], .find[hidden], .back[hidden] { display: none; }
-  .back { height: 40px; padding: 0 16px; font: 600 13px var(--label); color: var(--cinnabar); }
-  .legend { left: 14px; bottom: 14px; flex-wrap: wrap; max-width: min(560px, calc(100% - 200px)); padding: 6px 10px; border-radius: 12px; gap: 2px 4px; }
-  .lg { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font: 600 12px/1 var(--label); color: var(--ink-2); }
-  .lg[aria-pressed="false"] { opacity: .35; text-decoration: line-through; }
-  .lg:hover { background: var(--paper-2); }
-  .zoom { right: 14px; bottom: 14px; flex-direction: column; padding: 4px; border-radius: 14px; gap: 2px; }
-  .zoom button { min-width: 40px; height: 34px; border-radius: 10px; font: 600 13px/1 var(--label); color: var(--ink-2); }
-  .zoom button:hover { background: var(--paper-2); color: var(--cinnabar); }
-  .has-panel .zoom { right: 380px; }
-  .status { margin: 0 0 0 auto; max-width: 360px; font: 500 13px var(--label); color: var(--ink-3); padding: 0 6px; pointer-events: none !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chain-form[hidden], .find[hidden], .flipback[hidden] { display: none; }
+  .flipback { height: 40px; padding: 0 16px; font: 700 13px var(--label); color: var(--cinnabar); letter-spacing: .1em; }
+  .status { margin: 0 0 0 auto; max-width: 380px; font: 500 13.5px var(--label); color: var(--ink-3); padding: 0 6px; pointer-events: none !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .06em; }
   .has-panel .status { display: none; }
+  .legend { left: 12px; bottom: 12px; flex-direction: column; align-items: stretch; padding: 8px; border-radius: 12px; gap: 1px; }
+  .lg { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 6px; font: 700 12px/1 var(--label); color: var(--ink-2); letter-spacing: .1em; }
+  .lg i { width: 18px; height: 4px; border-radius: 4px; background: var(--ec); filter: brightness(.75); }
+  .lg[aria-pressed="false"] { opacity: .35; }
+  .lg[aria-pressed="false"] i { background: var(--line-2); }
+  .lg:hover { background: var(--paper-2); }
+  .zoom { right: 12px; bottom: 12px; flex-direction: column; padding: 4px; border-radius: 14px; gap: 2px; }
+  .zoom button { min-width: 42px; height: 34px; border-radius: 10px; font: 700 13px/1 var(--label); color: var(--ink-2); }
+  .zoom button:hover { background: var(--paper-2); color: var(--cinnabar); }
+  .has-panel .zoom { right: 384px; }
 
-  .panel { position: absolute; z-index: 4; top: 14px; right: 14px; bottom: 14px; width: 352px; overflow-y: auto; padding: 22px 22px 18px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px); animation: slide .45s var(--ease); cursor: auto; user-select: text; }
+  .panel { position: absolute; z-index: 4; top: 12px; right: 12px; bottom: 12px; width: 356px; overflow-y: auto; padding: 22px 22px 18px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px); animation: slide .5s var(--ease); cursor: auto; user-select: text; }
   @keyframes slide { from { opacity: 0; transform: translateX(18px); } }
   .panel :global(.pn-x) { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: var(--ink-3); }
   .panel :global(.pn-x:hover) { background: var(--paper-2); color: var(--cinnabar); }
-  .panel :global(.pn-g) { font: 700 11.5px/1 var(--label); letter-spacing: .24em; color: var(--gc, var(--cinnabar)); }
-  .panel :global(h2) { font: 700 40px/1.15 var(--display); margin: 10px 0 4px; }
+  .panel :global(.pn-g) { font: 700 12px/1 var(--label); letter-spacing: .24em; color: var(--gc, var(--cinnabar)); }
+  .panel :global(h2) { font: 700 40px/1.15 var(--display); margin: 10px 0 4px; letter-spacing: .06em; }
   .panel :global(.chain-h) { font-size: 28px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
   .panel :global(.chain-h small) { font: 500 13px var(--label); color: var(--ink-3); }
   .panel :global(.pn-t) { font-size: 14.5px; color: var(--ink-2); }
-  .panel :global(.pn-n) { font: 600 12px/1 var(--label); color: var(--ink-3); margin: 14px 0 6px; letter-spacing: .1em; }
+  .panel :global(.pn-n) { font: 700 12px/1 var(--label); color: var(--ink-3); margin: 14px 0 6px; letter-spacing: .12em; }
   .panel :global(.pn-sec) { padding: 10px 0; border-top: 1px solid var(--line); }
-  .panel :global(.pn-sec h3) { font: 700 11.5px/1 var(--label); letter-spacing: .2em; color: var(--tc); margin-bottom: 8px; }
+  .panel :global(.pn-sec h3) { font: 700 12px/1 var(--label); letter-spacing: .22em; color: var(--ec); filter: brightness(.65); margin-bottom: 8px; }
   .panel :global(.pn-sec ul) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .panel :global(.pn-sec li) { display: flex; align-items: baseline; gap: 10px; font-size: 15px; }
   .panel :global([data-go]) { font-weight: 700; border-bottom: 1.5px solid color-mix(in srgb, var(--gc) 55%, transparent); }
@@ -627,20 +691,21 @@ const client = {
   .panel :global(.chain li) { display: grid; justify-items: start; gap: 4px; padding: 6px 0 6px 18px; border-left: 2px solid var(--cinnabar-soft); position: relative; }
   .panel :global(.chain li::before) { content: ''; position: absolute; left: -6px; bottom: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--cinnabar); }
   .panel :global(.via) { font-size: 13px; color: var(--ink-3); }
-  .panel :global(.via small) { margin-left: 8px; font: 600 10.5px var(--label); letter-spacing: .1em; color: var(--cinnabar); }
+  .panel :global(.via small) { margin-left: 8px; font: 700 10.5px var(--label); letter-spacing: .1em; color: var(--cinnabar); }
   .panel :global(.pn-note), .panel :global(.pn-empty) { margin-top: 14px; font-size: 13px; color: var(--ink-3); line-height: 1.8; }
   .panel :global(.pn-empty) { font-size: 15px; color: var(--ink-2); margin-top: 30px; }
 
   @media (max-width: 900px) {
     .gwrap { padding: 0; margin-top: 0; }
-    .stage { border-radius: 0; border-left: 0; border-right: 0; height: calc(100svh - var(--header-h) - 42px); }
-    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 44%; border-radius: 16px 16px 0 0; animation-name: rise; }
-    @keyframes rise { from { opacity: 0; transform: translateY(20px); } }
-    .has-panel .zoom, .has-panel .legend, .has-panel .status { display: none; }
-    .legend { max-width: calc(100% - 90px); }
-    .lg { font-size: 11px; padding: 4px 5px; }
+    .stage { border-radius: 0; height: calc(100svh - var(--header-h) - 42px); }
+    .mirror { top: 52%; }
+    .has-panel .mirror { left: 50%; top: 28%; width: min(94cqw, 50cqh); }
+    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46%; border-radius: 16px 16px 0 0; animation-name: up; }
+    @keyframes up { from { opacity: 0; transform: translateY(20px); } }
+    .has-panel .zoom, .has-panel .legend, .status { display: none; }
+    .legend { flex-direction: row; flex-wrap: wrap; max-width: calc(100% - 90px); }
+    .lg { font-size: 11px; padding: 4px 6px; }
     .find input { width: 100px; }
-    .chain-form input { width: 64px; }
-    .status { display: none; }
+    .chain-form input { width: 60px; }
   }
 </style>
