@@ -367,9 +367,10 @@ const Garden = (() => {
         hall(g, x, y - 10, 38, .8, { bays: 3 });
         break;
       case 'dct':
-        el('rect', { class: 'g-corr', x: 756, y: 447, width: 50, height: 6 }, g);
-        el('path', { class: 'g-pile', d: 'M762 453v5M774 453v5M786 453v5M798 453v5' }, g);
-        el('rect', { class: 'g-plinth', x: 734, y: 452, width: 28, height: 5 }, g);
+        /* 曲廊朝西南，接回潇湘馆那一侧的岸 */
+        el('rect', { class: 'g-corr', x: x - 58, y: y - 5, width: 50, height: 6 }, g);
+        el('path', { class: 'g-pile', d: [-52, -40, -28, -16].map(d => `M${x + d} ${y + 1}v5`).join('') }, g);
+        el('rect', { class: 'g-plinth', x: x - 14, y, width: 28, height: 5 }, g);
         ting(g, x, y + 1, .85);
         break;
       case 'lxa':
@@ -531,8 +532,8 @@ const Garden = (() => {
       ['willow', 404, 396], ['willow', 396, 462], ['willow', 524, 520], ['willow', 690, 520], ['willow', 760, 514], ['willow', 826, 400], ['willow', 826, 486], ['willow', 580, 326], ['willow', 456, 312],
       ['plum', 980, 150], ['plum', 1130, 200], ['plum', 1000, 232], ['plum', 1120, 240], ['plum', 960, 196], ['plum', 1082, 236],
       ['blossom', 92, 330], ['blossom', 256, 340], ['blossom', 252, 300], ['blossom', 98, 380], ['blossom', 140, 290],
-      ['bamboo', 250, 584], ['bamboo', 412, 600], ['bamboo', 408, 640], ['bamboo', 250, 650], ['bamboo', 300, 676], ['bamboo', 360, 676], ['bamboo', 410, 676], ['bamboo', 280, 566],
-      ['banana', 966, 560], ['pine', 1040, 96], ['pine', 1106, 92], ['pine', 132, 80], ['pine', 196, 90]
+      ['bamboo', 292, 584], ['bamboo', 452, 604], ['bamboo', 448, 642], ['bamboo', 292, 650], ['bamboo', 342, 676], ['bamboo', 400, 676], ['bamboo', 448, 676], ['bamboo', 322, 566],
+      ['banana', 926, 560], ['pine', 1040, 96], ['pine', 1106, 92], ['pine', 132, 80], ['pine', 196, 90]
     ];
     special.forEach(([k, x, y]) => {
       planted.push([x, y]);
