@@ -6,7 +6,7 @@ import TitleSlip from '../components/TitleSlip.astro';
 import daguanyuan from '../assets/paintings/sunwen-daguanyuan.jpg';
 import imgDaiyu from '../assets/paintings/tuyong-daiyu.jpg';
 import imgStone from '../assets/paintings/tuyong-stone.jpg';
-import imgXiangyun from '../assets/paintings/tuyong-xiangyun.jpg';
+import imgGarden from '../assets/paintings/sunwen-garden.jpg';
 import imgJinghuan from '../assets/paintings/tuyong-jinghuan.jpg';
 import InkRiver from '../components/InkRiver.astro';
 import { PEOPLE, EDGES, CHAPTERS, TOTAL_CHARS, TOTAL_NOTES, STATS, byId, verseOf, huiName } from '../lib/data.ts';
@@ -21,11 +21,11 @@ const twelve = TWELVE_ORDER.map(id => {
   const lines = id === '林黛玉' ? ['堪怜咏絮才', '玉带林中挂'] : id === '薛宝钗' ? ['可叹停机德', '金簪雪里埋'] : v!.verse.slice(-2);
   return { p, img: portraitImage(p.portrait)!, lines, book: p.book === 'z' ? '正册' : p.book === 'f' ? '副册' : '又副册' };
 });
-/* 开卷四轴：画取改琦《红楼梦图咏》，句子都是书里的原话 */
+/* 开卷四轴：人物、关系、回目取改琦《红楼梦图咏》，园子取孙温全景的左半边；句子都是书里的原话 */
 const DOORS = [
   { href: '/people/', title: '人物譜', img: imgDaiyu, line: '千红一窟，万艳同杯' },
   { href: '/graph/', title: '關係', img: imgStone, line: '一损皆损，一荣皆荣' },
-  { href: '/garden/', title: '大觀園', img: imgXiangyun, line: '天上人间诸景备' },
+  { href: '/garden/', title: '大觀園', img: imgGarden, line: '天上人间诸景备' },
   { href: '/chapters/', title: '一百二十回', img: imgJinghuan, line: '字字看来皆是血' }
 ];
 const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary]);
@@ -58,11 +58,11 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
           <span class="mount">
             <span class="hua">
               <Image src={d.img} alt="" widths={[360, 560, 760]} sizes="(max-width: 760px) 44vw, 22vw" loading="lazy" />
-              <span class="tag">{d.title}</span>
             </span>
           </span>
           <span class="di" aria-hidden="true"></span>
         </span>
+        <span class="title">{d.title}</span>
         <span class="line kai">{d.line}</span>
       </a>
     ))}
@@ -191,27 +191,30 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   @property --p { syntax: '<number>'; inherits: true; initial-value: 1; }
   .hangs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(20px, 4vw, 64px); padding-top: clamp(80px, 12vw, 160px); padding-bottom: clamp(60px, 8vw, 120px); }
   .hangs.reveal { opacity: 1; transform: none; filter: none; }
-  .axis { display: flex; flex-direction: column; align-items: center; gap: 22px; color: inherit; }
+  .axis { display: flex; flex-direction: column; align-items: center; gap: 12px; color: inherit; }
+  .roll { margin-bottom: 18px; }
   .roll { position: relative; display: block; width: 100%; --p: 1; }
   .tian { position: relative; display: block; height: 10px; margin: 0 -2%; border-radius: 3px; background: linear-gradient(#5b3d22, #8a6038 40%, #4a2f18); box-shadow: 0 2px 3px rgb(30 18 6 / .3); }
   .tian::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 40%; height: 30px; translate: -50% 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 30' preserveAspectRatio='none'%3E%3Cpath d='M2 30 Q30 12 50 3 Q70 12 98 30' fill='none' stroke='%236b4a2a' stroke-width='1.4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") no-repeat center / 100% 100%; }
   .tian::after { content: ''; position: absolute; left: 50%; bottom: calc(100% + 24px); width: 7px; height: 7px; translate: -50% 0; border-radius: 50%; background: #6b4a2a; }
   .mount { display: block; padding: 16% 8% 10%; background-color: #ddd3bc; background-image: linear-gradient(90deg, rgb(255 255 255 / .18), transparent 30%, transparent 70%, rgb(0 0 0 / .05)), var(--paper-fiber); box-shadow: inset 0 0 0 1px rgb(80 60 30 / .12), 0 18px 30px -18px rgb(40 26 10 / .45); clip-path: inset(0 0 calc((1 - var(--p)) * 100%) 0); }
   .hua { position: relative; display: block; box-shadow: 0 0 0 4px #efe7d3, 0 0 0 5px rgb(80 60 30 / .25); }
-  .hua :global(img) { display: block; width: 100%; height: auto; transition: filter .8s var(--ease); }
-  .tag { position: absolute; top: 7%; right: 7%; writing-mode: vertical-rl; padding: .7em .35em; font: 400 clamp(17px, 1.7vw, 24px)/1 var(--title); letter-spacing: .18em; color: #1d1712; background: #f5edd9; box-shadow: inset 0 0 0 1px #3b2f22, inset 0 0 0 3px #f5edd9, inset 0 0 0 3.6px #3b2f22, 0 3px 8px -3px rgb(30 20 8 / .4); }
+  .hua :global(img) { display: block; width: 100%; aspect-ratio: 1130 / 1700; object-fit: cover; height: auto; transition: filter .8s var(--ease); }
   .di { position: absolute; left: -5%; right: -5%; top: calc(var(--p) * (100% - 14px)); height: 14px; border-radius: 7px; background: linear-gradient(#4a2f18, #8a6038 35%, #5b3d22 70%, #2e1c0c); box-shadow: 0 6px 10px -4px rgb(30 18 6 / .5); }
   .di::before, .di::after { content: ''; position: absolute; top: -3px; width: 12px; height: 20px; border-radius: 4px; background: linear-gradient(90deg, #6e4a26, #c99a5e 45%, #6e4a26); }
   .di::before { left: -6px; }
   .di::after { right: -6px; }
-  .line { font-size: 15px; letter-spacing: .3em; color: var(--ink-3); white-space: nowrap; transition: color .4s; }
-  .axis:hover .line { color: var(--cinnabar); }
+  /* 题目写在立轴下方，画心一点不挡 */
+  .title { font: 400 clamp(22px, 2vw, 28px)/1.2 var(--title); letter-spacing: .24em; margin-right: -.24em; color: var(--ink); transition: color .4s; }
+  .axis:hover .title { color: var(--cinnabar); }
+  .line { font-size: 14px; letter-spacing: .3em; color: var(--ink-3); white-space: nowrap; }
   .axis:hover .hua :global(img) { filter: brightness(1.04) contrast(1.06); }
   @media (prefers-reduced-motion: no-preference) {
     .hangs:not(.in) .roll { --p: 0; }
     .hangs:not(.in) .line { opacity: 0; }
     .hangs.in .roll { animation: unfurl 1.6s cubic-bezier(.5, 0, .2, 1) calc(var(--i) * .22s) both; }
-    .hangs.in .line { animation: settle .9s ease calc(1.3s + var(--i) * .22s) both; }
+    .hangs:not(.in) .title { opacity: 0; }
+    .hangs.in .title, .hangs.in .line { animation: settle .9s ease calc(1.3s + var(--i) * .22s) both; }
     .roll { transition: transform .6s var(--ease); }
     .axis:hover .roll { transform: translateY(-4px) rotate(-.4deg); }
   }
