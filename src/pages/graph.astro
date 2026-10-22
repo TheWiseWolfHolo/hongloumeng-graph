@@ -1,51 +1,66 @@
 ---
 import Base from '../layouts/Base.astro';
-import { layGraph } from '../lib/graph-layout.ts';
+import { layWheel, R } from '../lib/graph-layout.ts';
 import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE, EDGES } from '../lib/data.ts';
 
-const G = layGraph();
+const W = layWheel();
 const TYPE_COLOR: Record<string, string> = { b: 'var(--g-rong)', m: 'var(--gold)', in: 'var(--g-ning)', sv: 'var(--ink-3)', lv: 'var(--k-lv)', fr: 'var(--g-lin)', ri: 'var(--ink)', my: 'var(--g-myth)' };
-/* 边画成轻微的弧，避免两条线重在一起 */
-const edgePath = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
-  const bend = Math.min(40, d * .12);
-  return `M${a.x} ${a.y}Q${(mx - (dy / d) * bend).toFixed(1)} ${(my + (dx / d) * bend).toFixed(1)} ${b.x} ${b.y}`;
+const HALF = R + 150;
+const rad = (d: number) => (d * Math.PI) / 180;
+const pt = (deg: number, r: number) => `${(Math.cos(rad(deg)) * r).toFixed(1)} ${(Math.sin(rad(deg)) * r).toFixed(1)}`;
+/* 家族名写在外圈弧上；下半圈的弧反着走，字才不会倒 */
+const arc = (a0: number, a1: number, r: number) => {
+  const mid = (((a0 + a1) / 2) % 360 + 360) % 360;
+  const bottom = mid > 0 && mid < 180;
+  const large = a1 - a0 > 180 ? 1 : 0;
+  return bottom ? `M${pt(a1, r)}A${r} ${r} 0 ${large} 0 ${pt(a0, r)}` : `M${pt(a0, r)}A${r} ${r} 0 ${large} 1 ${pt(a1, r)}`;
 };
-/* 给前端的数据：每人的身份和亲友 */
+let ticks = '';
+for (let d = 0; d < 360; d += 2) ticks += `M${pt(d, R + 132)}L${pt(d, R + 132 - (d % 10 ? 4 : 10))}`;
+const flip = (a: number) => a > 90 && a < 270;
 const client = {
   p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name]])),
   t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role])])),
-  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name]))
+  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name])),
+  order: TYPE_ORDER,
+  color: TYPE_COLOR,
+  R
 };
 ---
-<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系：按家族聚成九座岛，点一个人看他的亲友，或者查两个人之间隔着谁。`} section="relations" sub="graph" bodyClass="pg-graph">
+<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系画成一张圆盘：九个家族沿圆周排开，关系线成束穿过。点一个人，盘面变成以他为中心的命盘。`} section="relations" sub="graph" bodyClass="pg-graph">
   <div class="gwrap">
     <div class="stage" data-stage>
-      <svg class="gsvg" data-svg role="img" aria-label="人物关系图">
-        <defs>
-          <radialGradient id="island-fill"><stop offset="0" stop-color="var(--ic)" stop-opacity=".12" /><stop offset=".7" stop-color="var(--ic)" stop-opacity=".05" /><stop offset="1" stop-color="var(--ic)" stop-opacity="0" /></radialGradient>
-          <filter id="isl-blur"><feGaussianBlur stdDeviation="8" /></filter>
-        </defs>
+      <svg class="gsvg" data-svg viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} role="img" aria-label="人物关系星图">
         <g data-vp>
-          <g class="islands">
-            {G.islands.map(i => (
-              <g class="island" style={`--ic:var(--g-${i.g})`} data-island={i.g}>
-                <circle cx={i.x} cy={i.cy} r={i.rad} fill="url(#island-fill)" />
-                <text class="isl-name" x={i.x} y={i.y}>{GROUPS[i.g].name}</text>
+          <g class="deco">
+            <circle class="rim" r={R + 132} />
+            <path class="ticks" d={ticks} />
+            <circle class="rim thin" r={R + 88} />
+            {W.sectors.map(s => (
+              <g class="sec" data-sector={s.g} style={`--gc:var(--g-${s.g})`}>
+                <path class="sec-arc" d={arc(s.a0, s.a1, R + 110)} id={`arc-${s.g}`} />
+                <text class="sec-name" dy="0.36em"><textPath href={`#arc-${s.g}`} startOffset="50%">{GROUPS[s.g].name}</textPath></text>
               </g>
             ))}
+            <g class="core-deco">
+              <circle class="rim dash" r={R * .3} />
+              <path id="poem-ring" class="none" d={`M0 ${-R * .2}A${R * .2} ${R * .2} 0 1 1 -0.1 ${-R * .2}`} />
+              <text class="poem"><textPath href="#poem-ring">满纸荒唐言　一把辛酸泪　都云作者痴　谁解其中味　</textPath></text>
+              <rect class="seal-r" x="-34" y="-34" width="68" height="68" rx="6" />
+              <text class="seal-t" y="-4">红楼</text><text class="seal-t" y="26">人物</text>
+            </g>
           </g>
-          <g class="edges">
-            {G.links.map(l => {
-              const a = G.nodes[l.s], b = G.nodes[l.t];
-              return <path class={`e t-${l.type}`} d={edgePath(a, b)} data-a={a.id} data-b={b.id} style={`--tc:${TYPE_COLOR[l.type]}`} stroke-dasharray={REL_TYPES[l.type].dash || undefined} />;
-            })}
+          <g class="edges" data-edges>
+            {W.links.map((l, i) => <path class:list={['e', `t-${l.type}`, { x: l.cross }]} d={l.d} data-a={l.a} data-b={l.b} style={`--tc:${TYPE_COLOR[l.type]};--i:${i}`} stroke-dasharray={REL_TYPES[l.type].dash || undefined} />)}
           </g>
+          <g class="ego" data-ego></g>
           <g class="nodes">
-            {G.nodes.map(n => (
-              <g class:list={['n', `tier-${n.tier}`]} data-id={n.id} transform={`translate(${n.x} ${n.y})`} style={`--gc:var(--g-${n.group})`} tabindex="0" role="button" aria-label={n.id}>
-                {n.tier === 'o' ? <rect class="dot" x={-n.r} y={-n.r} width={n.r * 2} height={n.r * 2} transform="rotate(45)" /> : <circle class="dot" r={n.r} />}
-                <text class="lb" y={n.r + 15}>{n.id}</text>
+            {W.nodes.map(n => (
+              <g class:list={['n', `tier-${n.tier}`]} data-id={n.id} data-a={n.a} data-r={n.r} transform={`translate(${n.x} ${n.y})`} style={`--gc:var(--g-${n.group})`} tabindex="0" role="button" aria-label={n.id}>
+                <circle class="hit" r="11" />
+                <circle class="dot" r={n.r} />
+                <text class="lb" x={flip(n.a) ? -(n.r + 6) : n.r + 6} dy="0.35em" text-anchor={flip(n.a) ? 'end' : 'start'} transform={`rotate(${flip(n.a) ? n.a + 180 : n.a})`}>{n.id}</text>
+                <text class="role" y={n.r + 30}></text>
               </g>
             ))}
           </g>
@@ -67,6 +82,8 @@ const client = {
           <input list="g-names" placeholder="到" data-to aria-label="到谁">
           <button type="submit" class="btn">查</button>
         </form>
+        <button type="button" class="back" data-back hidden>← 回到全景</button>
+        <p class="status" data-status>停在名字上看他的亲友，点一下进入命盘</p>
         <datalist id="g-names">{PEOPLE.map(p => <option value={p.id} />)}</datalist>
       </div>
 
@@ -86,7 +103,6 @@ const client = {
       </div>
 
       <aside class="panel" data-panel hidden aria-live="polite"></aside>
-      <p class="hint" data-hint>滚轮缩放，拖动平移；点一个人看他的命盘</p>
     </div>
   </div>
   <script is:inline type="application/json" id="g-data" set:html={JSON.stringify(client)} />
@@ -95,77 +111,86 @@ const client = {
 <script>
   import { esc } from '../client/site.ts';
   type Tie = [string, string, string];
-  const D: { p: Record<string, [string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string> } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const D: { p: Record<string, [string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string>; order: string[]; color: Record<string, string>; R: number } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const R = D.R;
+  const NS = 'http://www.w3.org/2000/svg';
   const stage = document.querySelector<HTMLElement>('[data-stage]')!;
   const svg = document.querySelector<SVGSVGElement>('[data-svg]')!;
   const vp = svg.querySelector<SVGGElement>('[data-vp]')!;
+  const egoG = svg.querySelector<SVGGElement>('[data-ego]')!;
   const panel = document.querySelector<HTMLElement>('[data-panel]')!;
-  const nodes = new Map([...svg.querySelectorAll<SVGGElement>('.n')].map(g => [g.dataset.id!, g]));
+  const status = document.querySelector<HTMLElement>('[data-status]')!;
+  const backBtn = document.querySelector<HTMLButtonElement>('[data-back]')!;
   const edges = [...svg.querySelectorAll<SVGPathElement>('.e')];
-  const pos = new Map([...nodes].map(([id, g]) => {
-    const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(g.getAttribute('transform')!)!;
-    return [id, [+m[1], +m[2]] as [number, number]];
-  }));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rad = (d: number) => (d * Math.PI) / 180;
+
+  /* ---------- 节点：全景位置、当前位置 ---------- */
+  type N = { id: string; g: SVGGElement; lb: SVGTextElement; role: SVGTextElement; a: number; r: number; wx: number; wy: number; x: number; y: number; mode: string };
+  const nodes = new Map<string, N>();
+  svg.querySelectorAll<SVGGElement>('.n').forEach(g => {
+    const a = +g.dataset.a!, r = +g.dataset.r!;
+    const wx = Math.cos(rad(a)) * R, wy = Math.sin(rad(a)) * R;
+    nodes.set(g.dataset.id!, { id: g.dataset.id!, g, lb: g.querySelector('.lb')!, role: g.querySelector('.role')!, a, r, wx, wy, x: wx, y: wy, mode: `r${Math.round(a)}` });
+  });
+  function place(n: N, x: number, y: number) {
+    n.x = x; n.y = y;
+    n.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+  }
+  /* 名字两种摆法：横着写在点下面，或者顺着半径写（a 是所在的角度） */
+  function labelMode(n: N, mode: 'flat' | number) {
+    const key = mode === 'flat' ? 'flat' : `r${Math.round(mode)}`;
+    if (n.mode === key) return;
+    n.mode = key;
+    if (mode === 'flat') {
+      n.lb.setAttribute('transform', ''); n.lb.setAttribute('x', '0'); n.lb.setAttribute('text-anchor', 'middle'); n.lb.setAttribute('dy', `${n.r + 15}`);
+    } else {
+      const a = ((mode % 360) + 360) % 360, f = a > 90 && a < 270;
+      n.lb.setAttribute('transform', `rotate(${f ? a + 180 : a})`); n.lb.setAttribute('x', String(f ? -(n.r + 6) : n.r + 6));
+      n.lb.setAttribute('text-anchor', f ? 'end' : 'start'); n.lb.setAttribute('dy', '0.35em');
+    }
+  }
 
   /* ---------- 视口：平移与缩放 ---------- */
-  const bbox = { x: 0, y: 0, w: 0, h: 0 };
-  {
-    const xs = [...pos.values()].map(p => p[0]), ys = [...pos.values()].map(p => p[1]);
-    bbox.x = Math.min(...xs) - 60; bbox.y = Math.min(...ys) - 80; bbox.w = Math.max(...xs) - bbox.x + 60; bbox.h = Math.max(...ys) - bbox.y + 60;
-  }
+  const HALF = R + 150;
   let view = { x: 0, y: 0, k: 1 };
-  const size = () => ({ w: stage.clientWidth, h: stage.clientHeight });
-  const homeView = () => {
-    const { w, h } = size();
-    const k = Math.min(w / bbox.w, h / bbox.h) * .96;
-    return { k, x: (w - bbox.w * k) / 2 - bbox.x * k, y: (h - bbox.h * k) / 2 - bbox.y * k };
-  };
-  function draw() {
-    vp.setAttribute('transform', `translate(${view.x.toFixed(1)} ${view.y.toFixed(1)}) scale(${view.k.toFixed(4)})`);
-    const home = homeView().k;
-    svg.dataset.zoom = view.k > home * 2.2 ? '3' : view.k > home * 1.4 ? '2' : '1';
+  const draw = () => vp.setAttribute('transform', `translate(${view.x.toFixed(2)} ${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
+  const unit = () => { const r = svg.getBoundingClientRect(); return (HALF * 2) / Math.min(r.width, r.height); };
+  /* 有面板时把圆盘挪到空出来的那一侧 */
+  function fitView() {
+    const w = stage.clientWidth, h = stage.clientHeight, u = unit();
+    const zoom = focusId && egoR ? Math.min(1.5, HALF / egoR) : 1;
+    if (panel.hidden) return { x: 0, y: 0, k: zoom };
+    if (w > 900) { const free = w - 380; const k = Math.min(1, free / Math.min(w, h)) * zoom; return { k, x: -(w - free) / 2 * u, y: 0 }; }
+    const free = h * .54; const k = Math.min(1, free / Math.min(w, h)) * zoom; return { k, x: 0, y: -(h - free) / 2 * u };
   }
   let anim = 0;
-  function animateTo(target: typeof view, ms = 650) {
+  function animateView(target: typeof view, ms = 700) {
     cancelAnimationFrame(anim);
-    if (reduced) { view = target; draw(); return; }
+    if (reduced || !ms) { view = target; draw(); return; }
     const from = { ...view }, t0 = performance.now();
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
     const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / ms), e = ease(t);
+      const t = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
       view = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, k: from.k + (target.k - from.k) * e };
       draw();
       if (t < 1) anim = requestAnimationFrame(tick);
     };
     anim = requestAnimationFrame(tick);
   }
-  const zoomAt = (cx: number, cy: number, f: number) => {
-    const home = homeView().k;
-    const k = Math.max(home * .6, Math.min(home * 8, view.k * f));
-    const r = k / view.k;
+  function zoomAt(cx: number, cy: number, f: number) {
+    const k = Math.max(.5, Math.min(6, view.k * f)), r = k / view.k;
     view = { k, x: cx - (cx - view.x) * r, y: cy - (cy - view.y) * r };
     draw();
+  }
+  const toSvg = (cx: number, cy: number) => {
+    const b = svg.getBoundingClientRect(), u = unit();
+    return [(cx - b.left - b.width / 2) * u, (cy - b.top - b.height / 2) * u];
   };
-  const centerOn = (pts: [number, number][], maxK = 2.2) => {
-    const { w, h } = size();
-    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-    const bx = Math.min(...xs) - 70, by = Math.min(...ys) - 70, bw = Math.max(...xs) - bx + 70, bh = Math.max(...ys) - by + 70;
-    const panelW = !panel.hidden && w > 900 ? 360 : 0;
-    const panelH = !panel.hidden && w <= 900 ? h * .42 : 0;
-    const k = Math.min((w - panelW) / bw, (h - panelH) / bh, homeView().k * maxK);
-    animateTo({ k, x: (w - panelW - bw * k) / 2 - bx * k, y: (h - panelH - bh * k) / 2 - by * k });
-  };
-  stage.addEventListener('wheel', e => {
-    e.preventDefault();
-    const r = stage.getBoundingClientRect();
-    zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .0016));
-  }, { passive: false });
+  stage.addEventListener('wheel', e => { e.preventDefault(); const [x, y] = toSvg(e.clientX, e.clientY); zoomAt(x, y, Math.exp(-e.deltaY * .0016)); }, { passive: false });
   const pts = new Map<number, { x: number; y: number }>();
   let drag: { x: number; y: number; vx: number; vy: number } | null = null, moved = false, pinch = 0;
   stage.addEventListener('pointerdown', e => {
     if ((e.target as Element).closest('.hud, .panel')) return;
-    stage.setPointerCapture(e.pointerId);
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) { drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; moved = false; }
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
@@ -174,133 +199,245 @@ const client = {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
-      const [a, b] = [...pts.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y), r = stage.getBoundingClientRect();
-      if (pinch) zoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, d / pinch);
-      pinch = d; moved = true;
-      return;
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      const [x, y] = toSvg((a.x + b.x) / 2, (a.y + b.y) / 2);
+      if (pinch) zoomAt(x, y, d / pinch);
+      pinch = d; moved = true; return;
     }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (Math.abs(dx) + Math.abs(dy) > 4) { moved = true; stage.classList.add('dragging'); }
-    view.x = drag.vx + dx; view.y = drag.vy + dy;
+    if (!moved && Math.abs(dx) + Math.abs(dy) > 5) { moved = true; stage.classList.add('dragging'); try { stage.setPointerCapture(e.pointerId); } catch {} }
+    if (!moved) return;
+    const u = unit();
+    view.x = drag.vx + dx * u; view.y = drag.vy + dy * u;
     draw();
   });
-  const up = (e: PointerEvent) => {
-    pts.delete(e.pointerId);
-    if (pts.size < 2) pinch = 0;
-    if (!pts.size) { drag = null; stage.classList.remove('dragging'); }
-  };
+  const up = (e: PointerEvent) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; stage.classList.remove('dragging'); } };
   stage.addEventListener('pointerup', up);
   stage.addEventListener('pointercancel', up);
-  stage.addEventListener('dblclick', e => {
-    if ((e.target as Element).closest('.hud, .panel')) return;
-    const r = stage.getBoundingClientRect();
-    zoomAt(e.clientX - r.left, e.clientY - r.top, 1.6);
-  });
   document.querySelectorAll<HTMLButtonElement>('[data-z]').forEach(b => b.addEventListener('click', () => {
     const f = +b.dataset.z!;
-    if (!f) { clear(); animateTo(homeView()); return; }
-    const { w, h } = size();
-    const target = { ...view };
-    const k = view.k * f, r = k / view.k;
-    target.k = k; target.x = w / 2 - (w / 2 - view.x) * r; target.y = h / 2 - (h / 2 - view.y) * r;
-    animateTo(target, 300);
+    if (!f) { animateView(fitView()); return; }
+    animateView({ k: view.k * f, x: view.x * f, y: view.y * f }, 300);
   }));
   document.querySelector('[data-full]')!.addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else stage.requestFullscreen?.().catch(() => stage.classList.toggle('pseudo-full'));
   });
-  addEventListener('resize', () => { if (!focusId) { view = homeView(); draw(); } });
 
-  /* ---------- 高亮 ---------- */
+  /* ---------- 全景里的高亮 ---------- */
   const hidden = new Set<string>();
-  const edgeVisible = (p: SVGPathElement) => !hidden.has(p.classList[1].slice(2));
-  function light(ids: Set<string>, pathEdges?: Set<SVGPathElement>) {
+  const typeOf = (p: SVGPathElement) => p.classList[1].slice(2);
+  const ties = (id: string) => (D.t[id] ?? []).filter(t => !hidden.has(t[1]));
+  function light(ids: Set<string>, onEdges: (p: SVGPathElement) => boolean) {
     svg.classList.add('lit');
-    nodes.forEach((g, id) => g.classList.toggle('on', ids.has(id)));
-    edges.forEach(p => p.classList.toggle('on', pathEdges ? pathEdges.has(p) : ids.has(p.dataset.a!) && ids.has(p.dataset.b!) && (focusId ? p.dataset.a === focusId || p.dataset.b === focusId : true) && edgeVisible(p)));
+    nodes.forEach((n, id) => n.g.classList.toggle('on', ids.has(id)));
+    edges.forEach(p => p.classList.toggle('on', onEdges(p)));
   }
   function unlight() {
-    svg.classList.remove('lit');
-    nodes.forEach(g => g.classList.remove('on', 'core'));
-    edges.forEach(p => p.classList.remove('on'));
+    svg.classList.remove('lit', 'chain');
+    nodes.forEach(n => n.g.classList.remove('on', 'core'));
+    edges.forEach(p => p.classList.remove('on', 'trace'));
   }
-  const neighbors = (id: string) => new Set([id, ...(D.t[id] ?? []).filter(t => !hidden.has(t[1])).map(t => t[0])]);
-  let focusId: string | null = null, chainLit = false;
-
-  nodes.forEach((g, id) => {
-    g.addEventListener('pointerenter', () => { if (!focusId && !chainLit) light(neighbors(id)); g.classList.add('hov'); });
-    g.addEventListener('pointerleave', () => { if (!focusId && !chainLit) unlight(); g.classList.remove('hov'); });
-    g.addEventListener('click', () => { if (!moved) focus(id); });
-    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
+  let focusId: string | null = null, chainOn = false, egoR = 0;
+  const DEFAULT_STATUS = status.textContent!;
+  function hover(id: string | null) {
+    if (focusId || chainOn) {
+      if (focusId && id) { status.textContent = `${id}　${D.p[id][1]}`; egoG.querySelectorAll<SVGPathElement>('path').forEach(p => p.classList.toggle('hot', p.dataset.b === id || p.dataset.a === id)); }
+      else if (focusId) egoG.querySelectorAll('path.hot').forEach(p => p.classList.remove('hot'));
+      return;
+    }
+    if (!id) { unlight(); status.textContent = DEFAULT_STATUS; return; }
+    const ts = ties(id);
+    light(new Set([id, ...ts.map(t => t[0])]), p => (p.dataset.a === id || p.dataset.b === id) && !hidden.has(typeOf(p)));
+    nodes.get(id)!.g.classList.add('core');
+    status.textContent = `${id}　${D.p[id][1]}　·　${ts.length} 位亲友`;
+  }
+  nodes.forEach((n, id) => {
+    n.g.addEventListener('pointerenter', () => hover(id));
+    n.g.addEventListener('pointerleave', () => { if (!focusId) n.g.classList.remove('core'); hover(null); });
+    n.g.addEventListener('click', () => { if (!moved) focus(id); });
+    n.g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
   });
-  stage.addEventListener('click', e => {
-    if (moved || (e.target as Element).closest('.n, .hud, .panel')) return;
-    clear();
-  });
+  svg.querySelectorAll<SVGGElement>('[data-sector]').forEach(s => s.addEventListener('click', () => {
+    if (focusId || moved) return;
+    const g = s.dataset.sector!;
+    const ids = new Set([...nodes.keys()].filter(id => D.p[id][0] === g));
+    light(ids, p => ids.has(p.dataset.a!) && ids.has(p.dataset.b!));
+    status.textContent = `${s.textContent}　${ids.size} 人`;
+  }));
 
-  /* ---------- 命盘：选中一个人 ---------- */
-  const groupColor = (id: string) => `var(--g-${D.p[id][0]})`;
-  function focus(id: string, fly = true) {
+  /* ---------- 变形：全景与命盘之间 ---------- */
+  let morphRaf = 0;
+  function morph(target: Map<string, [number, number]>, ms = 900, done?: () => void) {
+    cancelAnimationFrame(morphRaf);
+    const from = new Map([...nodes].map(([id, n]) => [id, [n.x, n.y] as [number, number]]));
+    const t0 = performance.now();
+    const ease = (t: number) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const step = (now: number) => {
+      const t = reduced ? 1 : Math.min(1, (now - t0) / ms);
+      nodes.forEach((n, id) => {
+        const [fx, fy] = from.get(id)!, [tx, ty] = target.get(id)!;
+        /* 各人起步略有先后，沿弧线走，看起来像在盘上散开 */
+        const e = ease(Math.min(1, Math.max(0, t * 1.25 - (n.a % 60) / 60 * .25)));
+        const lift = Math.sin(e * Math.PI) * .12;
+        place(n, fx + (tx - fx) * e - (ty - fy) * lift, fy + (ty - fy) * e + (tx - fx) * lift);
+      });
+      if (t < 1) morphRaf = requestAnimationFrame(step); else done?.();
+    };
+    morphRaf = requestAnimationFrame(step);
+  }
+
+  /* 命盘：本人居中，第一圈是亲友（按关系分段），第二圈是亲友的亲友，其余退到外沿 */
+  function egoLayout(id: string) {
+    const pos = new Map<string, [number, number]>();
+    const first = ties(id).sort((a, b) => D.order.indexOf(a[1]) - D.order.indexOf(b[1]));
+    const ring1 = first.map(t => t[0]);
+    const r1 = Math.min(R * .62, Math.max(R * .36, ring1.length * 46 / (2 * Math.PI)));
+    const ang1 = new Map<string, number>();
+    ring1.forEach((o, i) => { const a = -90 + (i + .5) * 360 / ring1.length; ang1.set(o, a); pos.set(o, [Math.cos(rad(a)) * r1, Math.sin(rad(a)) * r1]); });
+    const seen = new Set([id, ...ring1]);
+    const second: { id: string; a: number; via: string; t: Tie }[] = [];
+    for (const o of ring1) for (const t of ties(o)) {
+      if (seen.has(t[0])) continue;
+      seen.add(t[0]);
+      second.push({ id: t[0], a: ang1.get(o)!, via: o, t });
+    }
+    second.sort((a, b) => a.a - b.a);
+    const r2 = Math.min(R * .98, Math.max(r1 + 130, second.length * 17 / (2 * Math.PI)));
+    /* 第二圈按引荐人的方向排序后均匀铺满一圈，再整体转一个角度，让每人离引荐人最近 */
+    const m = second.length, even = 360 / Math.max(m, 1);
+    let off = 0;
+    if (m) off = second.reduce((acc, s, i) => { let d = s.a - (-90 + i * even); d = ((d + 540) % 360) - 180; return acc + d; }, 0) / m;
+    const angs = second.map((_, i) => m < 8 ? second[i].a : -90 + i * even + off);
+    second.forEach((s, i) => pos.set(s.id, [Math.cos(rad(angs[i])) * r2, Math.sin(rad(angs[i])) * r2]));
+    pos.set(id, [0, 0]);
+    nodes.forEach((n, nid) => { if (!pos.has(nid)) pos.set(nid, [Math.cos(rad(n.a)) * (R + 70), Math.sin(rad(n.a)) * (R + 70)]); });
+    return { pos, first, second, r1, r2, angs };
+  }
+  function drawEgo(L: ReturnType<typeof egoLayout>) {
+    egoG.innerHTML = '';
+    const mk = (tag: string, attrs: Record<string, string | number>) => {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, String(attrs[k]));
+      egoG.appendChild(e); return e;
+    };
+    mk('circle', { r: L.r1, class: 'ring' });
+    if (L.second.length) mk('circle', { r: L.r2, class: 'ring two' });
+    /* 关系分段：在第一圈内侧标出“血亲”“主仆”…… */
+    const n1 = L.first.length;
+    let i0 = 0;
+    for (let i = 1; i <= n1; i++) {
+      if (i < n1 && L.first[i][1] === L.first[i0][1]) continue;
+      const a0 = -90 + i0 * 360 / n1, a1 = -90 + i * 360 / n1, rr = L.r1 * .55;
+      const t = L.first[i0][1];
+      if (n1 > 1) mk('path', { class: 'seg', d: `M${Math.cos(rad(a0 + 1)) * rr} ${Math.sin(rad(a0 + 1)) * rr}A${rr} ${rr} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${Math.cos(rad(a1 - 1)) * rr} ${Math.sin(rad(a1 - 1)) * rr}`, style: `--tc:${D.color[t]}` });
+      const am = (a0 + a1) / 2, lr = rr - 16;
+      mk('text', { class: 'seg-t', x: (Math.cos(rad(am)) * lr).toFixed(1), y: (Math.sin(rad(am)) * lr).toFixed(1), style: `--tc:${D.color[t]}` }).textContent = D.types[t];
+      i0 = i;
+    }
+    L.first.forEach(([o, t], i) => {
+      const [x, y] = L.pos.get(o)!;
+      mk('path', { class: 'l1', d: `M0 0Q${(x * .5 - y * .08).toFixed(1)} ${(y * .5 + x * .08).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`, style: `--tc:${D.color[t]};--i:${i}`, 'data-b': o, pathLength: 1 });
+    });
+    L.second.forEach((s, i) => {
+      const [ax, ay] = L.pos.get(s.via)!, [bx, by] = L.pos.get(s.id)!;
+      mk('path', { class: 'l2', d: `M${ax.toFixed(1)} ${ay.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`, style: `--tc:${D.color[s.t[1]]};--i:${i}`, 'data-a': s.via, 'data-b': s.id, pathLength: 1 });
+    });
+  }
+
+  function focus(id: string, instant = false) {
     if (!D.p[id]) return;
-    focusId = id; chainLit = false;
-    const ids = neighbors(id);
-    light(ids);
-    nodes.get(id)!.classList.add('core');
+    const was = focusId;
+    unlight();
+    focusId = id; chainOn = false;
+    const L = egoLayout(id);
+    const r1Set = new Set(L.first.map(t => t[0])), r2Set = new Set(L.second.map(s => s.id));
+    svg.classList.add('mode-ego');
+    egoG.classList.remove('show');
+    nodes.forEach((n, nid) => {
+      n.g.classList.toggle('core', nid === id);
+      n.g.classList.toggle('r1', r1Set.has(nid));
+      n.g.classList.toggle('r2', r2Set.has(nid));
+      n.g.classList.toggle('rest', nid !== id && !r1Set.has(nid) && !r2Set.has(nid));
+      labelMode(n, nid === id || r1Set.has(nid) ? 'flat' : r2Set.has(nid) ? L.angs[L.second.findIndex(s => s.id === nid)] : n.a);
+      n.role.textContent = '';
+    });
+    L.first.forEach(([o, , role]) => { nodes.get(o)!.role.textContent = role; });
+    nodes.get(id)!.lb.setAttribute('dy', '0.36em'); nodes.get(id)!.mode = 'core';
+    egoR = L.r2 + 130;
+    morph(L.pos, instant ? 0 : was ? 750 : 1000, () => { drawEgo(L); requestAnimationFrame(() => egoG.classList.add('show')); });
+    renderPanel(id);
+    backBtn.hidden = false;
+    status.textContent = `${id}　${D.p[id][1]}`;
+    const url = new URL(location.href); url.search = ''; url.searchParams.set('focus', id); history.replaceState(null, '', url);
+    animateView(fitView(), instant ? 0 : 800);
+  }
+  function toWheel() {
+    if (!focusId && !chainOn) return;
+    const wasEgo = !!focusId;
+    focusId = null; chainOn = false;
+    egoG.classList.remove('show'); egoG.innerHTML = '';
+    svg.classList.remove('mode-ego');
+    nodes.forEach(n => { n.g.classList.remove('core', 'r1', 'r2', 'rest'); n.role.textContent = ''; labelMode(n, n.a); });
+    if (wasEgo) morph(new Map([...nodes].map(([id, n]) => [id, [n.wx, n.wy] as [number, number]])), 800);
+    unlight();
+    panel.hidden = true; stage.classList.remove('has-panel'); backBtn.hidden = true;
+    status.textContent = DEFAULT_STATUS;
+    history.replaceState(null, '', location.pathname);
+    animateView(fitView());
+  }
+  backBtn.addEventListener('click', toWheel);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && (focusId || chainOn)) toWheel(); });
+  stage.addEventListener('click', e => {
+    if (moved || (e.target as Element).closest('.n, .hud, .panel, [data-sector]')) return;
+    if (focusId || chainOn) toWheel(); else unlight();
+  });
+
+  const groupColor = (id: string) => `var(--g-${D.p[id][0]})`;
+  function renderPanel(id: string) {
     const [group, title, gname] = D.p[id];
-    const ties = (D.t[id] ?? []).filter(t => !hidden.has(t[1]));
+    const ts = ties(id);
     const byType = new Map<string, Tie[]>();
-    ties.forEach(t => { if (!byType.has(t[1])) byType.set(t[1], []); byType.get(t[1])!.push(t); });
+    ts.forEach(t => { if (!byType.has(t[1])) byType.set(t[1], []); byType.get(t[1])!.push(t); });
     panel.innerHTML = `
-      <button type="button" class="pn-x" data-close aria-label="关闭">×</button>
+      <button type="button" class="pn-x" data-close aria-label="回到全景">×</button>
       <p class="pn-g" style="--gc:var(--g-${group})">${esc(gname)}</p>
       <h2>${esc(id)}</h2>
       <p class="pn-t">${esc(title)}</p>
-      <p class="pn-n">${ties.length} 位亲友</p>
-      ${[...byType].map(([t, list]) => `<div class="pn-sec"><h3>${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}" style="--gc:${groupColor(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
+      <p class="pn-n">${ts.length} 位亲友</p>
+      ${[...byType].map(([t, list]) => `<div class="pn-sec"><h3 style="--tc:${D.color[t]}">${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}" style="--gc:${groupColor(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
       <div class="pn-acts"><a class="btn" href="/people/${encodeURIComponent(id)}/">进人物页</a><button type="button" class="btn ghost" data-chain-from="${esc(id)}">从这里查关系链</button></div>`;
     panel.hidden = false;
     stage.classList.add('has-panel');
-    const url = new URL(location.href); url.search = ''; url.searchParams.set('focus', id); history.replaceState(null, '', url);
-    if (fly) centerOn([...ids].map(x => pos.get(x)!).filter(Boolean));
-  }
-  function clear() {
-    focusId = null; chainLit = false;
-    unlight();
-    panel.hidden = true;
-    stage.classList.remove('has-panel');
-    history.replaceState(null, '', location.pathname);
+    panel.scrollTop = 0;
   }
   panel.addEventListener('click', e => {
     const t = e.target as HTMLElement;
-    if (t.closest('[data-close]')) { clear(); return; }
+    if (t.closest('[data-close]')) { toWheel(); return; }
     const go = t.closest<HTMLElement>('[data-go]');
     if (go) { focus(go.dataset.go!); return; }
     const cf = t.closest<HTMLElement>('[data-chain-from]');
-    if (cf) { setMode('chain'); fromIn.value = cf.dataset.chainFrom!; toIn.focus(); }
+    if (cf) { const from = cf.dataset.chainFrom!; toWheel(); setMode('chain'); fromIn.value = from; toIn.focus(); }
   });
+  panel.addEventListener('pointerover', e => { const go = (e.target as HTMLElement).closest<HTMLElement>('[data-go]'); if (go && focusId) hover(go.dataset.go!); });
 
   /* ---------- 找人 ---------- */
   const q = document.querySelector<HTMLInputElement>('[data-q]')!;
-  q.addEventListener('change', () => { const v = q.value.trim(); if (D.p[v]) { focus(v); q.blur(); } });
-  q.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    const v = q.value.trim();
-    const hit = D.p[v] ? v : Object.keys(D.p).find(id => id.includes(v));
-    if (hit) { q.value = hit; focus(hit); }
-  });
+  const pick = () => { const v = q.value.trim(); const hit = D.p[v] ? v : Object.keys(D.p).find(id => v && id.includes(v)); if (hit) { q.value = hit; q.blur(); focus(hit); } };
+  q.addEventListener('change', pick);
+  q.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
 
   /* ---------- 关系类型开关 ---------- */
   document.querySelectorAll<HTMLButtonElement>('[data-type]').forEach(b => b.addEventListener('click', () => {
     const t = b.dataset.type!;
     hidden.has(t) ? hidden.delete(t) : hidden.add(t);
     b.setAttribute('aria-pressed', String(!hidden.has(t)));
-    edges.forEach(p => p.classList.toggle('off', !edgeVisible(p)));
-    if (focusId) focus(focusId, false);
+    edges.forEach(p => p.classList.toggle('off', hidden.has(typeOf(p))));
+    if (focusId) focus(focusId);
   }));
 
-  /* ---------- 关系链：两人之间最短的一条路 ---------- */
+  /* ---------- 关系链：两人之间最短的一条路，沿着全景里的线描红 ---------- */
   const form = document.querySelector<HTMLFormElement>('[data-chain-form]')!;
   const fromIn = form.querySelector<HTMLInputElement>('[data-from]')!, toIn = form.querySelector<HTMLInputElement>('[data-to]')!;
   const findAll = document.querySelector<HTMLElement>('[data-find-all]')!;
@@ -308,7 +445,7 @@ const client = {
     document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
     form.hidden = m !== 'chain';
     findAll.hidden = m === 'chain';
-    if (m === 'chain') { if (focusId) fromIn.value = focusId; fromIn.value ? toIn.focus() : fromIn.focus(); }
+    if (m === 'chain') { if (focusId) { fromIn.value = focusId; toWheel(); } fromIn.value ? toIn.focus() : fromIn.focus(); }
   }
   document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode!)));
   function bfs(a: string, b: string) {
@@ -317,95 +454,136 @@ const client = {
     while (queue.length) {
       const cur = queue.shift()!;
       if (cur === b) break;
-      for (const t of D.t[cur] ?? []) {
-        if (hidden.has(t[1]) || prev.has(t[0])) continue;
-        prev.set(t[0], [cur, t]);
-        queue.push(t[0]);
-      }
+      for (const t of ties(cur)) { if (prev.has(t[0])) continue; prev.set(t[0], [cur, t]); queue.push(t[0]); }
     }
     if (!prev.has(b)) return null;
     const steps: { from: string; to: string; tie: Tie }[] = [];
     for (let cur = b; prev.get(cur); cur = prev.get(cur)![0]) steps.unshift({ from: prev.get(cur)![0], to: cur, tie: prev.get(cur)![1] });
     return steps;
   }
+  const closeBtn = '<button type="button" class="pn-x" data-close aria-label="关闭">×</button>';
   function chain(a: string, b: string) {
-    if (!D.p[a] || !D.p[b]) { panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="关闭">×</button><p class="pn-empty">人物谱里找不到${esc(!D.p[a] ? a || '起点' : b || '终点')}。</p>`; panel.hidden = false; return; }
+    if (focusId) toWheel();
+    const show = (html: string) => { panel.innerHTML = closeBtn + html; panel.hidden = false; stage.classList.add('has-panel'); animateView(fitView()); };
+    if (!D.p[a] || !D.p[b]) { show(`<p class="pn-empty">人物谱里找不到${esc(!D.p[a] ? a || '起点' : b || '终点')}。</p>`); return; }
     const steps = a === b ? [] : bfs(a, b);
-    focusId = null; chainLit = true;
-    if (!steps) {
-      unlight();
-      panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="关闭">×</button><p class="pn-empty">${esc(a)}和${esc(b)}之间，在现有的关系里连不上。</p>`;
-      panel.hidden = false; stage.classList.add('has-panel');
-      return;
-    }
+    if (!steps) { unlight(); show(`<p class="pn-empty">${esc(a)}和${esc(b)}之间，在现有的关系里连不上。</p>`); return; }
+    unlight();
+    chainOn = true;
     const ids = new Set([a, ...steps.map(s => s.to)]);
-    const pathEdges = new Set(edges.filter(p => steps.some(s => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from))));
-    light(ids, pathEdges);
-    nodes.get(a)!.classList.add('core'); nodes.get(b)!.classList.add('core');
-    panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="关闭">×</button>
-      <p class="pn-g">关系链</p>
+    const on = (p: SVGPathElement) => steps.some(s => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from));
+    light(ids, on);
+    svg.classList.add('chain');
+    edges.filter(on).forEach(p => p.classList.add('trace'));
+    nodes.get(a)!.g.classList.add('core'); nodes.get(b)!.g.classList.add('core');
+    show(`<p class="pn-g">关系链</p>
       <h2 class="chain-h">${esc(a)}<small>到</small>${esc(b)}</h2>
-      <p class="pn-n">隔着 ${Math.max(0, steps.length - 1)} 个人</p>
+      <p class="pn-n">中间隔着 ${Math.max(0, steps.length - 1)} 个人</p>
       <ol class="chain">
         <li><button type="button" data-go="${esc(a)}" style="--gc:${groupColor(a)}">${esc(a)}</button></li>
-        ${steps.map(s => `<li class="step"><span class="via">${esc(s.tie[2])}<small>${esc(D.types[s.tie[1]])}</small></span><button type="button" data-go="${esc(s.to)}" style="--gc:${groupColor(s.to)}">${esc(s.to)}</button></li>`).join('')}
+        ${steps.map(s => `<li><span class="via">${esc(s.tie[2])}<small>${esc(D.types[s.tie[1]])}</small></span><button type="button" data-go="${esc(s.to)}" style="--gc:${groupColor(s.to)}">${esc(s.to)}</button></li>`).join('')}
       </ol>
-      <p class="pn-note">每一步写的是后一位之于前一位的身份。</p>`;
-    panel.hidden = false;
-    stage.classList.add('has-panel');
+      <p class="pn-note">每一步写的是后一位之于前一位的身份。</p>`);
+    status.textContent = `${a} → ${b}`;
     const url = new URL(location.href); url.search = ''; url.searchParams.set('from', a); url.searchParams.set('to', b); history.replaceState(null, '', url);
-    centerOn([...ids].map(x => pos.get(x)!));
   }
   form.addEventListener('submit', e => { e.preventDefault(); chain(fromIn.value.trim(), toIn.value.trim()); });
 
-  /* ---------- 起步 ---------- */
-  view = homeView();
+  /* ---------- 起步：线从圆周往里一根根画进去 ---------- */
   draw();
   const params = new URLSearchParams(location.search);
-  if (params.get('from') && params.get('to')) { setMode('chain'); fromIn.value = params.get('from')!; toIn.value = params.get('to')!; chain(fromIn.value, toIn.value); }
-  else if (params.get('focus')) focus(params.get('focus')!);
-  else if (!reduced) {
-    /* 第一次进来，从远处慢慢推近 */
-    const h = homeView();
-    view = { k: h.k * .7, x: h.x + bbox.w * h.k * .15, y: h.y + bbox.h * h.k * .15 };
-    draw();
-    requestAnimationFrame(() => animateTo(h, 1200));
+  if (!reduced && !params.size) {
+    edges.forEach(p => p.setAttribute('pathLength', '1'));
+    svg.classList.add('drawing');
+    setTimeout(() => { svg.classList.remove('drawing'); edges.forEach(p => p.removeAttribute('pathLength')); }, 2600);
   }
-  setTimeout(() => document.querySelector('[data-hint]')?.classList.add('gone'), 5000);
+  if (params.get('from') && params.get('to')) { setMode('chain'); fromIn.value = params.get('from')!; toIn.value = params.get('to')!; chain(fromIn.value, toIn.value); }
+  else if (params.get('focus')) focus(params.get('focus')!, true);
+  addEventListener('resize', () => { view = fitView(); draw(); });
 </script>
 
 <style>
   .gwrap { padding: 0 var(--gutter); max-width: calc(var(--wrap) + 240px); margin: 18px auto 0; }
-  .stage { position: relative; height: calc(100svh - var(--header-h) - 70px); min-height: 520px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); background-image: var(--paper-grain); touch-action: none; cursor: grab; user-select: none; }
+  .stage { position: relative; height: calc(100svh - var(--header-h) - 70px); min-height: 560px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 50%, var(--card) 0 38%, var(--paper) 75%); touch-action: none; cursor: grab; user-select: none; }
   .stage.dragging { cursor: grabbing; }
   .stage:fullscreen, .stage.pseudo-full { position: fixed; inset: 0; z-index: 100; height: 100%; border-radius: 0; }
-  .gsvg { width: 100%; height: 100%; display: block; }
-  .isl-name { font: 400 30px var(--brush); fill: var(--ic); opacity: .55; text-anchor: middle; letter-spacing: .3em; pointer-events: none; }
-  .e { fill: none; stroke: var(--tc); stroke-width: 1.1; opacity: .32; transition: opacity .3s, stroke-width .3s; vector-effect: non-scaling-stroke; }
-  .e.off { display: none; }
-  .n { cursor: pointer; outline: none; }
-  .dot { fill: var(--gc); stroke: var(--card); stroke-width: 2; transition: transform .3s var(--ease); }
-  .tier-o .dot { fill: var(--card); stroke: var(--gc); stroke-width: 2; }
-  .n:hover .dot, .n:focus-visible .dot { transform: scale(1.35); }
-  .lb { font: 600 13px var(--serif); fill: var(--ink); text-anchor: middle; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; transition: opacity .3s; }
-  .tier-c .lb { font-size: 16px; font-weight: 700; }
-  .tier-s .lb, .tier-o .lb { opacity: 0; font-size: 12px; }
-  .gsvg[data-zoom="2"] .tier-s .lb, .gsvg[data-zoom="3"] .lb, .gsvg[data-zoom="2"] .tier-o .lb { opacity: 1; }
-  .n.hov .lb { opacity: 1; }
-  /* 选中时其余变淡 */
-  .gsvg.lit .e { opacity: .05; }
-  .gsvg.lit .n { opacity: .18; }
-  .gsvg.lit .n.on { opacity: 1; }
-  .gsvg.lit .n.on .lb { opacity: 1; }
-  .gsvg.lit .e.on { opacity: .95; stroke-width: 2.2; }
-  .n.core .dot { stroke: var(--cinnabar); stroke-width: 3; transform: scale(1.4); }
-  .n.core .lb { font-size: 18px; fill: var(--cinnabar); }
-  .gsvg.lit .island { opacity: .4; }
+  .gsvg { width: 100%; height: 100%; display: block; overflow: visible; }
 
+  /* 盘面装饰 */
+  .rim { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .rim.thin { stroke: var(--line); }
+  .rim.dash { stroke-dasharray: 2 6; }
+  .ticks { stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .sec-arc { fill: none; stroke: var(--gc); stroke-width: 28; opacity: .1; transition: opacity .3s; }
+  .sec { cursor: pointer; }
+  .sec:hover .sec-arc { opacity: .22; }
+  .sec-name { font: 400 22px var(--brush); fill: var(--gc); text-anchor: middle; letter-spacing: .3em; }
+  .none { fill: none; }
+  .poem { font: 15px var(--kai); fill: var(--ink-3); letter-spacing: .35em; opacity: .75; }
+  .seal-r { fill: var(--cinnabar); }
+  .seal-t { font: 400 26px var(--brush); fill: #fff6ea; text-anchor: middle; }
+  .core-deco, .sec, .ticks, .rim { transition: opacity .6s var(--ease); }
+  .mode-ego .core-deco, .mode-ego .sec { opacity: 0; pointer-events: none; }
+  .mode-ego .ticks, .mode-ego .rim { opacity: .4; }
+
+  /* 关系线 */
+  .e { fill: none; stroke: var(--tc); stroke-width: 1; opacity: .22; transition: opacity .35s, stroke-width .35s; vector-effect: non-scaling-stroke; }
+  .e.x { opacity: .3; }
+  .e.off { display: none; }
+  .drawing .e { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: drawin 1.4s var(--ease) forwards; animation-delay: calc(var(--i) * 3ms + .2s); }
+  @keyframes drawin { to { stroke-dashoffset: 0; } }
+  .lit .e { opacity: .04; }
+  .lit .e.on { opacity: .95; stroke-width: 2; }
+  .chain .e.on { stroke: var(--cinnabar); stroke-width: 3; }
+  .e.trace { animation: pulse 1.6s var(--ease) 2; }
+  @keyframes pulse { 50% { stroke-width: 5; } }
+  .mode-ego .edges { opacity: 0; pointer-events: none; }
+  .edges { transition: opacity .5s; }
+
+  /* 人物 */
+  .n { cursor: pointer; outline: none; }
+  .hit { fill: transparent; }
+  .dot { fill: var(--gc); stroke: var(--card); stroke-width: 1.5; transition: r .4s var(--ease), opacity .4s; }
+  .tier-c .dot { stroke: color-mix(in srgb, var(--gc) 40%, var(--card)); stroke-width: 3; }
+  .lb { font: 500 12.5px var(--serif); fill: var(--ink-2); transition: opacity .4s, fill .3s; pointer-events: none; }
+  .tier-c .lb { font-weight: 700; font-size: 14.5px; fill: var(--ink); }
+  .tier-s .lb, .tier-o .lb { font-size: 11.5px; fill: var(--ink-3); }
+  .n:hover .lb, .n:focus-visible .lb { fill: var(--gc); }
+  .n:hover .dot, .n:focus-visible .dot { opacity: .8; }
+  .lit .n { opacity: .25; }
+  .lit .n.on { opacity: 1; }
+  .lit .n.on .lb { fill: var(--ink); font-weight: 700; }
+  .n.core .lb { fill: var(--cinnabar) !important; }
+  .role { font: 500 11.5px var(--sans); fill: var(--ink-3); text-anchor: middle; pointer-events: none; }
+
+  /* 命盘 */
+  .mode-ego .n { opacity: 1; }
+  .mode-ego .n.rest { opacity: .2; }
+  .mode-ego .n.rest .lb { opacity: 0; }
+  .mode-ego .n.rest .dot { r: 2px; }
+  .mode-ego .n.r1 .lb { font-size: 16px; font-weight: 700; fill: var(--ink); }
+  .mode-ego .n.r1 .dot { r: 7px; }
+  .mode-ego .n.r2 .lb { font-size: 12.5px; fill: var(--ink-2); }
+  .mode-ego .n.core .dot { r: 38px; stroke: var(--card); stroke-width: 4; filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); }
+  .mode-ego .n.core .lb { font: 400 24px var(--brush); fill: #fff6ea !important; }
+  .ego { opacity: 0; transition: opacity .5s; pointer-events: none; }
+  .ego.show { opacity: 1; }
+  .ego :global(.ring) { fill: none; stroke: var(--line-2); stroke-dasharray: 2 5; vector-effect: non-scaling-stroke; }
+  .ego :global(.ring.two) { stroke: var(--line); }
+  .ego :global(.seg) { fill: none; stroke: var(--tc); stroke-width: 3; stroke-linecap: round; opacity: .55; }
+  .ego :global(.seg-t) { font: 700 11px var(--sans); fill: var(--tc); text-anchor: middle; dominant-baseline: middle; letter-spacing: .14em; }
+  .ego :global(.l1), .ego :global(.l2) { fill: none; stroke: var(--tc); vector-effect: non-scaling-stroke; transition: opacity .3s, stroke-width .3s; }
+  .ego :global(.l1) { stroke-width: 1.6; opacity: .7; }
+  .ego :global(.l2) { stroke-width: 1; opacity: .3; }
+  .ego.show :global(.l1), .ego.show :global(.l2) { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: drawin .8s var(--ease) forwards; animation-delay: calc(var(--i) * 18ms); }
+  .ego.show :global(.l2) { animation-delay: calc(.35s + var(--i) * 6ms); }
+  .ego :global(path.hot) { opacity: 1; stroke-width: 3; }
+
+  /* 浮在盘上的工具 */
   .hud { position: absolute; z-index: 3; display: flex; gap: 6px; align-items: center; }
   .hud.top { top: 14px; left: 14px; right: 14px; flex-wrap: wrap; pointer-events: none; }
   .hud.top > * { pointer-events: auto; }
-  .modes, .zoom, .legend, .find, .chain-form { background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
+  .modes, .zoom, .legend, .find, .chain-form, .back { background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
   .modes { display: flex; padding: 3px; }
   .modes button { padding: 8px 16px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-3); letter-spacing: .1em; }
   .modes button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
@@ -414,7 +592,8 @@ const client = {
   .chain-form { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 14px; font: 600 12px var(--sans); color: var(--ink-3); }
   .chain-form input { width: 96px; }
   .chain-form .btn { height: 32px; padding: 0 16px; }
-  .chain-form[hidden], .find[hidden] { display: none; }
+  .chain-form[hidden], .find[hidden], .back[hidden] { display: none; }
+  .back { height: 40px; padding: 0 16px; font: 600 13px var(--sans); color: var(--cinnabar); }
   .legend { left: 14px; bottom: 14px; flex-wrap: wrap; max-width: min(560px, calc(100% - 200px)); padding: 6px 10px; border-radius: 12px; gap: 2px 4px; }
   .lg { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font: 600 12px/1 var(--sans); color: var(--ink-2); }
   .lg[aria-pressed="false"] { opacity: .35; text-decoration: line-through; }
@@ -422,30 +601,29 @@ const client = {
   .zoom { right: 14px; bottom: 14px; flex-direction: column; padding: 4px; border-radius: 14px; gap: 2px; }
   .zoom button { min-width: 40px; height: 34px; border-radius: 10px; font: 600 13px/1 var(--sans); color: var(--ink-2); }
   .zoom button:hover { background: var(--paper-2); color: var(--cinnabar); }
-  .hint { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); font: 500 12.5px var(--sans); color: var(--ink-3); background: var(--card); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); transition: opacity .8s; pointer-events: none; }
-  .hint.gone { opacity: 0; }
+  .has-panel .zoom { right: 380px; }
+  .status { margin: 0 0 0 auto; max-width: 360px; font: 500 13px var(--sans); color: var(--ink-3); padding: 0 6px; pointer-events: none !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .has-panel .status { display: none; }
 
-  .panel { position: absolute; z-index: 4; top: 70px; right: 14px; bottom: 14px; width: 340px; overflow-y: auto; padding: 22px 22px 18px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px); animation: slide .4s var(--ease); cursor: auto; user-select: text; }
-  .has-panel .zoom { right: 368px; }
-  @keyframes slide { from { opacity: 0; transform: translateX(16px); } }
+  .panel { position: absolute; z-index: 4; top: 14px; right: 14px; bottom: 14px; width: 352px; overflow-y: auto; padding: 22px 22px 18px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px); animation: slide .45s var(--ease); cursor: auto; user-select: text; }
+  @keyframes slide { from { opacity: 0; transform: translateX(18px); } }
   .panel :global(.pn-x) { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: var(--ink-3); }
   .panel :global(.pn-x:hover) { background: var(--paper-2); color: var(--cinnabar); }
   .panel :global(.pn-g) { font: 700 11.5px/1 var(--sans); letter-spacing: .24em; color: var(--gc, var(--cinnabar)); }
-  .panel :global(h2) { font: 400 38px/1.15 var(--brush); margin: 10px 0 4px; }
+  .panel :global(h2) { font: 400 40px/1.15 var(--brush); margin: 10px 0 4px; }
   .panel :global(.chain-h) { font-size: 28px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
   .panel :global(.chain-h small) { font: 500 13px var(--sans); color: var(--ink-3); }
   .panel :global(.pn-t) { font-size: 14.5px; color: var(--ink-2); }
   .panel :global(.pn-n) { font: 600 12px/1 var(--sans); color: var(--ink-3); margin: 14px 0 6px; letter-spacing: .1em; }
   .panel :global(.pn-sec) { padding: 10px 0; border-top: 1px solid var(--line); }
-  .panel :global(.pn-sec h3) { font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--ink-3); margin-bottom: 8px; }
+  .panel :global(.pn-sec h3) { font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--tc); margin-bottom: 8px; }
   .panel :global(.pn-sec ul) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .panel :global(.pn-sec li) { display: flex; align-items: baseline; gap: 10px; font-size: 15px; }
   .panel :global([data-go]) { font-weight: 700; border-bottom: 1.5px solid color-mix(in srgb, var(--gc) 55%, transparent); }
   .panel :global([data-go]:hover) { color: var(--gc); }
   .panel :global(.pn-sec li span) { font-size: 13px; color: var(--ink-3); }
   .panel :global(.pn-acts) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-  .panel :global(.btn.ghost) { background: none; color: var(--ink-2); border: 1px solid var(--line-2); }
-  .panel :global(.chain) { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 0; font-size: 17px; }
+  .panel :global(.chain) { list-style: none; margin: 14px 0 0; padding: 0; display: grid; font-size: 17px; }
   .panel :global(.chain li) { display: grid; justify-items: start; gap: 4px; padding: 6px 0 6px 18px; border-left: 2px solid var(--cinnabar-soft); position: relative; }
   .panel :global(.chain li::before) { content: ''; position: absolute; left: -6px; bottom: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--cinnabar); }
   .panel :global(.via) { font-size: 13px; color: var(--ink-3); }
@@ -456,13 +634,13 @@ const client = {
   @media (max-width: 900px) {
     .gwrap { padding: 0; margin-top: 0; }
     .stage { border-radius: 0; border-left: 0; border-right: 0; height: calc(100svh - var(--header-h) - 42px); }
-    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46%; border-radius: 16px 16px 0 0; animation-name: rise; }
+    .panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 44%; border-radius: 16px 16px 0 0; animation-name: rise; }
     @keyframes rise { from { opacity: 0; transform: translateY(20px); } }
-    .has-panel .zoom { right: 14px; bottom: calc(46% + 10px); }
-    .has-panel .legend { display: none; }
+    .has-panel .zoom, .has-panel .legend, .has-panel .status { display: none; }
     .legend { max-width: calc(100% - 90px); }
     .lg { font-size: 11px; padding: 4px 5px; }
     .find input { width: 100px; }
     .chain-form input { width: 64px; }
+    .status { display: none; }
   }
 </style>
