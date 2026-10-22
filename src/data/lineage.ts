@@ -14,7 +14,7 @@ export const TREE_NING: TreeNode = {
       g: 'm',
       grp: 'ning',
       ch: [
-        { n: '贾敷', s: '早亡', g: 'm', grp: 'ning', x: 1 },
+        { n: '贾敷', s: '八九岁上便死', g: 'm', grp: 'ning', x: 1 },
         {
           n: '贾敬',
           s: '修道炼丹',
@@ -27,11 +27,14 @@ export const TREE_NING: TreeNode = {
               g: 'm',
               grp: 'ning',
               sp: [
-                { n: '尤氏', s: '继室', t: 'w', g: 'f', grp: 'ning' }
+                { n: '尤氏', s: '继室', t: 'w', g: 'f', grp: 'ning' },
+                { n: '佩凤', s: '妾', t: 'c', g: 'f', grp: 'ning', x: 1 },
+                { n: '偕鸳', s: '妾', t: 'c', g: 'f', grp: 'ning', x: 1 },
+                { n: '文花', s: '妾', t: 'c', g: 'f', grp: 'ning', x: 1 }
               ],
               ch: [
                 { n: '贾蓉', s: '', g: 'm', grp: 'ning', sp: [
-                    { n: '秦可卿', s: '', t: 'w', g: 'f', grp: 'ning' }
+                    { n: '秦可卿', s: '第十三回亡故', t: 'w', g: 'f', grp: 'ning' }
                   ] }
               ]
             },
@@ -64,7 +67,9 @@ export const TREE_RONG: TreeNode = {
           g: 'm',
           grp: 'rong',
           sp: [
-            { n: '邢夫人', s: '继室', t: 'w', g: 'f', grp: 'rong' }
+            { n: '邢夫人', s: '继室', t: 'w', g: 'f', grp: 'rong' },
+            { n: '嫣红', s: '八百两买来', t: 'c', g: 'f', grp: 'rong', x: 1 },
+            { n: '翠云', s: '妾', t: 'c', g: 'f', grp: 'rong', x: 1 }
           ],
           ch: [
             {
@@ -75,15 +80,17 @@ export const TREE_RONG: TreeNode = {
               sp: [
                 { n: '王熙凤', s: '正室', t: 'w', g: 'f', grp: 'rong' },
                 { n: '平儿', s: '妾', t: 'c', g: 'f', grp: 'rong' },
-                { n: '尤二姐', s: '偷娶', t: 'l', k: '外室', g: 'f', grp: 'oth' }
+                { n: '尤二姐', s: '偷娶', t: 'l', k: '外室', g: 'f', grp: 'oth' },
+                { n: '秋桐', s: '贾赦所赏', t: 'c', g: 'f', grp: 'rong' }
               ],
               ch: [
                 { n: '巧姐', s: '', g: 'f', grp: 'rong' }
               ]
             },
-            { n: '贾迎春', s: '二木头', g: 'f', grp: 'rong', sp: [
+            { n: '贾迎春', s: '妾出', g: 'f', grp: 'rong', sp: [
                 { n: '孙绍祖', s: '中山狼', t: 'w', g: 'm', grp: 'out' }
-              ] }
+              ] },
+            { n: '贾琮', s: '随邢夫人', g: 'm', grp: 'rong', x: 1 }
           ]
         },
         {
@@ -109,7 +116,9 @@ export const TREE_RONG: TreeNode = {
                 { n: '贾兰', s: '', g: 'm', grp: 'rong' }
               ]
             },
-            { n: '贾元春', s: '贤德妃', g: 'f', grp: 'rong' },
+            { n: '贾元春', s: '贤德妃', g: 'f', grp: 'rong', sp: [
+                { n: '当今', s: '入宫', t: 'w', g: 'm', grp: 'out', x: 1 }
+              ] },
             {
               n: '贾宝玉',
               s: '怡红公子',
