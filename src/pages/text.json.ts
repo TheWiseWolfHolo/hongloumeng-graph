@@ -7,7 +7,8 @@ export function GET() {
   const out: string[] = [];
   for (let n = 1; n <= 120; n++) {
     const d = JSON.parse(readFileSync(join(dir, `${String(n).padStart(3, '0')}.json`), 'utf8'));
-    out.push(d.blocks.map((b: { s: string }) => b.s).join('\n'));
+    /* 单独成段的脂批不进搜索，只搜正文 */
+    out.push(d.blocks.filter((b: { t: string }) => b.t !== 'pi').map((b: { s: string }) => b.s).join('\n'));
   }
   return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json' } });
 }

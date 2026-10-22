@@ -1,0 +1,48 @@
+---
+import Base from '../layouts/Base.astro';
+import { PEOPLE } from '../lib/data.ts';
+import { GARDEN } from '../data/garden.ts';
+import '../styles/garden.css';
+
+const groups = Object.fromEntries(PEOPLE.map(p => [p.id, p.group]));
+const homes = GARDEN.filter(b => b.kind === 'home');
+---
+<Base title="大观园" description={`为元春省亲而建的园子，后来成了宝玉和姐妹们的住处。手绘的园子示意图，${homes.length} 处院落各有住户与旧事，还能随贾政一行把第十七回的游园走一遍。`} section="garden">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">园 · 壹</span>
+        <h1 class="ink-in" style="--d:.1s">大观园</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">为元春省亲而建，后来成了宝玉和姐妹们的住处。点院落、匾额或下面的名字，看住户和旧事；也可以跟着第十七回贾政一行，看宝玉一路题匾额对联。</p>
+    </header>
+
+    <div class="garden-grid">
+      <div class="gmain">
+        <div class="gtools">
+          <button class="btn primary" type="button" id="gTour">随贾政一行游园</button>
+          <span class="gt-hint">第十七回 · 大观园试才题对额，共九处</span>
+        </div>
+        <div class="gmap"><div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园示意图"></svg></div></div>
+        <div class="gplaces" id="gPlaces" aria-label="园中各处"></div>
+        <p class="map-note">示意图。方位按书中叙述大致安排，并非考据地图。水从东北山坳引进来，流过全园，经沁芳闸出去。</p>
+      </div>
+      <aside class="gcard" id="gcard" aria-live="polite"></aside>
+    </div>
+  </div>
+  <script is:inline type="application/json" id="garden-people" set:html={JSON.stringify(groups)} />
+</Base>
+
+<script>
+  import Garden from '../client/garden-map.js';
+  Garden.init();
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (id) Garden.select(id, true);
+  if (new URLSearchParams(location.search).has('tour')) Garden.startTour();
+</script>
+
+<style>
+  .garden-grid { margin-top: 32px; }
+  .gcard { position: sticky; top: calc(var(--header-h) + 16px); }
+  @media (max-width: 960px) { .garden-grid { grid-template-columns: 1fr; } .gcard { position: static; } }
+</style>

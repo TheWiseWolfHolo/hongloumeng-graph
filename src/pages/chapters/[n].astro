@@ -235,6 +235,13 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
     if (first) setTimeout(() => first!.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior }), 60);
   }
   onScroll();
+  /* 左右方向键翻回 */
+  addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement).tagName)) return;
+    const rel = e.key === 'ArrowLeft' ? 'prev' : e.key === 'ArrowRight' ? 'next' : '';
+    const a = rel && document.querySelector<HTMLAnchorElement>(`a[rel="${rel}"]`);
+    if (a) location.href = a.href;
+  });
 </script>
 
 <style>

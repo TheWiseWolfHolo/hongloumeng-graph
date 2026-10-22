@@ -1,0 +1,183 @@
+---
+import Base from '../layouts/Base.astro';
+import PersonLink from '../components/PersonLink.astro';
+import { EVENTS, EVENT_KINDS, type EventKind } from '../data/events.ts';
+import { CHAPTERS, isSequel } from '../lib/data.ts';
+
+const cnOf = new Map(CHAPTERS.map(c => [c.n, c.cn]));
+const titleOf = new Map(CHAPTERS.map(c => [c.n, c.title.join('　')]));
+const evAt = new Map<number, number>();
+EVENTS.forEach((e, i) => e.c.forEach(n => { if (!evAt.has(n)) evAt.set(n, i); }));
+const span = (c: number[]) => (c.length > 1 && c.at(-1) !== c[0] ? `${cnOf.get(c[0])}至${cnOf.get(c.at(-1)!)?.replace('第', '')}` : cnOf.get(c[0])!);
+const kinds = Object.keys(EVENT_KINDS) as EventKind[];
+const people = [...new Set(EVENTS.flatMap(e => e.ids))];
+---
+<Base title="大事眉批" description={`《红楼梦》一百二十回里的 ${EVENTS.length} 件大事，按回目排开，像旧书眉批一样圈点。可以按类别、人物筛，也可以只看前八十回。`} section="chapters" sub="timeline">
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <span class="eyebrow ink-in">回目 · 贰</span>
+        <h1 class="ink-in" style="--d:.1s">大事眉批</h1>
+      </div>
+      <p class="lede ink-in" style="--d:.25s">全书一百二十回排成一行，一点一回，朱圈是大事。点圈跳到那件事，点空点去读那一回。下面五十件事按回目排开，后四十回是续书，颜色压淡一些。</p>
+    </header>
+
+    <nav class="axis reveal" aria-label="一百二十回大事分布">
+      <div class="ax-row">
+        {Array.from({ length: 120 }, (_, k) => {
+          const n = k + 1, ev = evAt.get(n);
+          return ev != null
+            ? <a class:list={['ax', 'ev', { big: EVENTS[ev].m, xu: isSequel(n) }]} href={`#ev${ev}`} style={`--kc:${EVENT_KINDS[EVENTS[ev].k]}`} title={`${cnOf.get(n)}　${EVENTS[ev].t}`} data-ax={ev}><i /></a>
+            : <a class:list={['ax', { xu: isSequel(n) }]} href={`/chapters/${n}/`} title={`${cnOf.get(n)}　${titleOf.get(n)}`}><i /></a>;
+        })}
+      </div>
+      <div class="ax-scale" aria-hidden="true">
+        {[1, 20, 40, 60, 100, 120].map(n => <span style={`--at:${(n - .5) / 120}`}>{n}</span>)}
+        <b style="--at:.6667">脂本止于此 · 以下续书</b>
+      </div>
+    </nav>
+
+    <div class="tl-tools reveal">
+      <div class="seg" role="group" aria-label="原著或续书">
+        <button type="button" data-part="" aria-pressed="true">全部</button>
+        <button type="button" data-part="early" aria-pressed="false">前八十回</button>
+        <button type="button" data-part="late" aria-pressed="false">后四十回</button>
+      </div>
+      <div class="kinds" role="group" aria-label="类别">
+        {kinds.map(k => <button type="button" class="chip" data-kind={k} aria-pressed="false" style={`--c:${EVENT_KINDS[k]}`}><i class="dot" />{k}</button>)}
+      </div>
+      <label class="who">
+        <span>只看</span>
+        <input list="tl-names" data-who placeholder="人物" aria-label="只看某个人的经历">
+        <datalist id="tl-names">{people.map(p => <option value={p} />)}</datalist>
+      </label>
+      <span class="tl-count" data-count aria-live="polite">{EVENTS.length} 件</span>
+    </div>
+
+    <ol class="tl">
+      {EVENTS.map((e, i) => (
+        <li class:list={['te', 'reveal', { big: e.m, xu: isSequel(e.c[0]) }]} id={`ev${i}`} data-kind={e.k} data-late={isSequel(e.c[0]) ? '1' : ''} data-ids={e.ids.join(' ')} style={`--kc:${EVENT_KINDS[e.k]}`}>
+          <div class="te-hui">
+            <a class="kai" href={`/chapters/${e.c[0]}/`}>{span(e.c)}</a>
+            <small>{CHAPTERS[e.c[0] - 1].title.map(t => <span>{t}</span>)}</small>
+          </div>
+          <div class="te-mark" aria-hidden="true"><span class="brush">{e.s.slice(0, 2)}</span></div>
+          <div class="te-b">
+            <p class="te-k"><i />{e.k}{isSequel(e.c[0]) && <em>续书</em>}</p>
+            <h2>{e.t}</h2>
+            <p class="te-d">{e.d}</p>
+            <div class="mem">{e.ids.map(id => <PersonLink id={id} />)}</div>
+          </div>
+        </li>
+      ))}
+    </ol>
+    <p class="tl-empty" data-empty hidden>没有符合条件的大事。</p>
+  </div>
+</Base>
+
+<script>
+  const items = [...document.querySelectorAll<HTMLElement>('.te')];
+  const axes = [...document.querySelectorAll<HTMLElement>('[data-ax]')];
+  const who = document.querySelector<HTMLInputElement>('[data-who]')!;
+  const count = document.querySelector('[data-count]')!;
+  const empty = document.querySelector<HTMLElement>('[data-empty]')!;
+  const kinds = new Set<string>();
+  let part = '';
+  function apply() {
+    const p = who.value.trim();
+    let n = 0;
+    items.forEach((li, i) => {
+      const ok = (!kinds.size || kinds.has(li.dataset.kind!))
+        && (!part || (part === 'late') === !!li.dataset.late)
+        && (!p || li.dataset.ids!.split(' ').includes(p));
+      li.hidden = !ok;
+      if (ok) { n++; li.classList.add('in'); }
+      axes.filter(a => +a.dataset.ax! === i).forEach(a => a.classList.toggle('dim', !ok));
+    });
+    count.textContent = `${n} 件`;
+    empty.hidden = n > 0;
+    const url = new URL(location.href);
+    p ? url.searchParams.set('p', p) : url.searchParams.delete('p');
+    history.replaceState(null, '', url);
+  }
+  document.querySelectorAll<HTMLButtonElement>('[data-part]').forEach(b => b.addEventListener('click', () => {
+    part = b.dataset.part!;
+    document.querySelectorAll('[data-part]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    apply();
+  }));
+  document.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.kind!;
+    kinds.has(k) ? kinds.delete(k) : kinds.add(k);
+    b.setAttribute('aria-pressed', String(kinds.has(k)));
+    apply();
+  }));
+  who.addEventListener('change', apply);
+  who.addEventListener('input', () => { if (!who.value) apply(); });
+  const p = new URLSearchParams(location.search).get('p');
+  if (p) { who.value = p; apply(); }
+  /* 从别处跳来时，把那件事闪一下 */
+  const flash = () => {
+    const t = location.hash ? document.querySelector<HTMLElement>(location.hash) : null;
+    if (!t?.classList.contains('te')) return;
+    t.hidden = false; t.classList.add('in', 'flash');
+    setTimeout(() => t.classList.remove('flash'), 1800);
+  };
+  addEventListener('hashchange', flash);
+  flash();
+</script>
+
+<style>
+  .axis { margin-top: 36px; padding: 22px 20px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  .ax-row { display: grid; grid-template-columns: repeat(120, 1fr); align-items: center; height: 30px; }
+  .ax { display: grid; place-items: center; height: 100%; }
+  .ax i { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-4); transition: transform .3s var(--ease); }
+  .ax.xu i { background: var(--line-2); }
+  .ax.ev i { width: 9px; height: 9px; background: none; border: 1.6px solid var(--kc); }
+  .ax.ev.big i { width: 13px; height: 13px; border-color: var(--cinnabar); border-width: 2px; background: color-mix(in srgb, var(--cinnabar) 14%, transparent); }
+  .ax.ev.xu i { opacity: .55; }
+  .ax.dim i { opacity: .15; }
+  .ax:hover i { transform: scale(1.7); }
+  .ax-scale { position: relative; height: 26px; margin-top: 4px; border-top: 1px solid var(--line); }
+  .ax-scale span { position: absolute; left: calc(var(--at) * 100%); top: 6px; transform: translateX(-50%); font: 600 11px var(--sans); color: var(--ink-3); }
+  .ax-scale b { position: absolute; left: calc(var(--at) * 100%); top: -36px; bottom: 0; border-left: 1px dashed var(--cinnabar); padding: 30px 0 0 8px; font: 600 11px var(--sans); color: var(--cinnabar); letter-spacing: .1em; white-space: nowrap; }
+
+  .tl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin: 28px 0 10px; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); }
+  .seg button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--sans); color: var(--ink-3); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  .kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+  .who { display: inline-flex; align-items: center; gap: 8px; font: 600 12.5px var(--sans); color: var(--ink-3); }
+  .who input { width: 110px; height: 34px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); font-size: 14px; color: var(--ink); }
+  .tl-count { margin-left: auto; font: 600 12.5px var(--sans); color: var(--ink-3); }
+
+  .tl { list-style: none; margin: 0; padding: 0; }
+  .te { display: grid; grid-template-columns: 170px 64px minmax(0, 1fr); gap: 0 26px; padding: 26px 0; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 20px); }
+  .te-hui { text-align: right; display: grid; align-content: start; gap: 6px; }
+  .te-hui a { font-size: 17px; color: var(--ink); }
+  .te-hui a:hover { color: var(--cinnabar); }
+  .te-hui small { display: grid; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+  .te-mark { display: grid; justify-items: center; }
+  .te-mark span { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--kc); color: var(--kc); font-size: 19px; writing-mode: vertical-rl; letter-spacing: .05em; }
+  .te.big .te-mark span { border: 2.5px solid var(--cinnabar); color: #fff6ea; background: var(--cinnabar); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cinnabar) 15%, transparent); }
+  .te-k { display: flex; align-items: center; gap: 8px; font: 700 11.5px/1 var(--sans); letter-spacing: .2em; color: var(--kc); }
+  .te-k i { width: 14px; height: 2px; background: var(--kc); }
+  .te-k em { font-style: normal; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 2px 5px; letter-spacing: .1em; }
+  .te h2 { font: 400 clamp(24px, 2.4vw, 30px)/1.25 var(--brush); margin: 10px 0 8px; }
+  .te-d { font-size: 16px; line-height: 1.95; color: var(--ink-2); max-width: 42em; }
+  .te .mem { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 14.5px; }
+  .te.xu { opacity: .78; }
+  .te.xu .te-mark span { border-style: dashed; }
+  .te.flash { animation: flash 1.8s var(--ease); }
+  @keyframes flash { 0%, 40% { background: color-mix(in srgb, var(--cinnabar) 9%, transparent); } 100% { background: transparent; } }
+  .tl-empty { padding: 40px 0; text-align: center; color: var(--ink-3); }
+  @media (max-width: 760px) {
+    .axis { padding: 16px 10px 8px; overflow-x: auto; }
+    .ax-row, .ax-scale { min-width: 600px; }
+    .te { grid-template-columns: 48px minmax(0, 1fr); gap: 10px 16px; }
+    .te-hui { grid-column: 2; grid-row: 1; text-align: left; }
+    .te-mark { grid-column: 1; grid-row: 1 / span 2; }
+    .te-mark span { width: 44px; height: 44px; font-size: 15px; }
+    .te-b { grid-column: 2; }
+    .tl-count { margin-left: 0; }
+  }
+</style>

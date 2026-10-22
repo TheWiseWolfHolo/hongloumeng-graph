@@ -1,0 +1,15 @@
+{
+  "name": "红楼梦人物关系图谱",
+  "short_name": "红楼梦",
+  "description": "《红楼梦》人物、关系与一百二十回原文",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3eee2",
+  "theme_color": "#f3eee2",
+  "icons": [
+    { "src": "/img/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

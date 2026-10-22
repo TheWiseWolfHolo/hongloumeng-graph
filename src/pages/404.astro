@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="此页不存" description="这一页找不到了。">
+  <div class="wrap nf">
+    <p class="nf-n brush ink-in">四〇四</p>
+    <h1 class="kai ink-in" style="--d:.15s">假作真时真亦假，无为有处有还无。</h1>
+    <p class="nf-t ink-in" style="--d:.3s">这一页找不到了。可能是旧版的链接，也可能地址打错了一个字。</p>
+    <div class="nf-a ink-in" style="--d:.45s">
+      <a class="btn" href="/">回卷首</a>
+      <a class="btn ghost" href="/people/">翻人物谱</a>
+      <a class="btn ghost" href="/chapters/">看回目</a>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .nf { min-height: calc(100svh - var(--header-h) - 200px); display: grid; place-content: center; justify-items: center; gap: 20px; text-align: center; padding-block: 60px; }
+  .nf-n { font-size: clamp(80px, 14vw, 160px); line-height: 1; color: var(--cinnabar); opacity: .9; }
+  .nf h1 { font-size: clamp(20px, 2.6vw, 28px); letter-spacing: .16em; line-height: 1.8; }
+  .nf-t { color: var(--ink-3); }
+  .nf-a { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+</style>

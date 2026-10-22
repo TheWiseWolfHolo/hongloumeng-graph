@@ -4,10 +4,12 @@
   "type": "module",
   "scripts": {
     "text": "node scripts/build-text.mjs",
+    "stats": "node scripts/build-stats.mjs",
+    "fonts": "node scripts/fonts.mjs",
     "dev": "astro dev",
-    "build": "astro build && node scripts/fonts.mjs",
+    "build": "node scripts/build-stats.mjs && node scripts/fonts.mjs && astro build && node scripts/check-site.mjs",
     "preview": "astro preview",
-    "check": "node scripts/check-data.mjs"
+    "check": "node scripts/check-site.mjs"
   },
   "dependencies": {
     "astro": "7.4.2"

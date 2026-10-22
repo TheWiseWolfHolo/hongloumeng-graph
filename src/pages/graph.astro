@@ -18,7 +18,7 @@ const client = {
   types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name]))
 };
 ---
-<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系：按家族聚成九座岛，点一个人看他的亲友，或者查两个人之间隔着谁。`} section="graph" sub="graph" bodyClass="pg-graph">
+<Base title="关系星图" description={`《红楼梦》${PEOPLE.length} 位人物、${EDGES.length} 条关系：按家族聚成九座岛，点一个人看他的亲友，或者查两个人之间隔着谁。`} section="relations" sub="graph" bodyClass="pg-graph">
   <div class="gwrap">
     <div class="stage" data-stage>
       <svg class="gsvg" data-svg role="img" aria-label="人物关系图">
