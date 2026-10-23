@@ -120,7 +120,7 @@ const Garden = (() => {
   let artworkTransition = Promise.resolve();
   async function setArtwork(src) {
     const request = ++artworkRequest;
-    const base = $('.g-artwork', svg);
+    const base = $$('.g-artwork', svg).at(-1);
     if (src !== base.getAttribute('href') && !preparedArt.has(src)) {
       const picture = new Image();
       picture.src = src;
@@ -129,13 +129,13 @@ const Garden = (() => {
     await preparedArt.get(src);
     await artworkTransition;
     if (request !== artworkRequest || src === base.getAttribute('href')) return;
-    const next = el('image', { class: 'g-artwork g-artwork-next', href: src, x: 0, y: 0, width: W, height: H, preserveAspectRatio: 'xMidYMid meet', 'aria-hidden': 'true' });
+    /* 新画盖上去淡入，淡完直接换掉旧画。不去改旧画的 href，那样大图会重新解码，闪一下底色 */
+    const next = el('image', { class: 'g-artwork', href: src, x: 0, y: 0, width: W, height: H, preserveAspectRatio: 'xMidYMid meet', 'aria-hidden': 'true' });
     base.after(next);
+    $('.g-vacancy', svg).setAttribute('href', src);
     const fade = next.animate([{ opacity: 0 }, { opacity: 1 }], { duration: reduced ? 0 : 420, easing: 'ease-in-out', fill: 'forwards' });
     artworkTransition = fade.finished.then(() => {
-      base.setAttribute('href', src);
-      $('.g-vacancy', svg).setAttribute('href', src);
-      next.remove();
+      base.remove();
     });
     await artworkTransition;
   }

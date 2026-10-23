@@ -59,7 +59,8 @@ const titles = CHAPTERS.map(c => [c.cn, c.title.join('　')]);
   .kb-where:hover { color: var(--ink); }
   .kb-turn { font: 400 17px/1 var(--title); letter-spacing: .4em; color: var(--ink-3); padding: 8px 4px 8px 10px; box-shadow: inset 0 -1px 0 var(--line-2); transition: color .3s, box-shadow .3s; }
   .kb-turn:hover { color: var(--cinnabar); box-shadow: inset 0 -1px 0 var(--cinnabar); }
-  .kb-turn:disabled { cursor: wait; }
+  .kb-turn:disabled { cursor: default; }
+  .kb-wrap[aria-busy="true"] .kb-block { cursor: default; }
   .kb-status { margin: -14px 0 0; color: var(--cinnabar); font: 400 15px/1.6 var(--serif); }
 
   /* 手机上只摊右页 */
