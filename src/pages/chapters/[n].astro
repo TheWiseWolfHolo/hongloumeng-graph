@@ -35,8 +35,8 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
         <section class="side-sec">
           <h2>本回提要</h2>
           <p class="sum">{c.summary}</p>
-          {noteCount > 0 && <p class="side-zp">本回脂批<b>{cn(noteCount)}</b>条</p>}
-          {sequel && <p class="side-zp xu">续书，无脂批。</p>}
+          {noteCount > 0 && <p class="side-zp">本回批语<b>{cn(noteCount)}</b>条</p>}
+          {sequel && <p class="side-zp xu">续书，无批语。</p>}
         </section>
         {events.length > 0 && (
           <section class="side-sec">
@@ -74,13 +74,13 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
       {sequel && (
         <aside class="xu-banner">
           <b>后四十回续书</b>
-          <p>这一回不出自曹雪芹之手。程伟元、高鹗在乾隆五十六年把它和前八十回一起刊行，通常认为是他人续写。情节可作参考，人物结局和前八十回的伏笔、脂批透露的原意多有出入。</p>
+          <p>这一回不出自曹雪芹之手。程伟元、高鹗在乾隆五十六年把它和前八十回一起刊行，通常认为是他人续写。情节可作参考，人物结局和前八十回的伏笔、批语透露的原意多有出入。</p>
         </aside>
       )}
       <div class="controls" role="toolbar" aria-label="阅读设置">
         {noteCount > 0 && (
-          <div class="ctl-group zp-modes" role="group" aria-label="脂批显示方式">
-            <span class="zp-label">脂批</span>
+          <div class="ctl-group zp-modes" role="group" aria-label="批语显示方式">
+            <span class="zp-label">批语</span>
             <button type="button" data-zp="off" aria-pressed="false">隐</button>
             <button type="button" data-zp="dot" aria-pressed="true">圈</button>
             <button type="button" data-zp="full" aria-pressed="false">显</button>
@@ -130,22 +130,66 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   if (store.get('hlm-names') === 'off') setNames(false);
 
   const vBtn = document.querySelector<HTMLButtonElement>('[data-vertical]')!;
-  const setVertical = (on: boolean) => {
+  const controls = document.querySelector<HTMLElement>('.controls')!;
+  const isV = () => reader.classList.contains('vertical');
+  /* 竖排从右往左读，scrollLeft 从 0 往负数走；读到的比例在 0 到 1 之间 */
+  const vSpan = () => Math.max(1, text.scrollWidth - text.clientWidth);
+  /* 竖排是刻本的样子，整回换成繁体；横排换回简体 */
+  let fan: Promise<{ at: number[]; ch: string }> | null = null;
+  const swapped: [Text, string][] = [];
+  async function setFan(on: boolean) {
+    if (!on) { for (const [t, s] of swapped) t.data = s; swapped.length = 0; return; }
+    if (swapped.length) return;
+    fan ??= fetch(`/chapters/${n}/fan.json`).then(r => r.json());
+    const { at, ch } = await fan.catch(() => ({ at: [] as number[], ch: '' }));
+    if (!isV() || swapped.length) return;
+    const w = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    let pos = 0, k = 0, next = at[0] ?? Infinity;
+    while (k < at.length && w.nextNode()) {
+      const t = w.currentNode as Text, s = t.data, end = pos + s.length;
+      if (next < end) {
+        const a = s.split('');
+        while (next < end) { a[next - pos] = ch[k]; k++; next += at[k] ?? Infinity; }
+        swapped.push([t, s]);
+        t.data = a.join('');
+      }
+      pos = end;
+    }
+  }
+  const setVertical = (on: boolean, p = 0, align = false) => {
     reader.classList.toggle('vertical', on);
+    setFan(on);
     vBtn.setAttribute('aria-pressed', String(on));
     store.set('hlm-vertical', on ? '1' : null);
-    if (on) text.scrollLeft = text.scrollWidth;
+    if (on) {
+      text.scrollLeft = -p * vSpan();
+      /* 工具条贴着页头，正文框正好占满下面的一屏 */
+      if (align) controls.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
+    }
   };
-  vBtn.addEventListener('click', () => setVertical(vBtn.getAttribute('aria-pressed') !== 'true'));
-  if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true);
-  /* 竖排时滚轮横着翻 */
+  vBtn.addEventListener('click', () => {
+    const on = vBtn.getAttribute('aria-pressed') !== 'true';
+    /* 横竖切换时接着原来读到的地方 */
+    const p = progress();
+    setVertical(on, p, true);
+    if (!on) { const r = text.getBoundingClientRect(); scrollTo({ top: scrollY + r.top + r.height * p - innerHeight * .4, behavior: 'instant' as ScrollBehavior }); }
+  });
+  /* 竖排时滚轮横着翻；翻到头了再交还给页面，好往下看下一回 */
   text.addEventListener('wheel', e => {
-    if (!reader.classList.contains('vertical') || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if (!isV() || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    const atEnd = -text.scrollLeft >= vSpan() - 1, atStart = text.scrollLeft >= -1;
+    if ((e.deltaY > 0 && atEnd) || (e.deltaY < 0 && atStart)) return;
     e.preventDefault();
-    text.scrollLeft -= e.deltaY;
+    text.scrollLeft -= e.deltaY * (e.deltaMode === 1 ? 32 : 1);
   }, { passive: false });
+  /* 竖排时一屏一屏地翻，留一列接上文 */
+  const pageBy = (dir: number) => {
+    const L = parseFloat(getComputedStyle(text).lineHeight) || 40;
+    const step = Math.max(L, Math.floor((text.clientWidth - L * 2) / L) * L - L);
+    text.scrollBy({ left: -dir * step, behavior: 'smooth' });
+  };
 
-  /* 脂批：隐去、只留朱圈、全部展开 */
+  /* 批语：隐去、只留朱圈、全部展开 */
   const zpBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-zp]')];
   const setZp = (mode: string) => {
     reader.dataset.zp = mode;
@@ -177,15 +221,13 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   /* 阅读进度条，并记下读到哪里 */
   const bar = document.querySelector<HTMLElement>('[data-rp]')!;
   let saveT = 0;
+  function progress() {
+    if (isV()) return Math.min(1, Math.abs(text.scrollLeft) / vSpan());
+    const r = text.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (innerHeight * .4 - r.top) / r.height));
+  }
   const onScroll = () => {
-    let p: number;
-    if (reader.classList.contains('vertical')) {
-      /* 竖排从右往左，scrollLeft 从 0 往负数走 */
-      p = Math.min(1, Math.abs(text.scrollLeft) / Math.max(1, text.scrollWidth - text.clientWidth));
-    } else {
-      const r = text.getBoundingClientRect();
-      p = Math.min(1, Math.max(0, (innerHeight * .4 - r.top) / r.height));
-    }
+    const p = progress();
     bar.style.transform = `scaleX(${p})`;
     clearTimeout(saveT);
     saveT = window.setTimeout(() => store.set('hlm-last', JSON.stringify({ n, p: +p.toFixed(3) })), 400);
@@ -197,7 +239,9 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   try {
     const last = JSON.parse(store.get('hlm-last') || 'null');
     const params = new URLSearchParams(location.search);
-    if (last?.n === n && last.p > .02 && last.p < .98 && !location.hash && !params.get('q') && !reader.classList.contains('vertical')) {
+    const resume = last?.n === n && last.p > .02 && last.p < .98 && !location.hash && !params.get('q');
+    if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true, resume ? last.p : 0);
+    else if (resume) {
       const r = text.getBoundingClientRect();
       scrollTo({ top: scrollY + r.top + r.height * last.p - innerHeight * .4, behavior: 'instant' as ScrollBehavior });
     }
@@ -237,6 +281,18 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   /* 左右方向键翻回 */
   addEventListener('keydown', e => {
     if (e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement).tagName)) return;
+    /* 竖排时左右键和翻页键翻的是这一回里的页，翻到头才去上下回 */
+    if (isV()) {
+      const fwd = e.key === 'ArrowLeft' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey);
+      const back = e.key === 'ArrowRight' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey);
+      if (!fwd && !back) return;
+      const atEnd = -text.scrollLeft >= vSpan() - 1, atStart = text.scrollLeft >= -1;
+      if ((fwd && !atEnd) || (back && !atStart)) { e.preventDefault(); pageBy(fwd ? 1 : -1); return; }
+      if (e.key.startsWith('Page') || e.key === ' ') return;
+      const a = document.querySelector<HTMLAnchorElement>(`a[rel="${fwd ? 'next' : 'prev'}"]`);
+      if (a) location.href = a.href;
+      return;
+    }
     const rel = e.key === 'ArrowLeft' ? 'prev' : e.key === 'ArrowRight' ? 'next' : '';
     const a = rel && document.querySelector<HTMLAnchorElement>(`a[rel="${rel}"]`);
     if (a) location.href = a.href;
@@ -302,14 +358,14 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .cp.next { text-align: right; }
   .cpt { font: 400 20px/1.5 var(--title); letter-spacing: .1em; transition: color .3s; }
 
-  /* ---- 脂批 ---- */
+  /* ---- 批语 ---- */
   .src-tag { color: var(--cinnabar); }
   .src-tag.xu { color: var(--ink-3); }
   .side-zp { margin-top: 10px; font: 400 12.5px/1.7 var(--title); color: var(--ink-3); }
   .side-zp b { color: var(--cinnabar); font-size: 14px; }
   .zp-modes { align-items: center; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--line); }
-  .zp-label { font: 400 12px/1 var(--title); letter-spacing: .14em; color: var(--cinnabar); padding: 0 8px 0 10px; }
-  .controls .zp-modes button { padding: 0 10px; font-family: var(--title); font-size: 14.5px; }
+  .zp-label { font: 400 16px/1 var(--title); letter-spacing: .14em; color: var(--cinnabar); padding: 0 8px 0 10px; }
+  .controls .zp-modes button { min-width: 34px; padding: 0 8px; font-family: var(--title); font-size: 17px; }
   .controls .zp-modes button[aria-pressed="true"] { color: var(--cinnabar); box-shadow: inset 0 0 0 1px var(--cinnabar); }
   .text :global(.zp) { --zc: var(--cinnabar); }
   .text :global(.zp.late) { --zc: color-mix(in srgb, var(--cinnabar) 55%, var(--ink-3)); }
@@ -346,14 +402,64 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .is-xu .ch-cn { color: var(--ink-3); }
   .is-xu .text { color: var(--ink-2); }
 
-  /* 竖排：从右往左翻，像线装书 */
-  .reader.vertical { grid-template-columns: 1fr; }
+  /* 竖排：照刻本的样子排成字格。每一行（竖着的一列）宽度固定为 --L：
+     块的行高是 --L，行内元素的行高比它小，竖排的基线是字的中线，大字小字都落在同一条中线上，
+     所以每列都正好一格宽，乌丝栏按 --L 画就和字对得上。段落、诗、批语之间不留空白，换段就换列。 */
+  .reader.vertical { grid-template-columns: minmax(0, 1fr); }
   .reader.vertical .side { display: none; }
-  .reader.vertical .text { writing-mode: vertical-rl; max-width: none; height: min(36em, calc(100vh - var(--header-h) - 190px)); overflow-x: auto; overflow-y: hidden; padding: 1.2em 1em; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); background-image: linear-gradient(to left, transparent calc(100% - 1px), color-mix(in srgb, var(--cinnabar) 12%, transparent) 0); background-size: 2.05em 100%; background-attachment: local; line-height: 2.05; scrollbar-width: thin; }
-  .reader.vertical .text :global(p) { margin: 0 0 0 1em; }
-  .reader.vertical .text :global(.poem) { border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0 .6em; margin: 0 .6em; }
-  .reader.vertical .text :global(.fig) { writing-mode: horizontal-tb; flex-direction: column; }
-  .reader.vertical .ch-head { padding-bottom: 20px; }
+  .reader.vertical .ch-head { padding: 6px 0 22px; }
+  .reader.vertical .ch-cn { font-size: clamp(40px, 5vw, 60px); margin: 14px 0 12px; }
+  .reader.vertical .controls { position: static; margin-bottom: 18px; scroll-margin-top: calc(var(--header-h) + 14px); }
+  .reader.vertical .text {
+    --fsv: calc(21px + var(--fs-step) * 1.5px);
+    --L: calc(var(--fsv) * 2.15);
+    --adv: calc(var(--fsv) * 1.12);
+    --py: calc(var(--fsv) * 1.5);
+    --rule: color-mix(in srgb, var(--cinnabar) 22%, transparent);
+    writing-mode: vertical-rl; text-orientation: mixed;
+    font-family: var(--title); font-size: var(--fsv); line-height: var(--L); letter-spacing: .12em; text-align: start;
+    /* 竖排盒子的宽是它的块向尺寸，不写死就会按内容撑到上万像素 */
+    width: 100%; max-width: none; margin: 0; box-sizing: border-box;
+    /* 高度取整到字距的整数倍，每列字数一样，底下不剩半个字 */
+    height: calc(100svh - var(--header-h) - 120px);
+    height: calc(round(down, 100svh - var(--header-h) - 120px - 2 * var(--py), var(--adv)) + 2 * var(--py) + 2px);
+    min-height: 16em;
+    padding: var(--py) var(--L);
+    overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent;
+    background-color: var(--card);
+    background-image: linear-gradient(to right, transparent calc(100% - 1px), var(--rule) 0);
+    background-size: var(--L) 100%;
+    background-position: right var(--L) top 0;
+    background-attachment: local;
+    border: 1px solid var(--line-2); border-width: 2px 1px; border-radius: 2px;
+    box-shadow: var(--shadow);
+  }
+  /* 行宽只由块上的支柱决定：行内元素行高压小，永远落在支柱里面，撑不宽列 */
+  /* 列宽取整像素，一百多列下来也不会积出半像素的偏差 */
+  @supports (width: round(1.5px, 1px)) {
+    .reader.vertical .text { --L: round(calc(var(--fsv) * 2.15), 1px); }
+  }
+  .reader.vertical .text :global(*) { line-height: 1.2; }
+  .reader.vertical .text :global(:is(p, .poem, .poem > span, .fig, .fig > span, .zb)) { line-height: var(--L); }
+  .reader.vertical .text :global(p) { margin: 0; text-indent: calc(var(--adv) * 2); }
+  .reader.vertical .text :global(p.center) { margin: 0; font-size: .82em; text-align: center; letter-spacing: .3em; }
+  .reader.vertical .text :global(.poem) { display: block; margin: 0; padding: 0 0 0 0; padding-inline-start: calc(var(--adv) * 2); border: 0; font-size: 1em; }
+  .reader.vertical .text :global(.poem > span) { display: block; }
+  .reader.vertical .text :global(.fig) { display: block; width: auto; margin: 0; padding: 0; padding-inline-start: calc(var(--adv) * 3); border: 0; border-radius: 0; font-size: 1em; letter-spacing: .3em; outline: 3px double var(--gold); outline-offset: -5px; }
+  .reader.vertical .text :global(.fig > span) { display: block; }
+  /* 人名：竖排时在字的左边画一道专名线 */
+  .reader.vertical .text :global(a.nm) { background-size: 1px 100%; background-position: 0 0; padding-left: .1em; }
+  .reader.vertical .text :global(a.nm:hover) { background-size: 2px 100%; }
+  /* 批语：朱圈不占字位，像圈点一样挂在上一个字的右下 */
+  .reader.vertical .text :global(.zp) { position: relative; }
+  .reader.vertical .text :global(.zp-dot) { position: absolute; top: -.4em; right: -.5em; width: .36em; height: .36em; margin: 0; border-width: 1.2px; }
+  .reader.vertical .text :global(.zp-dot)::before { content: ''; position: absolute; inset: -.35em; }
+  .reader.vertical .text :global(.zp-text) { font-size: .7em; letter-spacing: .06em; }
+  .reader.vertical .text :global(.zp-text b) { font-size: .8em; margin: 0 0 .4em; }
+  .reader.vertical .text :global(.zb) { display: block; margin: 0; padding: 0; padding-inline-start: calc(var(--adv) * 2); border: 0; border-radius: 0; background: none; font-size: .78em; letter-spacing: .06em; }
+  .reader.vertical .text :global(.zb-label) { display: inline; margin: 0 .8em 0 0; margin-inline-end: .8em; font-size: .9em; }
+  .reader[data-zp="dot"].vertical .text :global(.zb .zb-text), .reader.vertical .text :global(.zb-text) { display: inline; overflow: visible; }
+  .reader.vertical .text :global(mark.hit) { box-shadow: none; }
 
   @media (max-width: 960px) {
     .reader { grid-template-columns: 1fr; }

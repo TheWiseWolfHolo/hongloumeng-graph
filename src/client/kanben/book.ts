@@ -1,7 +1,7 @@
 /* 首页那本线装书的控制：开在哪一回、随手翻、手拖书角翻页。
    书从左往右翻：往后翻是左页翻到右边，往前翻是右页翻回左边。读过的叶子摞在右边，没读的在左边。
    下一次随手翻翻到哪回，在空闲时先选好、取回、画好，点下去就开始翻。 */
-import { geom, drawPage, sizeCanvas, loadFiber, textOf, type Spread, type Side, type Geom } from './page.ts';
+import { geom, drawPage, drawEdge, sizeCanvas, loadFiber, textOf, type Spread, type Side, type Geom } from './page.ts';
 import { Curl, type Leaf } from './curl.ts';
 
 export function mountBook(root: HTMLElement) {
@@ -10,6 +10,7 @@ export function mountBook(root: HTMLElement) {
   const cv = { l: root.querySelector<HTMLCanvasElement>('[data-kb-cl]')!, r: root.querySelector<HTMLCanvasElement>('[data-kb-cr]')! };
   const blocks = { l: root.querySelector<HTMLElement>('[data-kb-l]')!, r: root.querySelector<HTMLElement>('[data-kb-r]')! };
   const glCv = root.querySelector<HTMLCanvasElement>('[data-kb-gl]')!;
+  const edges = { l: root.querySelector<HTMLCanvasElement>('[data-kb-el]')!, r: root.querySelector<HTMLCanvasElement>('[data-kb-er]')! };
   const titles: [string, string][] = JSON.parse(root.querySelector('[data-kb-titles]')!.textContent!);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const narrow = matchMedia('(max-width: 760px)');
@@ -20,11 +21,12 @@ export function mountBook(root: HTMLElement) {
   let cur: Spread | null = null;
   let busy = false;
 
-  /* 两边书叶的厚度：读过的在右，没读的在左。只在书根和书口露出一道细边，平滑地变 */
-  const thickOf = (n: number) => ({ l: 3 + 11 * (120 - n) / 119, r: 3 + 11 * (n - 1) / 119 });
+  /* 两边书叶的厚度：读过的在右，没读的在左。只在书口和书根露出几道纸边 */
+  const thickOf = (n: number) => ({ l: 1.2 + 4.8 * (120 - n) / 119, r: 1.2 + 4.8 * (n - 1) / 119 });
+  let thick = { l: 0, r: 0 };
   const setThick = (t: { l: number; r: number }) => {
-    root.style.setProperty('--tl', t.l.toFixed(1));
-    root.style.setProperty('--tr', t.r.toFixed(1));
+    thick = t;
+    for (const s of ['l', 'r'] as const) drawEdge(edges[s], g, dpr, s, t[s]);
   };
 
   const spreads = new Map<number, Promise<Spread>>();
@@ -62,6 +64,7 @@ export function mountBook(root: HTMLElement) {
     root.style.setProperty('--pw', g.W + 'px');
     root.style.setProperty('--ph', g.H + 'px');
     for (const s of ['l', 'r'] as const) sizeCanvas(cv[s], g, dpr);
+    if (thick.l) setThick(thick);
     if (curl) {
       /* 卷起的纸会高出书页、伸出书口，画布四周留出余地 */
       const mx = g.W * .2, my = g.H * .32, mb = g.H * .12;
@@ -225,8 +228,8 @@ export function mountBook(root: HTMLElement) {
   const day = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5);
   const first = last?.n || (day % 120) + 1;
   cap(first, last?.n ? '接着讀' : '今日一回');
-  setThick(thickOf(first));
   measure();
+  setThick(thickOf(first));
   Promise.all([load(first), loadFiber()]).then(async ([sp]) => {
     /* 字没到之前先铺上空纸 */
     for (const s of ['l', 'r'] as const) drawPage(cv[s], g, dpr, sp, s, true);

@@ -82,9 +82,11 @@ export function drawPage(cv: HTMLCanvasElement, g: Geom, dpr: number, sp: Spread
   ctx.fillRect(0, 0, W, H);
   if (fiber) {
     ctx.save();
+    /* 纤维要细碎、若有若无，拉长了就像划痕 */
     ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = .5;
     const pat = ctx.createPattern(fiber, 'repeat')!;
-    const ox = rand() * 512, oy = rand() * 512, sc = .62 + rand() * .12;
+    const ox = rand() * 512, oy = rand() * 512, sc = .36 + rand() * .08;
     pat.setTransform(new DOMMatrix().translate(-ox, -oy).scale(sc));
     ctx.fillStyle = pat;
     ctx.fillRect(0, 0, W, H);
@@ -156,21 +158,9 @@ export function drawPage(cv: HTMLCanvasElement, g: Geom, dpr: number, sp: Spread
   ctx.fillRect(gx, fy0, 1.9, fy1 - fy0);
   ctx.globalAlpha = .6;
   ctx.fillRect(side === 'r' ? gx + 3.6 : gx - 3.6 + 1.9 - 1, fy0, 1, fy1 - fy0);
-  /* 半个版心：界线，和半个白鱼尾（只勾轮廓），鱼尾上一道横栏 */
+  /* 半个版心：只留一道界线。鱼尾和版心题字都压在折口上，翻开的书看不全，不画 */
   const bx = side === 'r' ? W - g.bw : g.bw;
   ctx.fillRect(bx - .5, fy0, 1, fy1 - fy0);
-  const yw = fy0 + u * 3.1, yh = u * .62;
-  ctx.globalAlpha = .78;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  const edge = side === 'r' ? W : 0;
-  ctx.moveTo(bx, yw - u * .14); ctx.lineTo(edge, yw - u * .14);
-  ctx.moveTo(bx, yw); ctx.lineTo(edge, yw);
-  ctx.lineTo(edge, yw + yh * .55);
-  ctx.lineTo(bx, yw + yh);
-  ctx.closePath();
-  ctx.stroke();
 
   /* 界行 */
   ctx.globalAlpha = .3;
@@ -242,4 +232,48 @@ export function drawPage(cv: HTMLCanvasElement, g: Geom, dpr: number, sp: Spread
 /* 这一页要用到的字：画之前先把字形分包取回来，canvas 不会自己去取 */
 export function textOf(sp: Spread) {
   return sp.cells.map(x => x[2]).join('') + sp.mei.map(x => x[1]).join('') + (sp.back ?? []).map(x => x[2]).join('');
+}
+
+/* 书叶摞起来的边：压在这一页底下的每一叶都比上一叶往书口、书根错出一点点，错得不齐。
+   从上往下看只露出几道发丝细的纸边，到中缝那头叶子都钉进书脊，边也收没了。
+   t 是这一摞露出的宽度（CSS 像素）。画布比页面往外、往下各大出 M。 */
+export const EDGE_M = 9;
+export function drawEdge(cv: HTMLCanvasElement, g: Geom, dpr: number, side: Side, t: number) {
+  const M = EDGE_M, W = g.W + M, H = g.H + M;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d')!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const r = rng(side === 'l' ? 41 : 43);
+  const n = Math.max(2, Math.round(t * 1.6));
+  /* 页面左上角在画布里的位置；书口朝外 */
+  const px = side === 'l' ? M : 0;
+  const out = side === 'l' ? -1 : 1;
+  for (let i = n; i >= 1; i--) {
+    const k = i / n;
+    const dx = t * k * .62 + (r() - .5) * .5, dy = t * k + (r() - .5) * .45;
+    /* 书口一边：整条错出；书根一边：从书口往中缝慢慢收到零 */
+    const fore = side === 'l' ? px + dx * out : px + g.W + dx * out;
+    const gut = side === 'l' ? px + g.W : px;
+    const tone = 222 - k * 22 + (r() - .5) * 8;
+    ctx.fillStyle = `rgb(${tone} ${tone - 16} ${tone - 50})`;
+    ctx.beginPath();
+    ctx.moveTo(gut, 0);
+    ctx.lineTo(fore, dy * .15);
+    ctx.lineTo(fore, g.H + dy);
+    ctx.bezierCurveTo(fore + (gut - fore) * .45, g.H + dy, gut + (fore - gut) * .1, g.H + dy * .35, gut, g.H);
+    ctx.closePath();
+    ctx.fill();
+    /* 每叶的边沿一道细线 */
+    ctx.strokeStyle = `rgb(110 82 45 / ${.1 + .14 * k})`;
+    ctx.lineWidth = .6;
+    ctx.beginPath();
+    ctx.moveTo(fore, dy * .15 + 2);
+    ctx.lineTo(fore, g.H + dy);
+    ctx.bezierCurveTo(fore + (gut - fore) * .45, g.H + dy, gut + (fore - gut) * .1, g.H + dy * .35, gut, g.H);
+    ctx.stroke();
+  }
 }
