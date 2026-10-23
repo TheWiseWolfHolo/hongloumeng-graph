@@ -180,6 +180,39 @@ function mountBook(root: HTMLElement, initial: BookChapter, cap: (n: number, lab
     return n;
   };
 
+  /* 翻完停下来，趁空闲把下一次要翻的页一张一张画好，点下去时不必现画。
+     先备随手翻的目标，再备左右相邻两回（手拖用）。备不成也不报错，真翻的时候会重来并报错。 */
+  let queued = 0;
+  let warmRun = 0;
+  const idle = () => new Promise<void>(resolve => {
+    if ('requestIdleCallback' in window) requestIdleCallback(() => resolve(), { timeout: 800 });
+    else setTimeout(resolve, 80);
+  });
+  async function warm() {
+    if (!cur || !visible) return;
+    const run = ++warmRun;
+    const from = cur.n;
+    const n = pickRandom();
+    queued = n;
+    const stale = () => run !== warmRun || busy || !visible || cur?.n !== from;
+    try {
+      const near = [from + 1, from - 1].filter(m => m >= 1 && m <= bookLimit());
+      const sps = await Promise.all([...route(from, n), ...near].map(load));
+      if (stale()) return;
+      await Promise.all(sps.map(glyphs));
+      for (const sp of sps) for (const side of ['l', 'r'] as const) {
+        await idle();
+        if (stale()) return;
+        face(sp, side);
+      }
+    } catch { /* 预备失败不打扰读者 */ }
+  }
+  const nextRandom = () => {
+    const n = queued;
+    queued = 0;
+    return n && n !== cur!.n && n <= bookLimit() ? n : pickRandom();
+  };
+
   async function go(n: number, label: string) {
     if (busy || !visible || !cur || n === cur.n || n > bookLimit()) return;
     const run = ++revision;
@@ -239,6 +272,7 @@ function mountBook(root: HTMLElement, initial: BookChapter, cap: (n: number, lab
     setBusy(false);
     retry = null;
     resize();
+    void warm();
   }
 
   /* 手拖书角：左页往右拖是下一回，右页往左拖是上一回 */
@@ -332,7 +366,7 @@ function mountBook(root: HTMLElement, initial: BookChapter, cap: (n: number, lab
   }
   void open(initial);
 
-  turn.addEventListener('click', () => { if (retry) void retry(); else if (cur) void go(pickRandom(), '隨手翻到'); });
+  turn.addEventListener('click', () => { if (retry) void retry(); else if (cur) void go(nextRandom(), '隨手翻到'); });
   function resize() {
     if (!visible) return;
     const u = probe.offsetWidth;
