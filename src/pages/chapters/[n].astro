@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import Seal from '../../components/Seal.astro';
 import { CHAPTERS, chapter, castOf, eventsIn, byId, huiRange, isSequel, cn } from '../../lib/data.ts';
-import { EVENT_KINDS } from '../../data/events.ts';
+import { EVENT_KINDS, eventRevealAt } from '../../data/events.ts';
 import { loadChapter, renderChapter } from '../../lib/render-text.ts';
 
 export function getStaticPaths() {
@@ -34,18 +34,18 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
         </nav>
         <section class="side-sec">
           <h2>本回提要</h2>
-          <p class="sum">{c.summary}</p>
+          <div class="spoil" data-ch={n}><p class="sum spoil-body">{c.summary}</p></div>
           {noteCount > 0 && <p class="side-zp">本回批语<b>{cn(noteCount)}</b>条</p>}
           {sequel && <p class="side-zp xu">续书，无批语。</p>}
         </section>
         {events.length > 0 && (
           <section class="side-sec">
             <h2>本回大事</h2>
-            <ul class="side-evs">{events.map(e => <li style={`--k:${EVENT_KINDS[e.k]}`}><b>{e.t}</b><span>{huiRange(e.c)}</span></li>)}</ul>
+            <ul class="side-evs">{events.map(e => <li class="spoil" data-ch={eventRevealAt(e)} style={`--k:${EVENT_KINDS[e.k]}`}><div class="spoil-body"><b>{e.t}</b><span>{huiRange(e.c)}</span></div></li>)}</ul>
           </section>
         )}
         <section class="side-sec">
-          <h2>登场人物 <small>{cn(cast.length)}位</small></h2>
+          <h2>本回提及 <small>{cn(cast.length)}位</small></h2>
           <ul class="cast">
             {cast.map(([id, v]) => {
               const p = byId.get(id)!;
@@ -92,12 +92,20 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
         </div>
         <button type="button" class="ctl" data-names aria-pressed="true">人名标注</button>
         <button type="button" class="ctl" data-vertical aria-pressed="false">竖排</button>
+        <button type="button" class="ctl" data-read-here hidden>从这里接着读</button>
       </div>
+
+      <nav class="hit-nav" data-hit-nav hidden aria-label="原文搜索命中">
+        <button type="button" data-hit-prev>上一处</button>
+        <span data-hit-count role="status"></span>
+        <button type="button" data-hit-next>下一处</button>
+      </nav>
 
       <div class="text" data-text set:html={html} />
 
       <footer class="ch-end">
         <Seal text="终" size={36} round />
+        <button type="button" class="read-done" data-read-done>读完本回</button>
         <nav class="ch-pager" aria-label="上一回与下一回">
           {prev ? <a href={`/chapters/${prev.n}/`} class="cp prev"><span class="cp-k">上一回　{prev.cn}</span><span class="cpt">{prev.title[0]}</span><span class="cpt">{prev.title[1]}</span></a> : <span />}
           {next ? <a href={`/chapters/${next.n}/`} class="cp next"><span class="cp-k">下一回　{next.cn}</span><span class="cpt">{next.title[0]}</span><span class="cpt">{next.title[1]}</span></a> : <a href="/chapters/" class="cp next"><span class="cp-k">全书完</span><span class="cpt">回到回目</span></a>}
@@ -108,11 +116,18 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
 </Base>
 
 <script>
-  import { store } from '../../client/site.ts';
+  import { store, cn, progress as guardedThrough, setProgress } from '../../client/site.ts';
+  import { toSimplified } from '../../lib/search.ts';
   const reader = document.querySelector<HTMLElement>('[data-reader]')!;
   const n = +reader.dataset.n!;
   const text = document.querySelector<HTMLElement>('[data-text]')!;
   const root = document.documentElement;
+  const params = new URLSearchParams(location.search);
+  const query = params.get('q')?.trim();
+  let reading = !query && !location.hash && !params.has('ref') && !params.has('hit');
+  const readHere = document.querySelector<HTMLButtonElement>('[data-read-here]')!;
+  const readDone = document.querySelector<HTMLButtonElement>('[data-read-done]')!;
+  readHere.hidden = reading;
 
   /* 字号与排法记在本机 */
   let size = +(store.get('hlm-size') || 0);
@@ -226,61 +241,120 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
     const r = text.getBoundingClientRect();
     return Math.min(1, Math.max(0, (innerHeight * .4 - r.top) / r.height));
   }
-  const onScroll = () => {
+  const onScroll = (save = true) => {
     const p = progress();
     bar.style.transform = `scaleX(${p})`;
+    if (!save || !reading) return;
     clearTimeout(saveT);
     saveT = window.setTimeout(() => store.set('hlm-last', JSON.stringify({ n, p: +p.toFixed(3) })), 400);
   };
-  addEventListener('scroll', onScroll, { passive: true });
-  text.addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('scroll', () => onScroll(), { passive: true });
+  text.addEventListener('scroll', () => onScroll(), { passive: true });
+  readHere.addEventListener('click', () => {
+    reading = true;
+    readHere.hidden = true;
+    document.querySelector<HTMLElement>('[data-hit-nav]')!.hidden = true;
+    const url = new URL(location.href);
+    for (const key of ['q', 'hit', 'ref']) url.searchParams.delete(key);
+    url.hash = '';
+    history.replaceState(null, '', url);
+    onScroll();
+  });
+  readDone.addEventListener('click', () => {
+    clearTimeout(saveT);
+    reading = false;
+    readHere.hidden = true;
+    store.set('hlm-last', JSON.stringify(n < 120 ? { n: n + 1, p: 0 } : { n, p: 1 }));
+    if (guardedThrough() > 0) setProgress(Math.max(guardedThrough(), n));
+    readDone.textContent = '本回已读';
+    readDone.disabled = true;
+  });
 
   /* 从首页“接着读”进来，回到上次的位置 */
   try {
     const last = JSON.parse(store.get('hlm-last') || 'null');
-    const params = new URLSearchParams(location.search);
-    const resume = last?.n === n && last.p > .02 && last.p < .98 && !location.hash && !params.get('q');
+    const resume = reading && last?.n === n && last.p > .02 && last.p < .98;
     if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true, resume ? last.p : 0);
     else if (resume) {
       const r = text.getBoundingClientRect();
       scrollTo({ top: scrollY + r.top + r.height * last.p - innerHeight * .4, behavior: 'instant' as ScrollBehavior });
     }
   } catch { /* 记录坏了就从头读 */ }
+  if (/^#p\d+$/.test(location.hash)) {
+    const paragraph = document.getElementById(location.hash.slice(1));
+    if (paragraph && text.contains(paragraph)) requestAnimationFrame(() => paragraph.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior }));
+  }
 
-  /* 从搜索进来：把原文里的这句话标出来 */
-  const q = new URLSearchParams(location.search).get('q');
-  if (q) {
-    const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
-    const nodes: Text[] = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
-    /* 人名链接会把一句话切成几段，先按整段文字找，再落回各个文本节点 */
+  /* 搜索字位与 text.json 相同，批语不计入正文位置。 */
+  if (query) {
+    const nodes: { node: Text; start: number }[] = [];
     let full = '';
-    const starts: number[] = [];
-    for (const t of nodes) { starts.push(full.length); full += t.data; }
-    let first: HTMLElement | null = null;
-    let i = full.indexOf(q);
-    const marks: [number, number][] = [];
-    while (i >= 0) { marks.push([i, i + q.length]); i = full.indexOf(q, i + q.length); }
-    for (let k = nodes.length - 1; k >= 0; k--) {
-      const t = nodes[k], a = starts[k], b = a + t.data.length;
-      for (const [s, e] of [...marks].reverse()) {
-        if (e <= a || s >= b) continue;
-        const from = Math.max(s, a) - a, to = Math.min(e, b) - a;
-        const range = document.createRange();
-        range.setStart(t, from);
-        range.setEnd(t, to);
-        const m = document.createElement('mark');
-        m.className = 'hit';
-        range.surroundContents(m);
-        first = m;
+    for (const segment of text.querySelectorAll<HTMLElement>('[data-text-start]')) {
+      let at = +segment.dataset.textStart!;
+      const gap = segment.dataset.textGap ?? '';
+      full = full.padEnd(at - gap.length, '\n') + gap;
+      const walker = document.createTreeWalker(segment, NodeFilter.SHOW_TEXT, {
+        acceptNode: node => node.parentElement?.closest('.zp') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+      });
+      while (walker.nextNode()) {
+        const node = walker.currentNode as Text;
+        nodes.push({ node, start: at });
+        full = full.padEnd(at, '\n') + node.data;
+        at += node.length;
       }
     }
-    if (first) setTimeout(() => first!.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior }), 60);
+    const normalized = toSimplified(full), q = toSimplified(query);
+    const offsets: number[] = [];
+    for (let at = normalized.indexOf(q); at >= 0; at = normalized.indexOf(q, at + q.length)) offsets.push(at);
+    const anchors = new Map<number, HTMLElement>();
+    for (const { node, start } of [...nodes].reverse()) {
+      const end = start + node.length;
+      for (const at of [...offsets].reverse()) {
+        if (at + q.length <= start || at >= end) continue;
+        const range = document.createRange();
+        range.setStart(node, Math.max(at, start) - start);
+        range.setEnd(node, Math.min(at + q.length, end) - start);
+        const mark = document.createElement('mark');
+        mark.className = 'hit';
+        mark.dataset.hitOffset = String(at);
+        range.surroundContents(mark);
+        anchors.set(at, mark);
+      }
+    }
+    const nav = document.querySelector<HTMLElement>('[data-hit-nav]')!;
+    const prevHit = document.querySelector<HTMLButtonElement>('[data-hit-prev]')!;
+    const nextHit = document.querySelector<HTMLButtonElement>('[data-hit-next]')!;
+    const count = document.querySelector<HTMLElement>('[data-hit-count]')!;
+    let selected = 0;
+    const selectHit = (index: number, updateUrl = true) => {
+      selected = index;
+      const at = offsets[index];
+      text.querySelectorAll<HTMLElement>('[data-hit-offset]').forEach(mark => mark.classList.toggle('current', +mark.dataset.hitOffset! === at));
+      count.textContent = `第${cn(index + 1)}处，共${cn(offsets.length)}处`;
+      prevHit.disabled = index === 0;
+      nextHit.disabled = index === offsets.length - 1;
+      anchors.get(at)!.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
+      if (updateUrl) {
+        const url = new URL(location.href);
+        url.searchParams.set('hit', String(at));
+        history.replaceState(null, '', url);
+      }
+    };
+    if (offsets.length) {
+      nav.hidden = false;
+      const requested = params.get('hit');
+      const index = requested != null ? offsets.indexOf(Number(requested)) : 0;
+      requestAnimationFrame(() => selectHit(index >= 0 ? index : 0, false));
+      prevHit.addEventListener('click', () => selectHit(selected - 1));
+      nextHit.addEventListener('click', () => selectHit(selected + 1));
+    }
   }
-  onScroll();
+  onScroll(false);
   /* 左右方向键翻回 */
   addEventListener('keydown', e => {
-    if (e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement).tagName)) return;
+    const target = e.target as HTMLElement;
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || document.querySelector('dialog[open]')
+      || target.isContentEditable || target.closest('input, textarea, select, button, summary, a, [role="button"], [role="slider"]')) return;
     /* 竖排时左右键和翻页键翻的是这一回里的页，翻到头才去上下回 */
     if (isV()) {
       const fwd = e.key === 'ArrowLeft' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey);
@@ -300,6 +374,12 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
 </script>
 
 <style>
+  .hit-nav { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 18px 0 28px; font-size: 14px; color: var(--ink-2); }
+  .hit-nav button, .read-done { padding: 9px 14px; border: 1px solid var(--line-2); border-radius: 3px; color: var(--cinnabar); }
+  .hit-nav button:disabled, .read-done:disabled { color: var(--ink-3); opacity: .6; cursor: default; }
+  .read-done { display: block; margin: 22px auto; }
+  .text :global(mark.hit.current) { position: relative; scroll-margin: 100px; }
+  .text :global(mark.hit.current)::after { content: ''; position: absolute; inset: -3px -5px; border: 1.5px solid var(--cinnabar); border-right-width: 1px; border-bottom-width: 1.8px; border-radius: 46% 54% 45% 55% / 52% 43% 57% 48%; transform: rotate(-4deg); pointer-events: none; }
   .read-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 60; pointer-events: none; }
   .read-progress i { display: block; height: 100%; background: var(--cinnabar); transform: scaleX(0); transform-origin: left; transition: transform .15s linear; }
   .reader { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); padding-top: 26px; align-items: start; }
@@ -312,6 +392,7 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .sum { font-size: 14px; line-height: 1.9; color: var(--ink-2); }
   .side-evs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .side-evs li { display: grid; padding-left: 12px; border-left: 2px solid var(--k); }
+  .side-evs .spoil-body { display: grid; }
   .side-evs b { font-size: 14.5px; }
   .side-evs span { font: 400 11.5px/1.6 var(--title); color: var(--ink-3); }
   .cast { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
@@ -348,7 +429,7 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .text :global(a.nm) { color: inherit; background-image: linear-gradient(color-mix(in srgb, var(--pc) 55%, transparent), color-mix(in srgb, var(--pc) 55%, transparent)); background-size: 100% 1px; background-position: 0 92%; background-repeat: no-repeat; transition: color .2s, background-size .2s; }
   .text :global(a.nm:hover) { color: var(--pc); background-size: 100% 2px; }
   .text.plain :global(a.nm) { background-image: none; pointer-events: none; }
-  .text :global(mark.hit) { background: color-mix(in srgb, var(--gold) 38%, transparent); color: inherit; border-radius: 2px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 38%, transparent); }
+  .text :global(mark.hit) { background: color-mix(in srgb, var(--cinnabar) 7%, transparent); color: inherit; border-radius: 0; box-shadow: none; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--cinnabar) 50%, transparent); text-underline-offset: .2em; }
 
   .ch-end { display: grid; justify-items: center; gap: 30px; margin-top: 60px; }
   .ch-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
@@ -369,7 +450,7 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .controls .zp-modes button[aria-pressed="true"] { color: var(--cinnabar); box-shadow: inset 0 0 0 1px var(--cinnabar); }
   .text :global(.zp) { --zc: var(--cinnabar); }
   .text :global(.zp.late) { --zc: color-mix(in srgb, var(--cinnabar) 55%, var(--ink-3)); }
-  .text :global(.zp-dot) { display: inline-block; width: .5em; height: .5em; margin: 0 .06em; border: 1.5px solid var(--zc); border-radius: 50%; vertical-align: .55em; cursor: pointer; padding: 0; transition: transform .2s, background .2s; }
+  .text :global(.zp-dot) { display: inline-block; width: .5em; height: .5em; margin: 0 .06em; border: 1.5px solid var(--zc); border-right-width: 1px; border-radius: 43% 57% 48% 52% / 54% 44% 56% 46%; rotate: -10deg; vertical-align: .55em; cursor: pointer; padding: 0; transition: transform .2s, background .2s; }
   .text :global(.zp-dot:hover), .text :global(.zp.open .zp-dot) { background: var(--zc); transform: scale(1.25); }
   .text :global(.zp-text) { display: none; font: .72em/1.75 var(--kai); color: var(--zc); letter-spacing: .02em; text-indent: 0; }
   .text :global(.zp-text b) { font: 400 .82em/1 var(--title); letter-spacing: .08em; margin-right: .5em; opacity: .75; white-space: nowrap; }

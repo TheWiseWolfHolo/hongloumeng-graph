@@ -11,7 +11,7 @@ const NAME_OF: Record<string, string> = { b: '血親', m: '婚配', lv: '情緣'
 const SPOOLS = ['m', 'lv', 'b', 'in', 'my', 'sv', 'fr', 'ri'];
 const client = {
   p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name, p.tier]])),
-  t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role])])),
+  t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role, t.revealAt])])),
   types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name]))
 };
 /* 祥云，太虚幻境那一层里散几朵 */
@@ -25,6 +25,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
         <label class="sr-only" for="g-q">寻一个人</label>
         <input id="g-q" data-q list="g-names" type="search" placeholder="寻一个人" autocomplete="off">
         <input data-to list="g-names" type="search" placeholder="与谁相干" autocomplete="off" hidden aria-label="另一个人">
+        <button type="submit" class="find-go">寻</button>
         <button type="button" class="pair" data-pair aria-pressed="false" title="查两人之间隔着谁">兩人之間</button>
       </form>
       <datalist id="g-names">{PEOPLE.map(p => <option value={p.id} />)}</datalist>
@@ -36,10 +37,16 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
           </button>
         ))}
       </div>
+      <button type="button" class="reveal-relations" data-reveal-relations hidden>显示后文关系</button>
+      <div class="zoomer" role="group" aria-label="缩放">
+        <button type="button" data-zoom="1" aria-label="放大">大</button>
+        <button type="button" data-zoom="-1" aria-label="缩小">小</button>
+        <button type="button" data-zoom="0" aria-label="看全幅">全</button>
+      </div>
     </div>
 
     <div class="frame" data-frame>
-      <svg class="silk" data-silk viewBox={`0 0 ${B.width} ${B.height}`} role="img" aria-label="人物关系图">
+      <svg class="silk" data-silk viewBox={`0 0 ${B.width} ${B.height}`} role="group" aria-label="人物关系图">
         <defs>
           <pattern id="weave" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 .5H6M.5 0V6" stroke="#8a7350" stroke-opacity=".07" stroke-width="1" /></pattern>
           <radialGradient id="aged" cx="50%" cy="45%" r="75%"><stop offset=".6" stop-color="#000" stop-opacity="0" /><stop offset="1" stop-color="#4a3418" stop-opacity=".16" /></radialGradient>
@@ -77,17 +84,13 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
       </svg>
     </div>
     <aside class="panel" data-panel hidden aria-live="polite"></aside>
-    <div class="zoomer" role="group" aria-label="缩放">
-      <button type="button" data-zoom="1" aria-label="放大">大</button>
-      <button type="button" data-zoom="-1" aria-label="缩小">小</button>
-      <button type="button" data-zoom="0" aria-label="看全幅">全</button>
-    </div>
   </div>
   <script is:inline type="application/json" id="g-data" set:html={JSON.stringify(client)} />
 </Base>
 
 <script>
-  type Tie = [string, string, string];
+  import { progress } from '../client/site.ts';
+  type Tie = [string, string, string, number];
   const D: { p: Record<string, [string, string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string> } = JSON.parse(document.getElementById('g-data')!.textContent!);
   const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   const NS = 'http://www.w3.org/2000/svg';
@@ -97,13 +100,16 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   const threads = [...document.querySelectorAll<SVGPathElement>('.th')];
   const slips = new Map([...document.querySelectorAll<SVGGElement>('.slip')].map(g => [g.dataset.id!, g]));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const ties = (id: string) => D.t[id] ?? [];
+  let revealRelations = false;
+  const ties = (id: string) => (D.t[id] ?? []).filter(t => revealRelations || !progress() || t[3] <= progress());
+  const revealButton = document.querySelector<HTMLButtonElement>('[data-reveal-relations]')!;
+  const allowed = (p: SVGPathElement) => ties(p.dataset.a!).some(t => t[0] === p.dataset.b && t[1] === p.dataset.type);
   const touches = (p: SVGPathElement, id: string) => p.dataset.a === id || p.dataset.b === id;
 
   /* ---------- 缩放：素绢放大了看细处，按住拖着走 ---------- */
   const silk = document.querySelector<SVGSVGElement>('[data-silk]')!;
   let zoom = 1, dragged = false;
-  const setZoom = (z: number, cx = frame.clientWidth / 2, cy = innerHeight / 2) => {
+  const setZoom = (z: number, cx = frame.getBoundingClientRect().left + frame.clientWidth / 2, cy = innerHeight / 2) => {
     z = Math.max(1, Math.min(3.2, z));
     if (Math.abs(z - zoom) < .001) return;
     /* 让鼠标底下那一点在缩放前后不动 */
@@ -150,7 +156,11 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
 
   /* ---------- 线轴：哪几种线露在外面 ---------- */
   const shown = new Set(['b', 'm', 'lv', 'my']);
-  const applyShown = () => threads.forEach(p => p.classList.toggle('show', shown.has(p.dataset.type!)));
+  const applyShown = () => threads.forEach(p => {
+    const visible = allowed(p);
+    p.classList.toggle('guarded', !visible);
+    p.classList.toggle('show', visible && shown.has(p.dataset.type!));
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-type]').forEach(b => b.addEventListener('click', () => {
     const t = b.dataset.type!;
     shown.has(t) ? shown.delete(t) : shown.add(t);
@@ -174,7 +184,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     g.addEventListener('pointerenter', () => hover(id));
     g.addEventListener('pointerleave', () => hover(null));
     g.addEventListener('click', e => { e.stopPropagation(); pairOn ? pairPick(id) : focus(id); });
-    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(id); } });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pairOn ? pairPick(id) : focus(id); } });
   });
 
   /* ---------- 线上的字：写在线的中段，彼此不压，也不压签 ---------- */
@@ -215,7 +225,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     slips.forEach((g, k) => { g.classList.toggle('me', k === id); g.classList.toggle('nb', near.has(k)); });
     const items: { path: SVGPathElement; text: string; cls: string }[] = [];
     threads.forEach(p => {
-      const on = touches(p, id);
+      const on = touches(p, id) && allowed(p);
       p.classList.toggle('on', on);
       if (!on) return;
       const other = p.dataset.a === id ? p.dataset.b! : p.dataset.a!;
@@ -225,7 +235,15 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     writeTags(items, [id, ...near]);
     renderPanel(id);
     const url = new URL(location.href); url.search = ''; url.searchParams.set('focus', id); history.replaceState(null, '', url);
-    if (scroll) slips.get(id)!.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center', inline: 'center' });
+    if (scroll) {
+      if (matchMedia('(max-width: 760px)').matches && zoom < 1.4) setZoom(1.4);
+      const r = slips.get(id)!.getBoundingClientRect();
+      const bounds = frame.getBoundingClientRect();
+      frame.scrollTo({ left: frame.scrollLeft + r.left + r.width / 2 - bounds.left - frame.clientWidth / 2, behavior: reduced ? 'auto' : 'smooth' });
+      const top = document.querySelector('[data-header]')!.getBoundingClientRect().bottom;
+      const bottom = matchMedia('(max-width: 1100px)').matches ? panel.getBoundingClientRect().top : innerHeight;
+      scrollTo({ top: scrollY + r.top + r.height / 2 - (top + bottom) / 2, behavior: reduced ? 'auto' : 'smooth' });
+    }
   }
   function clear(resetUrl = true) {
     focusId = null;
@@ -317,7 +335,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     slips.forEach((g, k) => { g.classList.toggle('nb', ids.has(k)); g.classList.toggle('end', k === a || k === b); });
     const items: { path: SVGPathElement; text: string; cls: string }[] = [];
     (steps ?? []).forEach((s, i) => {
-      const p = threads.find(p => (p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from));
+      const p = threads.find(p => p.dataset.type === s.tie[1] && ((p.dataset.a === s.from && p.dataset.b === s.to) || (p.dataset.a === s.to && p.dataset.b === s.from)));
       if (!p) return;
       p.style.setProperty('--k', String(i));
       p.classList.add('path');
@@ -325,11 +343,11 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     });
     writeTags(items, [...ids]);
     /* 一句一句念下来：后一位是前一位的什么人 */
-    const said = steps ? steps.map(s => `<button type="button" data-go="${esc(s.to)}">${esc(s.to)}</button>是<button type="button" data-go="${esc(s.from)}">${esc(s.from)}</button>的${esc(s.tie[2])}`).join('；') + '。' : '';
+    const said = a === b ? '选的是同一个人。' : steps ? steps.map(s => `<button type="button" data-go="${esc(s.to)}">${esc(s.to)}</button>是<button type="button" data-go="${esc(s.from)}">${esc(s.from)}</button>的${esc(s.tie[2])}`).join('；') + '。' : '';
     panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="收起">×</button>
       <p class="pn-g">兩人之間</p>
       <h2 class="pn-pair">${esc(a)}<small>与</small>${esc(b)}</h2>
-      <p class="pn-said kai">${steps ? said : `${esc(a)}与${esc(b)}，书里牵不上线。`}</p>`;
+      <p class="pn-said kai">${steps ? said : progress() && !revealRelations ? '已读内容里暂未连起这两个人。' : `${esc(a)}与${esc(b)}，书里牵不上线。`}</p>`;
     panel.hidden = false;
     /* 滚到整条路线的中段 */
     const rs = [...ids].map(k => slips.get(k)!.getBoundingClientRect());
@@ -339,6 +357,15 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   }
 
   /* ---------- 起步 ---------- */
+  function updateGuard() {
+    revealButton.hidden = !progress() || revealRelations;
+    applyShown();
+    if (focusId) focus(focusId, false);
+    else if (frame.classList.contains('paired')) go();
+  }
+  revealButton.addEventListener('click', () => { revealRelations = true; updateGuard(); });
+  addEventListener('hlm:progress', () => { revealRelations = false; updateGuard(); });
+  updateGuard();
   const params = new URLSearchParams(location.search);
   if (params.get('from') && params.get('to')) { setPair(true); qIn.value = params.get('from')!; toIn.value = params.get('to')!; go(); }
   else if (params.get('focus')) setTimeout(() => focus(params.get('focus')!), 60);
@@ -351,13 +378,17 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .loom :global(.t-sv) { --tc: var(--t-sv); } .loom :global(.t-fr) { --tc: var(--t-fr); } .loom :global(.t-ri) { --tc: var(--t-ri); } .loom :global(.t-my) { --tc: var(--t-my); }
 
   .bar { position: sticky; top: var(--header-h); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 18px 32px; flex-wrap: wrap; padding: 14px var(--gutter); background: color-mix(in srgb, var(--paper) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-  .find { display: flex; align-items: center; gap: 14px; }
+  .find { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+  .find-go, .reveal-relations { font: 400 17px/1 var(--title); color: var(--cinnabar); padding: 8px 4px; }
   .find input { width: 9em; border: 0; border-bottom: 1px solid var(--ink-3); background: none; padding: 6px 2px; font: 400 16px/1.2 var(--serif); letter-spacing: .08em; outline: 0; transition: border-color .3s; }
   .find input:focus { border-color: var(--cinnabar); }
-  .pair { font: 400 17px/1 var(--title); letter-spacing: .16em; color: var(--ink-3); padding: 6px 2px; transition: color .3s; }
+  .pair { position: relative; font: 400 17px/1 var(--title); letter-spacing: .16em; color: var(--ink-3); padding: 6px 2px; transition: color .3s; }
+  .pair::after { content: ''; position: absolute; inset: -2px -7px; border: 1.3px solid var(--cinnabar); border-bottom-width: 1.8px; border-right-width: .8px; border-radius: 46% 54% 43% 57% / 52% 44% 56% 48%; transform: rotate(-3deg); opacity: 0; pointer-events: none; }
+  .pair[aria-pressed="true"]::after { opacity: .85; }
   .pair[aria-pressed="true"], .pair:hover { color: var(--cinnabar); }
   .spools { display: flex; gap: 4px 14px; flex-wrap: wrap; }
-  .spool { display: inline-flex; align-items: center; gap: 6px; padding: 4px 2px; font: 400 15px/1 var(--kai); letter-spacing: .12em; color: var(--ink-3); transition: color .3s, opacity .3s; }
+  .spool { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 4px 2px; font: 400 15px/1 var(--kai); letter-spacing: .12em; color: var(--ink-3); transition: color .3s, opacity .3s; }
+  .spool::after { content: ''; position: absolute; left: 21px; right: 2px; bottom: 0; height: 3px; border-bottom: 1.5px solid var(--cinnabar); border-radius: 32% 67% 24% 58%; transform: rotate(-2deg); opacity: 0; pointer-events: none; }
   .spool svg { width: 15px; height: 18px; }
   .spool .flange { fill: #8a6a42; }
   .spool .wound { fill: var(--tc); }
@@ -365,16 +396,17 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .spool[aria-pressed="false"] { opacity: .42; }
   .spool[aria-pressed="false"] .wound { fill: transparent; stroke: var(--tc); stroke-width: 1; }
   .spool[aria-pressed="true"] { color: var(--ink); }
+  .spool[aria-pressed="true"]::after { opacity: .8; }
 
   /* 素绢挂在纸上，四周留白 */
   .frame { margin: 36px auto 0; width: min(100% - 2 * var(--gutter), 1560px); overflow-x: auto; overscroll-behavior-x: contain; cursor: grab; }
   .frame.panning { cursor: grabbing; }
   .frame.panning :global(*) { cursor: grabbing !important; }
-  .zoomer { position: fixed; z-index: 30; right: max(16px, calc(var(--gutter) - 8px)); bottom: 24px; display: grid; background: color-mix(in srgb, var(--card) 94%, transparent); box-shadow: inset 0 0 0 1px var(--line-2), 0 12px 24px -18px rgb(40 26 10 / .5); }
+  .zoomer { display: flex; flex: none; background: transparent; border-block: 1px solid var(--line-2); }
   .zoomer button { width: 40px; height: 40px; font: 400 17px/1 var(--title); color: var(--ink-2); transition: color .2s, background .2s; }
-  .zoomer button + button { box-shadow: inset 0 1px 0 var(--line); }
+  .zoomer button + button { box-shadow: inset 1px 0 0 var(--line); }
   .zoomer button:hover { color: var(--cinnabar); background: color-mix(in srgb, var(--cinnabar) 6%, transparent); }
-  .silk { display: block; width: 100%; min-width: 1080px; height: auto; box-shadow: 0 0 0 1px rgb(90 66 30 / .18), 0 30px 60px -40px rgb(40 26 10 / .55); user-select: none; -webkit-user-select: none; }
+  .silk { display: block; width: 100%; min-width: 1080px; max-width: none; height: auto; box-shadow: 0 0 0 1px rgb(90 66 30 / .18), 0 30px 60px -40px rgb(40 26 10 / .55); user-select: none; -webkit-user-select: none; }
 
   .cloud { color: #a99a7e; opacity: .35; }
   .rule { stroke: #8f7b5a; stroke-opacity: .35; stroke-width: 1; }
@@ -393,6 +425,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .ready.focused .th:not(.on), .ready.paired .th:not(.path) { opacity: 0; stroke-dashoffset: 1; transition-delay: 0s; }
   .ready.focused .th.on { stroke-dashoffset: 0; opacity: 1; stroke-width: 2.3; transition-delay: 0s; }
   .ready.paired .th.path { stroke-dashoffset: 0; opacity: 1; stroke-width: 3; transition-delay: calc(var(--k) * .35s); }
+  .th.guarded { display: none; }
 
   /* 签：象牙色，顶上一道家族的颜色 */
   .slip { cursor: pointer; outline: none; transition: opacity .4s; }
@@ -425,7 +458,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .panel :global(.pn-t) { margin-top: 8px; font: 400 15px/1.7 var(--kai); color: #6b5a45; }
   .panel :global(.pn-sec) { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgb(90 66 30 / .14); }
   .panel :global(.pn-sec h3) { display: flex; align-items: center; gap: 8px; font: 400 14px/1 var(--kai); letter-spacing: .24em; color: var(--tc); }
-  .panel :global(.pn-sec h3::before) { content: ''; width: 18px; height: 2px; background: var(--tc); border-radius: 1px; }
+  .panel :global(.pn-sec h3::before) { content: ''; width: 18px; height: 2px; background: var(--tc); clip-path: polygon(0 40%, 100% 0, 94% 70%, 9% 100%); }
   .panel :global(.pn-sec ul) { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
   .panel :global(.pn-sec li) { display: flex; align-items: baseline; gap: 6px; }
   .panel :global([data-go]) { font: 400 17px/1.3 var(--title); color: #2a2119; transition: color .2s; }
@@ -439,7 +472,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .panel :global(.pn-said [data-go]) { font: inherit; color: var(--cinnabar); }
 
   @media (max-width: 1100px) {
-    .panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 46vh; border-radius: 10px 10px 0 0; }
+    .panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 36dvh; padding: 18px 24px max(18px, env(safe-area-inset-bottom)); border-top: 1px solid var(--cinnabar); border-radius: 0; }
   }
   @media (max-width: 760px) {
     .bar { position: static; }

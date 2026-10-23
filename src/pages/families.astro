@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import PersonLink from '../components/PersonLink.astro';
 import PageHead from '../components/PageHead.astro';
 import { HOUSES, HOUSE_LINKS, GUANFU } from '../data/families.ts';
+import { EDGES, relationRevealAt } from '../data/relations.ts';
 
 type Key = keyof typeof HOUSES;
 const ORDER: Key[] = ['jia', 'shi', 'wang', 'xue'];
@@ -24,7 +25,11 @@ const links = HOUSE_LINKS.map((l, i) => {
   const tx = q[0] - c[0], ty = q[1] - c[1], tl = Math.hypot(tx, ty), ux = tx / tl, uy = ty / tl;
   const arrow = `M${q[0]} ${q[1]}L${q[0] - ux * 11 - uy * 5} ${q[1] - uy * 11 + ux * 5}L${q[0] - ux * 11 + uy * 5} ${q[1] - uy * 11 - ux * 5}Z`;
   const lx = .25 * p[0] + .5 * c[0] + .25 * q[0], ly = .25 * p[1] + .5 * c[1] + .25 * q[1];
-  return { ...l, i, path: `M${p}Q${c} ${q}`, arrow, lx, ly: ly + 5 };
+  const revealAt = Math.max(...l.relations.map(([a, b]) => {
+    const relation = EDGES.find(e => e[0] === a && e[1] === b && (e[2] === 'm' || e[2] === 'b'));
+    return relation ? relationRevealAt(relation) : 121;
+  }));
+  return { ...l, i, revealAt, path: `M${p}Q${c} ${q}`, arrow, lx, ly: ly + 5 };
 });
 ---
 <Base title="四大家族" description="《红楼梦》第四回护官符上的贾史王薛四大家族，以及林家：各家来历、房分，谁嫁进了谁家。" section="relations" sub="families">
@@ -44,12 +49,12 @@ const links = HOUSE_LINKS.map((l, i) => {
       </aside>
 
       <div class="map">
-        <svg viewBox="0 0 500 420" role="img" aria-label="五家之间的婚姻往来">
+        <svg viewBox="0 0 500 420" role="group" aria-label="五家之间的婚姻往来">
           <defs>
             <filter id="seal-rough"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" /><feDisplacementMap in="SourceGraphic" scale="2.2" /></filter>
           </defs>
           {links.map(l => (
-            <g class:list={['fm-l', { late: l.late }]} data-l={l.i} tabindex="0" role="button" aria-label={`${l.who.join('、')}从${HOUSES[l.a as Key].name}家嫁到${HOUSES[l.b as Key].name}家`}>
+            <g class:list={['fm-l', { late: l.late }]} data-l={l.i} data-reveal-at={l.revealAt} tabindex="0" role="button" aria-label={`${l.who.join('、')}从${HOUSES[l.a as Key].name}家嫁到${HOUSES[l.b as Key].name}家`}>
               <path class="fm-hit" d={l.path} />
               <path class="fm-link" d={l.path} />
               <path class="fm-arrow" d={l.arrow} />
@@ -70,6 +75,7 @@ const links = HOUSE_LINKS.map((l, i) => {
           })}
         </svg>
         <p class="map-hint">白文印四家在护官符上，朱文印林家不在。箭头由娘家指向夫家。</p>
+        <button type="button" class="show-relations" data-show-relations hidden>显示完整家族关系</button>
       </div>
 
       <div class="panels">
@@ -85,7 +91,7 @@ const links = HOUSE_LINKS.map((l, i) => {
               </div>
               <dl>
                 <dt>出身</dt><dd>{h.guan}</dd>
-                <dt>在书中</dt><dd>{h.now}</dd>
+                <dt>在书中</dt><dd class="spoil" data-ch="121"><div class="spoil-body">{h.now}</div></dd>
                 <dt>房分</dt>
                 <dd>
                   {fang ? (
@@ -103,12 +109,12 @@ const links = HOUSE_LINKS.map((l, i) => {
         {links.map(l => {
           const A = HOUSES[l.a as Key], B = HOUSES[l.b as Key];
           return (
-            <section class="panel" data-panel={`l:${l.i}`} hidden style={`--c:var(--g-${B.grp})`}>
+            <section class="panel" data-panel={`l:${l.i}`} data-reveal-at={l.revealAt} hidden style={`--c:var(--g-${B.grp})`}>
               <div class="pn-head">
                 <span class:list={['pn-seal', { zhu: l.a === 'lin' }]}>{A.name}</span><span class="pn-to">嫁入</span><span class:list={['pn-seal', { zhu: l.b === 'lin' }]}>{B.name}</span>
                 <div><h2>{l.text}</h2><p class="pn-k">{A.name}家的女儿嫁进{B.name}家</p></div>
               </div>
-              <p class="pn-p">{l.note}</p>
+              <div class="spoil" data-ch="121"><p class="pn-p spoil-body">{l.note}</p></div>
               <div class="mem">{[...new Set([...l.who, ...A.members, ...B.members])].map(id => <PersonLink id={id} />)}</div>
             </section>
           );
@@ -119,11 +125,25 @@ const links = HOUSE_LINKS.map((l, i) => {
 </Base>
 
 <script>
+  import { progress } from '../client/site.ts';
   const root = document.querySelector<HTMLElement>('[data-fam]')!;
   const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
   let sel = 'h:jia';
+  let showAll = false;
+  const relationLinks = [...root.querySelectorAll<SVGElement>('.fm-l')];
+  const showButton = root.querySelector<HTMLButtonElement>('[data-show-relations]')!;
+  const hiddenRelation = (el: SVGElement | HTMLElement) => Boolean(progress() && !showAll && +el.dataset.revealAt! > progress());
   function render() {
+    if (panels.some(p => p.dataset.panel === sel && p.dataset.revealAt && hiddenRelation(p))) sel = 'h:jia';
     panels.forEach(p => { p.hidden = p.dataset.panel !== sel; });
+    relationLinks.forEach(g => {
+      const hidden = hiddenRelation(g);
+      g.toggleAttribute('hidden', hidden);
+      g.setAttribute('aria-hidden', String(hidden));
+      g.setAttribute('tabindex', hidden ? '-1' : '0');
+      g.dataset.guardReady = '';
+    });
+    showButton.hidden = !relationLinks.some(hiddenRelation);
     root.querySelectorAll<SVGElement>('.fm-node').forEach(g => g.classList.toggle('on', sel === `h:${g.dataset.h}`));
     root.querySelectorAll<SVGElement>('.fm-l').forEach(g => g.classList.toggle('on', sel === `l:${g.dataset.l}`));
     root.querySelectorAll<HTMLElement>('.guan-col').forEach(c => c.classList.toggle('on', sel === `h:${c.dataset.h}`));
@@ -141,6 +161,8 @@ const links = HOUSE_LINKS.map((l, i) => {
     const t = e.target as Element;
     if (t.matches('.fm-node, .fm-l')) { e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
   });
+  showButton.addEventListener('click', () => { showAll = true; render(); });
+  addEventListener('hlm:progress', () => { showAll = false; render(); });
   render();
 </script>
 
@@ -151,9 +173,9 @@ const links = HOUSE_LINKS.map((l, i) => {
   .guan-t { writing-mode: vertical-rl; display: flex; align-items: center; gap: 10px; padding-left: 8px; border-left: 1px solid currentColor; }
   .guan-t b { font: 400 26px/1 var(--title); letter-spacing: .3em; color: var(--cinnabar); }
   .guan-t small { font: 400 11px/1 var(--title); letter-spacing: .3em; opacity: .7; }
-  .guan-col { writing-mode: vertical-rl; display: flex; gap: 6px; padding: 6px 4px; text-align: start; border-radius: 4px; color: inherit; transition: background .2s; }
+  .guan-col { writing-mode: vertical-rl; display: flex; gap: 6px; padding: 6px 4px; text-align: start; color: inherit; transition: background .2s; }
   .guan-col:hover { background: color-mix(in srgb, var(--c) 10%, transparent); }
-  .guan-col.on { background: color-mix(in srgb, var(--c) 14%, transparent); }
+  .guan-col.on { background: transparent; }
   .guan-m { font: 400 20px/1.4 var(--title); letter-spacing: .14em; }
   .guan-seal { display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; margin-bottom: .4em; font: normal 400 .9em/1 var(--display); color: #fff; background: var(--c); border-radius: 3px; writing-mode: horizontal-tb; }
   /* 选中的一句照古书批点的样子，字旁加朱圈 */
@@ -176,6 +198,8 @@ const links = HOUSE_LINKS.map((l, i) => {
   .fm-node.zhu .inner { stroke: var(--c); }
   .fm-node.zhu .big { fill: var(--c); }
   .fm-l { cursor: pointer; outline: none; }
+  :global(html.guard) .fm-l:not([data-guard-ready]) { display: none; }
+  .show-relations { display: block; margin: 14px auto 0; padding: 8px 12px; font: 400 16px/1.4 var(--title); color: var(--cinnabar); border: 1px solid var(--line-2); }
   .fm-hit { fill: none; stroke: transparent; stroke-width: 18; }
   .fm-link { fill: none; stroke: var(--ink-3); stroke-width: 1.6; transition: stroke .2s, stroke-width .2s; }
   .fm-arrow { fill: var(--ink-3); transition: fill .2s; }
@@ -185,7 +209,7 @@ const links = HOUSE_LINKS.map((l, i) => {
   .fm-l:hover .fm-arrow, .fm-l.on .fm-arrow { fill: var(--cinnabar); }
   .fm-l.on .fm-lab { fill: var(--cinnabar); font-weight: 700; }
 
-  .panel { padding: 24px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 6px; animation: ink-in .5s var(--ease-ink); }
+  .panel { padding: 24px; background: var(--card); border: 1px solid var(--line); border-top: 2px solid var(--c); animation: ink-in .5s var(--ease-ink); }
   .pn-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 16px; }
   .pn-head h2 { font: 400 26px/1.2 var(--title); }
   .pn-k { font: 400 12px/1.6 var(--title); color: var(--ink-3); letter-spacing: .1em; }

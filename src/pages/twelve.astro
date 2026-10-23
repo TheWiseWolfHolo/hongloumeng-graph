@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PageHead from '../components/PageHead.astro';
 import PersonLink from '../components/PersonLink.astro';
-import { TWELVE, TWELVE_MORE, byId, noteLabel, cn } from '../lib/data.ts';
+import { TWELVE, TWELVE_MORE, byId, noteLabel, cn, endingAt } from '../lib/data.ts';
 import { portraitImage } from '../lib/portraits.ts';
 import { loadChapter, type Block } from '../lib/render-text.ts';
 
@@ -82,7 +82,7 @@ const leaves = BOOKS.map(b => ({
                 <div class="imgs">{pics.map(x => <a href={`/people/${x.id}/`} class="pic-a"><Image src={x.img!} width={420} height={630} alt={`${x.id}画像`} loading={i === 0 ? 'eager' : 'lazy'} /></a>)}</div>
                 <figcaption>{v.pic}</figcaption>
               </figure>
-              <span class="fold" aria-hidden="true"><b>{b.name}</b><i></i><b>{cn(i + 1)}</b></span>
+              <span class="fold" aria-hidden="true"><b>{b.name}</b><b>{cn(i + 1)}</b></span>
               <!-- 左半叶：判词与批 -->
               <div class="ci">
                 <div class="verse" aria-label={v.verse.join('，')}>
@@ -90,7 +90,7 @@ const leaves = BOOKS.map(b => ({
                 </div>
                 {notes.length > 0 && (
                   <ul class="pi">
-                    {notes.map(n => <li><b>{n.label}</b>{n.s}</li>)}
+                    {notes.map(n => <li class="spoil" data-ch="121"><div class="spoil-body"><b>{n.label}</b>{n.s}</div></li>)}
                   </ul>
                 )}
               </div>
@@ -101,14 +101,14 @@ const leaves = BOOKS.map(b => ({
                 {sg.length > 0 && <><dt>曲</dt><dd>{sg.map(s => <a href={`#${songAnchor(s)}`}>《{s}》</a>)}</dd></>}
                 {v.flower && <><dt>籤</dt><dd>{v.flower}<small>第六十三回</small></dd></>}
               </dl>
-              <details class="gloss spoil" data-ch="81">
+              <details class="gloss">
                 <summary>判词怎么读，结局如何</summary>
-                <div class="spoil-body">
-                  <p>{v.gloss}</p>
+                <div>
+                  <div class="spoil" data-ch="121"><p class="spoil-body">{v.gloss}</p></div>
                   {fates.map(p => (
                     <div class="fate">
-                      {p.fate && <p><b>{p.id}　原意</b>{p.fate}</p>}
-                      {p.xu && <p class="xu"><b>{p.id}　续书</b>{p.xu}</p>}
+                      {p.fate && <div class="spoil" data-ch="121"><p class="spoil-body"><b>{p.id}　结局推测</b>{p.fate}</p></div>}
+                      {p.xu && <div class="spoil" data-ch={endingAt(p, 'xu')}><p class="xu spoil-body"><b>{p.id}　续书</b>{p.xu}</p></div>}
                     </div>
                   ))}
                 </div>
@@ -137,7 +137,7 @@ const leaves = BOOKS.map(b => ({
             <h3><span class="song-n">{['引', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '尾'][i]}</span>{s.name}</h3>
             {s.ids.length > 0 && <p class="song-who">{s.ids.map(id => <PersonLink id={id} />)}</p>}
             <p class="song-text">{s.text}</p>
-            {s.notes.map(n => <p class="song-pi"><b>{n.label}</b>{n.s}</p>)}
+            {s.notes.map(n => <div class="spoil" data-ch="121"><p class="song-pi spoil-body"><b>{n.label}</b>{n.s}</p></div>)}
           </li>
         ))}
       </ol>
@@ -227,23 +227,22 @@ const leaves = BOOKS.map(b => ({
   .pic-a :global(img) { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; }
   .hua figcaption { writing-mode: vertical-rl; max-block-size: 22em; font: 400 16px/1.9 var(--title); letter-spacing: .14em; color: #4a3a2a; }
   .bare figcaption { max-block-size: 18em; font-size: 20px; line-height: 2.2; }
-  .fold { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 30px 0; border-left: 1px solid rgb(90 66 30 / .32); border-right: 1px solid rgb(90 66 30 / .32); }
-  .fold b { writing-mode: vertical-rl; font: 400 14px/1 var(--title); letter-spacing: .2em; color: #5c4a35; }
-  .fold i { width: 18px; height: 13px; background: #2a2018; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 50%, 0 100%); }
+  .fold { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 30px 0; border-left: 1px solid rgb(90 66 30 / .32); border-right: 1px solid rgb(90 66 30 / .32); }
+  .fold b { writing-mode: vertical-rl; font: 400 13px/1 var(--title); letter-spacing: .2em; color: #776650; }
   .ci { grid-column: 1; grid-row: 1; display: flex; flex-direction: row-reverse; align-items: flex-start; justify-content: center; gap: 30px; padding: clamp(28px, 4vw, 48px) clamp(20px, 3vw, 36px); }
   /* 判词：一句一行，朱丝栏，字落在格子正中 */
   .verse { --u: clamp(48px, 4.4vw, 58px); writing-mode: vertical-rl; font: 400 calc(var(--u) * .54)/var(--u) var(--title); letter-spacing: .32em; color: #1d1712; padding: 14px 0; background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), rgb(176 45 34 / .26) calc(var(--u) - 1px) var(--u)); background-position: right; box-shadow: inset -1px 0 0 rgb(176 45 34 / .26); }
   .verse span { display: block; }
-  .verse span:nth-child(2n) { padding-inline-start: 1em; }
   .pi { list-style: none; margin: 0; padding: 14px 0 0; display: flex; flex-direction: column; gap: 0 12px; writing-mode: vertical-rl; max-block-size: 22em; }
   .pi li { font: 400 15px/1.85 var(--title); color: #a8291f; letter-spacing: .06em; }
   .pi b { font: 400 13px/1.85 var(--title); color: rgb(168 41 31 / .7); margin-block-end: .6em; display: inline-block; }
   @media (prefers-reduced-motion: no-preference) {
     .ye.enter .spread { animation: leaf-in .5s var(--ease-ink) both; }
-    .ye.enter .verse span { animation: ink-in 1.1s var(--ease-ink) both; animation-delay: calc(.15s + var(--j) * .16s); }
+    .ye.enter .verse span { animation: verse-in .24s ease both; animation-delay: calc(var(--j) * .035s); }
     .ye.leave .spread { opacity: 0; transform: translateX(-10px); transition: opacity .2s, transform .2s; }
   }
   @keyframes leaf-in { from { opacity: 0; transform: translateX(14px); } }
+  @keyframes verse-in { from { opacity: 0; } to { opacity: 1; } }
   .ye.back.enter .spread { animation-name: leaf-back; }
   @keyframes leaf-back { from { opacity: 0; transform: translateX(-14px); } }
 

@@ -83,7 +83,9 @@ for name, cp in names.items():
     parts = split(name)
     if not parts:
         continue
-    keep = [p for p in parts if not stray(bbox(p))] or parts
+    # “咏／詠”下方的独立轮廓来自邻字，顶端仍进入通用框；先去掉它，再计算真正字身的缩放。
+    keep = [p for p in parts if not stray(bbox(p))
+            and not (cp in (0x548F, 0x8A60) and bbox(p)[3] < -60)] or parts
     if len(keep) < len(parts):
         fixed.append(chr(cp))
     a = bounds(gs, name) if len(keep) == len(parts) else None

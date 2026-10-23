@@ -15,7 +15,22 @@ export const REL_TYPES: Record<RelType, { name: string; dash: string }> = {
   my: { name: '前世神缘', dash: '2 3' }
 };
 
-export type Edge = [a: string, b: string, type: RelType, label: string, note?: string];
+export type Edge = [a: string, b: string, type: RelType, label: string, note?: string, revealAt?: number, noteAt?: number];
+
+/* 第二回冷子兴已经说明的亲属关系；附带旧事另按注释回次揭示。 */
+const OPENING_RELATIONS = new Set([
+  '贾演|贾源', '贾演|贾代化', '贾代化|贾敬', '贾敬|贾珍', '贾珍|贾蓉',
+  '贾敬|贾惜春', '贾珍|贾惜春', '贾源|贾代善', '贾代善|贾母',
+  '贾代善|贾赦', '贾代善|贾政', '贾代善|贾敏', '贾母|贾赦',
+  '贾母|贾政', '贾母|贾敏', '贾赦|贾政', '贾赦|贾琏', '贾赦|贾迎春',
+  '贾政|王夫人', '贾政|贾珠', '贾政|贾元春', '贾政|贾宝玉', '贾政|贾探春',
+  '贾政|贾环', '王夫人|贾珠', '王夫人|贾元春', '王夫人|贾宝玉',
+  '贾琏|王熙凤', '王夫人|王熙凤', '贾母|贾宝玉', '贾母|林黛玉',
+  '贾敏|林黛玉', '林如海|林黛玉', '林如海|贾敏'
+]);
+
+export const relationRevealAt = (edge: Edge) => edge[5] ?? (OPENING_RELATIONS.has(`${edge[0]}|${edge[1]}`) ? 2 : 121);
+export const relationNoteAt = (edge: Edge) => edge[6] ?? 121;
 
 export const EDGES: Edge[] = [
   ["贾演", "贾源", "b", "兄弟", "宁、荣两公，同胞兄弟"],

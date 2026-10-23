@@ -1,80 +1,161 @@
 ---
-/* 一百二十回谁在场，照《史记》年表的样子画：人名列在右边，回次从右往左排，
-   每一格点一个墨点，这一回提到他越多，墨点越大；后四十回是续书，墨色淡下去。
-   十回一道界栏，顶上标回次。指着一行，这一行转成朱色，底下写出他前八十回提到多少次、哪一回最多。 */
-import { MENTIONS, STATS, byId, cn } from '../lib/data.ts';
+import { MENTIONS, STATS, byId, cn, chapter } from '../lib/data.ts';
 interface Props { count?: number }
 const { count = 14 } = Astro.props;
-const ids = Object.entries(STATS.totals)
-  .filter(([id]) => byId.get(id)!.tier !== 'o')
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, count)
-  .map(([id]) => id);
-const N = 120, NAME = 84, TOP = 30, ROW = 28, W = 1200;
-const CW = (W - NAME - 6) / N;
-const H = TOP + ids.length * ROW + 6;
-/* 第 n 回在第几格：第一回贴着人名，往左排 */
-const cx = (n: number) => W - NAME - 6 - (n - .5) * CW;
-const vmax = Math.max(...ids.flatMap(id => MENTIONS[id]));
-const f = (v: number) => +v.toFixed(1);
-const rows = ids.map((id, i) => {
-  const m = MENTIONS[id];
-  const y = TOP + (i + .5) * ROW;
-  const dots = m.map((v, k) => (v > 0 ? { x: f(cx(k + 1)), r: f(Math.max(.9, Math.sqrt(v / vmax) * CW * .62)), xu: k >= 80 } : null)).filter(Boolean) as { x: number; r: number; xu: boolean }[];
-  const peak = m.slice(0, 80).reduce((b, v, k) => (v > m[b] ? k : b), 0) + 1;
-  return { id, y, dots, total: STATS.totals[id], peak };
-});
-const tens = Array.from({ length: 12 }, (_, i) => (i + 1) * 10);
+const ids = Object.entries(STATS.totals).filter(([id]) => byId.get(id)!.tier !== 'o')
+  .sort((a, b) => b[1] - a[1]).slice(0, count).map(([id]) => id);
+const W = 1200, TOP = 58, ROW = 36, CW = W / 120, H = TOP + ids.length * ROW;
+const cx = (n: number) => W - (n - .5) * CW;
+const max = Math.max(...ids.flatMap(id => MENTIONS[id]));
+const rows = ids.map((id, i) => ({ id, y: TOP + (i + .5) * ROW, values: MENTIONS[id] }));
+const first = rows[0];
+const chapters = Array.from({ length: 120 }, (_, i) => chapter(i + 1).title.join('　'));
 ---
-<figure class="nianbiao reveal">
-  <div class="nb-box" data-scroll-start="end">
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`原文提到最多的${count}个人在一百二十回里各回被提到的多少`}>
-      <rect class="xu-bg" x={f(cx(120) - CW / 2)} y={TOP} width={f(CW * 40)} height={H - TOP - 6} />
-      <g class="grid">
-        <line x1="0" x2={W} y1={TOP} y2={TOP} />
-        <line x1="0" x2={W} y1={H - 6} y2={H - 6} />
-        <line x1={W - NAME} x2={W - NAME} y1="0" y2={H - 6} />
-        {tens.slice(0, -1).map(n => <line x1={f(cx(n) - CW / 2)} x2={f(cx(n) - CW / 2)} y1={TOP - 8} y2={H - 6} class:list={{ eighty: n === 80 }} />)}
-      </g>
-      <g class="hd">
-        {[1, ...tens.slice(0, -1)].map(n => <text x={f(cx(n))} y={TOP - 12} text-anchor="middle">{cn(n)}</text>)}
-      </g>
-      {rows.map((r, i) => (
-        <a href={`/people/${r.id}/`} class="row" style={`--i:${i}`} aria-label={`${r.id}，前八十回提到${r.total}次`}>
-          <rect class="hit" x="0" y={r.y - ROW / 2} width={W} height={ROW} />
-          <text class="nm" x={W - NAME / 2} y={r.y}>{r.id}</text>
-          {r.dots.map(d => <circle cx={d.x} cy={r.y} r={d.r} class:list={{ xu: d.xu }} />)}
-          <text class="cap" x={W - NAME - 14} y={H + 22}>{`${r.id}　前八十回提到${cn(r.total)}次，第${cn(r.peak)}回最多`}</text>
-        </a>
-      ))}
-    </svg>
+<figure class="nianbiao" aria-label="一百二十回人物提及年表" data-mentions style={`--nb-top:${TOP}px;--nb-row:${ROW}px`}>
+  <div class="nb-shell">
+    <div class="nb-box" data-nb-scroll>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} tabindex="0" role="group" aria-label="人物提及图，左右方向键选回目，上下方向键选人物" data-nb-plot>
+        <rect class="xu-bg" x="0" y="0" width={CW * 40} height={H} />
+        <text class="part" x={CW * 20} y="18">后四十回 · 续书</text>
+        <text class="part" x={CW * 80} y="18">前八十回</text>
+        <g class="grid" aria-hidden="true">
+          {Array.from({ length: 13 }, (_, i) => i * 10).map(n => <line x1={W - n * CW} x2={W - n * CW} y1={TOP - 10} y2={H} class:list={{ eighty: n === 80 }} />)}
+          {Array.from({ length: ids.length + 1 }, (_, i) => <line class="row-rule" x1="0" x2={W} y1={TOP + i * ROW} y2={TOP + i * ROW} />)}
+        </g>
+        <g class="ticks" aria-hidden="true">
+          {[1, ...Array.from({ length: 12 }, (_, i) => (i + 1) * 10)].map(n => <text x={n === 1 ? W - 12 : n === 120 ? 12 : cx(n)} style={n === 120 ? 'text-anchor:start' : undefined} y={TOP - 17}>{cn(n)}</text>)}
+        </g>
+        <rect class="selection-row" x="0" y={TOP} width={W} height={ROW} data-nb-row hidden />
+        <rect class="selection-col" x={W - CW} y={TOP} width={CW} height={H - TOP} data-nb-col hidden />
+        {rows.map(r => <g aria-hidden="true">{r.values.map((v, i) => v > 0 && <circle class="dot" cx={cx(i + 1)} cy={r.y} r={Math.max(1.1, Math.sqrt(v / max) * 4.3).toFixed(1)} />)}</g>)}
+        <circle class="selection-dot" cx={cx(1)} cy={first.y} r="4.5" data-nb-dot hidden />
+      </svg>
+    </div>
+    <div class="nb-names" aria-label="选择人物">
+      <span class="nb-name-head">人物</span>
+      {rows.map((r, i) => <button type="button" data-nb-person={i} aria-pressed="false" aria-controls="mention-detail">{r.id}</button>)}
+    </div>
   </div>
-  <p class="nb-note" aria-hidden="true"><span>右起第一回</span><span>左边四十回是续书，墨淡</span></p>
+  <figcaption class="nb-detail" id="mention-detail" data-nb-detail hidden>
+    <p class="nb-result" aria-live="polite" aria-atomic="true" data-nb-result><a href={`/people/${first.id}/`}>{first.id}</a><span>第一回 · 提及{cn(first.values[0])}次</span></p>
+    <a class="nb-read" href="/chapters/1/" data-nb-read>读这一回</a>
+    <p class="nb-chapter" data-nb-chapter>{chapters[0]}</p>
+    <div class="nb-navigation" role="group" aria-label="选择回目">
+      <button type="button" data-nb-prev disabled>上一回</button>
+      <select data-nb-select aria-label="选择第几回">{Array.from({ length: 120 }, (_, i) => <option value={i + 1}>第{cn(i + 1)}回</option>)}</select>
+      <button type="button" data-nb-next>下一回</button>
+      <button type="button" class="nb-close" data-nb-close>收起</button>
+    </div>
+  </figcaption>
+  <div class="nb-key"><span>右起第一回</span><span class="nb-scale"><i class="small-dot"></i><i class="large-dot"></i>墨点越大，提及越多</span></div>
+  <script is:inline type="application/json" data-nb-data set:html={JSON.stringify({ ids, values: rows.map(r => r.values), chapters, width: W, top: TOP, row: ROW })} />
 </figure>
+
+<script>
+  import { cn, progress } from '../client/site.ts';
+  for (const figure of document.querySelectorAll<HTMLElement>('[data-mentions]')) {
+    const data: { ids: string[]; values: number[][]; chapters: string[]; width: number; top: number; row: number } = JSON.parse(figure.querySelector('[data-nb-data]')!.textContent!);
+    const plot = figure.querySelector<SVGSVGElement>('[data-nb-plot]')!;
+    const scroll = figure.querySelector<HTMLElement>('[data-nb-scroll]')!;
+    const names = [...figure.querySelectorAll<HTMLButtonElement>('[data-nb-person]')];
+    const rowMark = figure.querySelector('[data-nb-row]')!;
+    const colMark = figure.querySelector('[data-nb-col]')!;
+    const dot = figure.querySelector('[data-nb-dot]')!;
+    const result = figure.querySelector('[data-nb-result]')!;
+    const person = result.querySelector<HTMLAnchorElement>('a')!;
+    const value = result.querySelector('span')!;
+    const read = figure.querySelector<HTMLAnchorElement>('[data-nb-read]')!;
+    const title = figure.querySelector('[data-nb-chapter]')!;
+    const chapterSelect = figure.querySelector<HTMLSelectElement>('[data-nb-select]')!;
+    const prev = figure.querySelector<HTMLButtonElement>('[data-nb-prev]')!;
+    const next = figure.querySelector<HTMLButtonElement>('[data-nb-next]')!;
+    const detail = figure.querySelector<HTMLElement>('[data-nb-detail]')!;
+    const close = figure.querySelector<HTMLButtonElement>('[data-nb-close]')!;
+    const cw = data.width / 120;
+    let row = 0, n = 1;
+    function select(nextRow: number, nextChapter: number, reveal = false) {
+      row = Math.max(0, Math.min(data.ids.length - 1, nextRow));
+      n = Math.max(1, Math.min(120, nextChapter));
+      const id = data.ids[row], x = data.width - n * cw;
+      detail.hidden = false;
+      for (const mark of [rowMark, colMark, dot]) mark.removeAttribute('hidden');
+      names.forEach((b, i) => b.setAttribute('aria-pressed', String(i === row)));
+      rowMark.setAttribute('y', String(data.top + row * data.row));
+      colMark.setAttribute('x', String(x));
+      dot.setAttribute('cx', String(x + cw / 2));
+      dot.setAttribute('cy', String(data.top + (row + .5) * data.row));
+      person.textContent = id;
+      person.href = `/people/${encodeURIComponent(id)}/`;
+      value.textContent = `第${cn(n)}回 · 提及${cn(data.values[row][n - 1])}次${n > 80 ? ' · 续书' : ''}`;
+      read.href = `/chapters/${n}/?ref=mentions`;
+      title.textContent = progress() && n > progress() ? '尚未读到这一回' : data.chapters[n - 1];
+      chapterSelect.value = String(n);
+      prev.disabled = n === 1;
+      next.disabled = n === 120;
+      if (reveal && (x < scroll.scrollLeft || x + cw > scroll.scrollLeft + scroll.clientWidth)) scroll.scrollLeft = x - scroll.clientWidth / 2;
+    }
+    names.forEach((b, i) => b.addEventListener('click', () => {
+      const values = data.values[i].slice(0, progress() || 80);
+      const peak = values.reduce((best, value, index) => value > values[best] ? index : best, 0) + 1;
+      select(i, detail.hidden ? peak : n, true);
+    }));
+    close.addEventListener('click', () => {
+      detail.hidden = true;
+      names.forEach(b => b.setAttribute('aria-pressed', 'false'));
+      for (const mark of [rowMark, colMark, dot]) mark.setAttribute('hidden', '');
+      plot.focus({ preventScroll: true });
+    });
+    addEventListener('hlm:progress', () => { if (!detail.hidden) select(row, n); });
+    chapterSelect.addEventListener('change', () => select(row, +chapterSelect.value, true));
+    prev.addEventListener('click', () => select(row, n - 1, true));
+    next.addEventListener('click', () => select(row, n + 1, true));
+    plot.addEventListener('click', e => {
+      const rect = plot.getBoundingClientRect(), y = e.clientY - rect.top;
+      if (y < data.top) return;
+      select(Math.floor((y - data.top) / data.row), 120 - Math.floor((e.clientX - rect.left) / cw));
+    });
+    plot.addEventListener('keydown', e => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
+      e.preventDefault();
+      select(row + (e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0), e.key === 'Home' ? 1 : e.key === 'End' ? 120 : n + (e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowRight' ? -1 : 0), true);
+    });
+    scroll.scrollLeft = scroll.scrollWidth;
+  }
+</script>
 
 <style>
   .nianbiao { margin: 0; }
+  .nb-shell { display: grid; grid-template-columns: minmax(0, 1fr) 104px; border-block: 1px solid var(--line-2); }
   .nb-box { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
-  .nianbiao svg { display: block; width: 100%; min-width: 760px; height: auto; overflow: visible; margin-bottom: 30px; }
-  .xu-bg { fill: color-mix(in srgb, var(--ink) 3%, transparent); }
-  .grid line { stroke: color-mix(in srgb, var(--cinnabar) 30%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
-  .grid line.eighty { stroke: color-mix(in srgb, var(--cinnabar) 55%, transparent); stroke-dasharray: 3 3; }
-  .hd text { font: 400 12px var(--title); fill: var(--ink-3); letter-spacing: .05em; }
-  .hit { fill: transparent; }
-  .nm { font: 400 15px var(--title); fill: var(--ink); text-anchor: middle; dominant-baseline: central; letter-spacing: .12em; transition: fill .25s; }
-  .row circle { fill: var(--ink); opacity: .82; transition: fill .25s, opacity .25s; }
-  .row circle.xu { opacity: .3; }
-  .row:hover circle, .row:focus-visible circle { fill: var(--cinnabar); opacity: 1; }
-  .row:hover circle.xu, .row:focus-visible circle.xu { opacity: .45; }
-  .row:hover .nm, .row:focus-visible .nm { fill: var(--cinnabar); }
-  .row:hover .hit { fill: color-mix(in srgb, var(--cinnabar) 5%, transparent); }
-  .nianbiao svg:has(.row:hover) .row:not(:hover) circle { opacity: .18; }
-  .cap { font: 400 15px var(--title); fill: var(--ink-2); text-anchor: end; letter-spacing: .12em; opacity: 0; transition: opacity .2s; pointer-events: none; }
-  .row:hover .cap, .row:focus-visible .cap { opacity: 1; }
-  .nb-note { display: flex; justify-content: space-between; flex-direction: row-reverse; margin-top: -22px; font: 400 13px/1.6 var(--title); letter-spacing: .2em; color: var(--ink-3); }
-  .nianbiao svg:has(.row:hover) + .nb-note, .nianbiao:has(.row:hover) .nb-note { opacity: 0; }
-  @media (prefers-reduced-motion: no-preference) {
-    .nianbiao.in .row circle { animation: drop .9s var(--ease-ink) backwards; animation-delay: calc(var(--i) * 50ms); }
-  }
-  @keyframes drop { from { opacity: 0; } }
+  .nb-box svg { display: block; width: 1200px; max-width: none; height: auto; cursor: crosshair; }
+  .xu-bg { fill: color-mix(in srgb, var(--ink) 4%, transparent); }
+  .grid line { stroke: color-mix(in srgb, var(--cinnabar) 23%, transparent); stroke-width: 1; }
+  .grid line.row-rule { stroke: var(--line); stroke-opacity: .35; }
+  .grid line.eighty { stroke: var(--cinnabar); stroke-dasharray: 4 4; }
+  .part, .ticks text { font: 400 15px var(--title); fill: var(--ink-2); text-anchor: middle; }
+  .ticks text { font-size: 14px; }
+  .dot { fill: var(--ink); opacity: .82; }
+  .selection-row { fill: color-mix(in srgb, var(--cinnabar) 3%, transparent); }
+  .selection-col { fill: color-mix(in srgb, var(--cinnabar) 5%, transparent); }
+  .selection-dot { fill: none; stroke: var(--cinnabar); stroke-width: 1.2; filter: url(#rough); }
+  .nb-names { border-left: 1px solid var(--line-2); background: var(--paper); }
+  .nb-name-head { display: grid; height: var(--nb-top); align-items: end; padding-bottom: 12px; text-align: center; font: 400 15px var(--title); color: var(--ink-3); }
+  .nb-names button { position: relative; display: block; width: 100%; height: var(--nb-row); font: 400 17px/1 var(--title); letter-spacing: .12em; }
+  .nb-names button:hover, .nb-names button[aria-pressed="true"] { color: var(--cinnabar); }
+  .nb-names button[aria-pressed="true"]::after { content: ''; position: absolute; left: 19%; right: 18%; bottom: 5px; height: 3px; border-bottom: 1.5px solid var(--cinnabar); border-radius: 30% 60% 45% 55%; transform: rotate(-3deg); pointer-events: none; }
+  .nb-detail { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; padding: 18px 0 12px; }
+  .nb-result { display: flex; align-items: baseline; gap: 6px 18px; flex-wrap: wrap; font: 400 17px/1.7 var(--title); }
+  .nb-result a, .nb-read { color: var(--cinnabar); }
+  .nb-read { align-self: start; padding: 4px 0 4px 12px; font: 400 17px/1.5 var(--title); white-space: nowrap; }
+  .nb-chapter { grid-column: 1 / -1; font: 400 15px/1.8 var(--title); color: var(--ink-2); }
+  .nb-navigation { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; font: 400 15px/1.4 var(--title); }
+  .nb-navigation button, .nb-navigation select { min-height: 40px; padding: 6px 8px; border: 0; border-bottom: 1px solid var(--line-2); border-radius: 0; background: transparent; color: var(--ink-2); font-family: var(--title); }
+  .nb-navigation .nb-close { margin-left: auto; font-size: 14px; color: var(--ink-3); border-bottom-color: transparent; }
+  .nb-navigation button:disabled { opacity: .4; cursor: default; }
+  .nb-key { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 400 14px/1.7 var(--title); color: var(--ink-3); }
+  .nb-scale { display: flex; align-items: center; gap: 7px; }
+  .nb-scale i { display: inline-block; border-radius: 50%; background: var(--ink); }
+  .small-dot { width: 3px; height: 3px; }
+  .large-dot { width: 8px; height: 8px; }
+  @media (max-width: 640px) { .nb-shell { grid-template-columns: minmax(0, 1fr) 88px; } .nb-names button { font-size: 16px; letter-spacing: .06em; } .nb-result { gap: 2px 10px; } }
 </style>

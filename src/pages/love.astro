@@ -19,7 +19,16 @@ const firstHui = (s: string) => {
   for (const c of m[1]) { if (c === '十') { n += (cur || 1) * 10; cur = 0; } else if (c === '百') { n += (cur || 1) * 100; cur = 0; } else cur = DIGIT[c] ?? 0; }
   return n + cur;
 };
-const feuds = [...FEUDS].sort((a, b) => firstHui(a.ch) - firstHui(b.ch)).map((f, i) => ({ ...f, n: firstHui(f.ch), i }));
+const lastHui = (s: string) => firstHui(`第${s.split('至').at(-1)!.replace(/^第/, '')}`);
+const feuds = [...FEUDS].sort((a, b) => firstHui(a.ch) - firstHui(b.ch)).map((f, i) => ({ ...f, n: firstHui(f.ch), revealAt: f.title === '抄检大观园' ? 77 : lastHui(f.ch), i }));
+const LOVE_AT: Record<string, { story: number; out?: number; xu?: number }> = {
+  木石前盟: { story: 5, xu: 98 }, 金玉良缘: { story: 121 }, 琏凤之家: { story: 69 },
+  鸳鸯剑: { story: 66, out: 66 }, 园中私情: { story: 74, out: 77, xu: 92 },
+  水月庵之私: { story: 16, out: 16 }, 画蔷: { story: 36, out: 58 },
+  汗巾之约: { story: 28 }, 中山狼: { story: 80, xu: 109 }, 妻妾之祸: { story: 80 },
+  金麒麟伏白首双星: { story: 31 }, 典衣之缘: { story: 57, out: 57 },
+  回头一顾: { story: 2, out: 2 }, 佛手与柚子: { story: 41 }
+};
 
 /* 六司：书里只写了匾名，哪段情缘挂哪一司是这里的分法 */
 const SI: { name: string; titles: string[] }[] = [
@@ -134,7 +143,8 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
         {SI.map((s, i) => (
           <div class="pane" role="tabpanel" id={`si-p${i}`} aria-labelledby={`si-t${i}`} hidden={i !== 0}>
             {s.titles.map(t => byTitle.get(t)!).map((l, j) => (
-              <article class="ce" style={`--j:${j}`}>
+              <article class="ce spoil" data-ch={LOVE_AT[l.title]?.story ?? 121} style={`--j:${j}`}>
+                <div class="ce-content spoil-body">
                 <header class="ce-h">
                   <h3>{l.title}</h3>
                   <span class:list={['ce-end', `e-${l.end}`]} title={{ 悲: '悲', 喜: '喜', 另: '未定' }[l.end]}>{l.end === '另' ? '未' : l.end}</span>
@@ -142,13 +152,12 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
                 <div class="ce-b">
                   <p class="ce-who">{l.ids.map(id => <PersonLink id={id} />)}</p>
                   <p class="ce-t">{l.text}</p>
-                  <div class="ce-out spoil" data-ch="81">
-                    <div class="spoil-body">
-                      <p class="v-zhi"><b>后来</b>{l.out}</p>
-                      <p class="v-xu"><b>后来</b>{l.xu ?? '续书没有另写，照前八十回。'}</p>
-                    </div>
+                  <div class="ce-out">
+                    <div class="v-zhi spoil" data-ch={LOVE_AT[l.title]?.out ?? 121}><p class="spoil-body"><b>后来</b>{l.out}</p></div>
+                    <div class="v-xu spoil" data-ch={LOVE_AT[l.title]?.xu ?? 121}><p class="spoil-body"><b>后来</b>{l.xu ?? '续书没有另写，照前八十回。'}</p></div>
                   </div>
                   <a class="ce-line" href={lineHref(l.ids)}>在关系图上牵线</a>
+                </div>
                 </div>
               </article>
             ))}
@@ -168,14 +177,14 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
           {Array.from({ length: 12 }, (_, k) => <span class="tick" style={`--x:${(k * 10) / 119}`}><i>{k ? cn(k * 10) : '一'}</i></span>)}
           <span class="eighty" style={`--x:${80 / 119}`} title="前八十回到此"></span>
           {feuds.map(f => (
-            <button type="button" class="mark" style={`--x:${(f.n - 1) / 119}`} data-go={f.i} aria-label={`${f.title}，${f.ch}`}><i></i><span>{f.title}</span></button>
+            <button type="button" class="mark" style={`--x:${(f.n - 1) / 119}`} data-go={f.i} data-reveal-at={f.revealAt} data-safe-label={f.ch} data-event-title={f.title} aria-label={f.ch}><i></i><span>{f.title}</span></button>
           ))}
         </div>
       </div>
       <div class="scroll vt reveal" data-scroll tabindex="0" aria-label="风波手卷，从右往左读">
         <div class="scroll-in">
           {feuds.map(f => (
-            <article class="fe spoil" data-ch={f.n} data-fe={f.i} id={`fe-${f.i}`}>
+            <article class="fe spoil" data-ch={f.revealAt} data-fe={f.i} id={`fe-${f.i}`}>
               <div class="spoil-body">
                 <p class="fe-ch">{f.ch}</p>
                 <h3>{f.title}</h3>
@@ -192,6 +201,7 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
 </Base>
 
 <script>
+  import { progress } from '../client/site.ts';
   /* 六司的匾：点哪块，底下换成哪一司 */
   const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-si]')];
   const panes = [...document.querySelectorAll<HTMLElement>('.pane')];
@@ -220,6 +230,16 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
   /* 尺上点一场风波，手卷卷到那一段；手卷卷动时，尺上跟着亮起正当中那一场 */
   const scroll = document.querySelector<HTMLElement>('[data-scroll]')!;
   const marks = [...document.querySelectorAll<HTMLButtonElement>('.mark')];
+  const updateMarks = () => {
+    const p = progress();
+    marks.forEach(mark => {
+      const title = p > 0 && +mark.dataset.revealAt! > p ? mark.dataset.safeLabel! : mark.dataset.eventTitle!;
+      mark.querySelector('span')!.textContent = title;
+      mark.setAttribute('aria-label', title);
+    });
+  };
+  updateMarks();
+  addEventListener('hlm:progress', updateMarks);
   const items = [...document.querySelectorAll<HTMLElement>('[data-fe]')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   marks.forEach(m => m.addEventListener('click', () => {
@@ -318,7 +338,9 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
   .pane:not([hidden]) .ce { animation: ce-in .8s var(--ease-ink) both; animation-delay: calc(var(--j) * .08s); }
   @keyframes ce-in { from { opacity: 0; transform: translateY(8px); } }
   /* 一页册子：版框双边，题目竖写在右边 */
-  .ce { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 22px; padding: 26px 24px 22px 28px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 14%, transparent), 0 16px 30px -26px rgb(40 26 10 / .5); }
+  .ce { padding: 26px 24px 22px 28px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 14%, transparent), 0 16px 30px -26px rgb(40 26 10 / .5); }
+  .ce-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 22px; height: 100%; }
+  :global(html.guard) .ce-end { display: none; }
   .ce-h { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-left: 18px; border-left: 1px solid var(--line); writing-mode: vertical-rl; }
   .ce-h h3 { font: 400 24px/1.2 var(--title); letter-spacing: .16em; }
   .ce-end { display: grid; place-items: center; width: 26px; height: 26px; writing-mode: horizontal-tb; font: 400 15px/1 var(--title); color: #fff6ea; background: var(--ink-3); border-radius: 2px; }
@@ -375,7 +397,8 @@ const marked = (lines: string[], keys: string[]) => lines.map(l => ring(l, keys.
   }
   @media (max-width: 560px) {
     .qu { font-size: 16.5px; }
-    .ce { grid-template-columns: 1fr; padding: 22px 20px; }
+    .ce { padding: 22px 20px; }
+    .ce-content { grid-template-columns: 1fr; }
     .ce-h { grid-column: 1; grid-row: 1; writing-mode: horizontal-tb; flex-direction: row; justify-content: space-between; padding: 0 0 12px; border-left: 0; border-bottom: 1px solid var(--line); }
     .ce-b { grid-row: 2; padding-top: 14px; }
     .ruler { display: none; }

@@ -38,9 +38,11 @@ const maxChars = Math.max(...CHAPTERS.map(c => c.chars));
               </a>
               <div class="ch-more">
                 <p class="ch-sum spoil" data-ch={c.n}><span class="spoil-body">{c.summary}</span></p>
-                <p class="ch-cast">
+                <p class="ch-cast spoil" data-ch={Math.max(c.n, ...c.ev.flatMap(e => e.c))}>
+                  <span class="spoil-body">
                   {c.cast.map(([id]) => <a href={`/people/${id}/`} data-peek style={`--pc:var(--g-${byId.get(id)!.group})`}>{id}</a>)}
                   {c.ev.map(e => <span class="ch-ev">{e.t}</span>)}
+                  </span>
                 </p>
               </div>
             </li>
@@ -107,6 +109,7 @@ const maxChars = Math.max(...CHAPTERS.map(c => c.chars));
   .ch-more { display: grid; gap: 10px; align-content: start; }
   .ch-sum { font-size: 14.5px; line-height: 1.9; color: var(--ink-2); }
   .ch-cast { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13.5px; }
+  .ch-cast .spoil-body { display: flex; flex-wrap: wrap; gap: 4px 12px; }
   .ch-cast a { color: var(--ink-2); border-bottom: 1px solid color-mix(in srgb, var(--pc) 50%, transparent); }
   .ch-cast a:hover { color: var(--pc); }
   .ch-ev { font: 400 11.5px/1 var(--title); padding: 4px 8px; border-radius: 3px; background: var(--cinnabar-soft); color: var(--cinnabar); align-self: center; }

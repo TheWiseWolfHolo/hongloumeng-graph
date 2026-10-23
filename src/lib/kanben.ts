@@ -3,7 +3,11 @@
    夹批排成双行小字，侧批、眉批写进天头；标点去掉，句末打圈、句中打点，照旧时圈点的样子。
    排版在构建时算好，每个字落在哪一格都是整数坐标，界行和字不会错位。 */
 import { Converter } from 'opencc-js';
-import { loadChapter, type Note } from './render-text.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { ChapterText, Note } from './render-text.ts';
+
+const loadChapter = (n: number): ChapterText => JSON.parse(readFileSync(join(process.cwd(), 'src', 'data', 'text', `${String(n).padStart(3, '0')}.json`), 'utf8'));
 
 /* 原文库是简体，刻本页面转成繁体；转换逐字对应，长度不变，批语挂的位置不受影响 */
 const s2t = Converter({ from: 'cn', to: 't' });

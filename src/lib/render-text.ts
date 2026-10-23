@@ -53,10 +53,13 @@ function inline(s: string, n: number, notes: Note[] = []) {
 
 export function renderChapter(c: ChapterText) {
   let html = '';
+  let textOffset = 0;
   noteId = 0;
   c.blocks.forEach((b, i) => {
     const id = `p${i + 1}`;
-    if (b.t === 'p') html += `<p id="${id}">${inline(b.s, c.n, b.n)}</p>`;
+    const blockStart = textOffset;
+    if (b.t !== 'pi') textOffset += b.s.length + 1;
+    if (b.t === 'p') html += `<p id="${id}" data-text-start="${blockStart}">${inline(b.s, c.n, b.n)}</p>`;
     else if (b.t === 'poem') {
       /* 诗按行拆开，批语的位置也按行换算 */
       let off = 0;
@@ -64,17 +67,25 @@ export function renderChapter(c: ChapterText) {
         const start = off;
         off += l.length + 1;
         const ns = (b.n ?? []).filter(x => x.at >= start && x.at <= start + l.length).map(x => ({ ...x, at: x.at - start }));
-        return `<span>${inline(l, c.n, ns)}</span>`;
+        return `<span data-text-start="${blockStart + start}">${inline(l, c.n, ns)}</span>`;
       });
       html += `<div class="poem" id="${id}">${lines.join('')}</div>`;
     }
-    else if (b.t === 'center') html += `<p class="center" id="${id}">${inline(b.s, c.n)}</p>`;
+    else if (b.t === 'center') html += `<p class="center" id="${id}" data-text-start="${blockStart}">${inline(b.s, c.n)}</p>`;
     else if (b.t === 'pi') {
       const label = noteLabel({ src: b.src ?? [], kind: b.kind ?? '批', s: b.s });
       const where = b.kind === '回前' ? ' zb-front' : b.kind === '回后' ? ' zb-back' : '';
       html += `<aside class="zb${where}${lateClass(b.src ?? [])}" id="${id}"><b class="zb-label">${esc(label)}</b><div class="zb-text">${noteText(b.s)}</div></aside>`;
     }
-    else html += `<div class="fig" id="${id}">${b.s.split(/[\s　]+/).map(l => `<span>${esc(l)}</span>`).join('')}</div>`;
+    else {
+      let previous = 0;
+      const parts = [...b.s.matchAll(/[^\s　]+/g)].map(m => {
+        const gap = b.s.slice(previous, m.index);
+        previous = m.index + m[0].length;
+        return `<span data-text-start="${blockStart + m.index}" data-text-gap="${esc(gap)}">${esc(m[0])}</span>`;
+      });
+      html += `<div class="fig" id="${id}">${parts.join('')}</div>`;
+    }
   });
   return html;
 }

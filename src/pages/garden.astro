@@ -18,7 +18,7 @@ const inGarden = new Set(GARDEN.flatMap(b => b.who));
 const walkers = PEOPLE.filter(p => inGarden.has(p.id)).map(p => p.id);
 const evByTitle = Object.fromEntries(EVENTS.map(e => [e.t, e.c]));
 const data = {
-  places: GARDEN.map(b => ({ id: b.id, kind: b.kind, name: b.name, seal: b.seal ?? '', alias: b.alias, who: b.who, scene: b.scene, note: b.note, ev: b.ev.map(t => [t, evByTitle[t]?.[0] ?? 0, (evByTitle[t]?.[0] ?? 0) > 80 ? 1 : 0]) })),
+  places: GARDEN.map(b => ({ id: b.id, kind: b.kind, name: b.name, seal: b.seal ?? '', alias: b.alias, who: b.who, scene: b.scene, note: b.note, ev: b.ev.map(t => [t, evByTitle[t]?.[0] ?? 0, (evByTitle[t]?.[0] ?? 0) > 80 ? 1 : 0, evByTitle[t]?.[1] ?? 121]) })),
   tour: GARDEN_TOUR.map(t => ({ name: t.name, site: t.site ?? '', text: t.text, plq: t.plq ?? '', dui: t.dui ?? null })),
   seasons: SEASONS,
   life: LIFE,
@@ -44,7 +44,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     <div class="ctl sheng" data-ctl="sheng" hidden>
       <button type="button" class="play" data-play aria-label="让回数自己往下走">流年</button>
       <div class="track">
-        <input type="range" min="17" max="112" value="17" step="1" data-hui aria-label="回数">
+        <input type="range" min="17" max="112" value="17" step="1" data-hui aria-label="回数" aria-valuetext="第十七回">
         <div class="ticks" aria-hidden="true">
           {LIFE.map(l => <span style={`--x:${(l.ch - 17) / 95}`} class:list={{ late: l.ch > 80 }}></span>)}
           <i class="eighty" style={`--x:${(80 - 17) / 95}`}></i>
@@ -58,11 +58,14 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
 
     <div class="stage">
       <div class="gmap" data-map>
-        <div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园图"></svg></div>
+        <div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="group" aria-label="大观园图"></svg></div>
         <canvas class="snow" data-snow aria-hidden="true"></canvas>
         <div class="mist" aria-hidden="true"></div>
       </div>
-      <aside class="jian" data-jian aria-live="polite"></aside>
+      <aside class="jian" data-jian aria-label="园中详情">
+        <button type="button" class="jian-close" data-jian-close>收起详情</button>
+        <div data-jian-content aria-live="polite"></div>
+      </aside>
     </div>
   </div>
   <script is:inline type="application/json" id="garden-people" set:html={JSON.stringify(groups)} />
@@ -71,8 +74,9 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
 
 <script>
   import Garden from '../client/garden-map.js';
+  import { applyGuard } from '../client/site.ts';
 
-  type Place = { id: string; kind: string; name: string; seal: string; alias: string; who: string[]; scene: string; note: string; ev: [string, number, number][] };
+  type Place = { id: string; kind: string; name: string; seal: string; alias: string; who: string[]; scene: string; note: string; ev: [string, number, number, number][] };
   const D: {
     places: Place[]; tour: { name: string; site: string; text: string; plq: string; dui: [string, string] | null }[];
     seasons: { s: string; ch: number; at: string; t: string; d: string }[];
@@ -84,16 +88,31 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   const place = (id: string) => D.places.find(p => p.id === id)!;
   const person = (id: string) => D.groups[id] ? `<a class="person" href="/people/${encodeURIComponent(id)}/" data-peek style="--pc:var(--g-${D.groups[id]})">${esc(id)}</a>` : `<span>${esc(id)}</span>`;
   const vert = (s: string, cls: string) => `<span class="${cls}">${[...s].map(c => `<i>${esc(c)}</i>`).join('')}</span>`;
-  const jian = document.querySelector<HTMLElement>('[data-jian]')!;
+  const detail = document.querySelector<HTMLElement>('[data-jian]')!;
+  const jian = document.querySelector<HTMLElement>('[data-jian-content]')!;
   const map = document.querySelector<HTMLElement>('[data-map]')!;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /* 笺换内容时先淡出再淡入，不在原地跳 */
   let swapT = 0;
   const write = (html: string) => {
     clearTimeout(swapT);
-    jian.classList.add('out');
-    swapT = window.setTimeout(() => { jian.innerHTML = html; jian.scrollTop = 0; jian.classList.remove('out'); }, reduced ? 0 : 160);
+    detail.classList.add('out');
+    swapT = window.setTimeout(() => { jian.innerHTML = html; detail.scrollTop = 0; applyGuard(jian); detail.classList.remove('out'); }, reduced ? 0 : 160);
   };
+  const guard = (ch: number, html: string) => `<div class="spoil" data-ch="${ch}"><div class="spoil-body">${html}</div></div>`;
+  function nearby(id?: string) {
+    if (id) Garden.center(id);
+    if (!matchMedia('(max-width: 1100px)').matches) return;
+    detail.classList.add('is-open');
+    if (id) requestAnimationFrame(() => {
+      const selected = [...map.querySelectorAll<SVGGElement>('[data-id]')].find(g => g.dataset.id === id)!;
+      const r = selected.getBoundingClientRect();
+      const top = document.querySelector('[data-header]')!.getBoundingClientRect().bottom;
+      scrollTo({ top: scrollY + r.top + r.height / 2 - (top + detail.getBoundingClientRect().top) / 2, behavior: reduced ? 'auto' : 'smooth' });
+    });
+  }
+  document.querySelector('[data-jian-close]')!.addEventListener('click', () => detail.classList.remove('is-open'));
+  addEventListener('keydown', e => { if (e.key === 'Escape') detail.classList.remove('is-open'); });
 
   let mode = 'you';
   let cur = 'yhy';
@@ -115,10 +134,10 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
         </div>
       </header>
       <section class="js"><h3>景</h3><p>${esc(b.scene)}</p></section>
-      <section class="js"><h3>事</h3><p>${esc(b.note)}</p></section>
-      ${b.ev.length ? `<section class="js"><h3>回</h3><ul class="evs">${b.ev.map(([t, n, late]) => `<li><a href="/chapters/${n}/"><span class="n">${hui(n)}</span><span class="t">${esc(t)}</span>${late ? '<small>续书</small>' : ''}</a></li>`).join('')}</ul></section>` : ''}
-      ${seasons.length ? `<section class="js"><h3>時</h3><ul class="sea">${seasons.map(s => `<li><b>${s.s}</b>${esc(s.t)}</li>`).join('')}</ul></section>` : ''}
-      ${life.length ? `<section class="js"><h3>變</h3><ul class="sea">${life.map(l => `<li><b>${D.cn[l.ch]}</b>${esc(l.t)}</li>`).join('')}</ul></section>` : ''}`);
+      <section class="js"><h3>事</h3>${guard(121, `<p>${esc(b.note)}</p>`)}</section>
+      ${b.ev.length ? `<section class="js"><h3>回</h3><ul class="evs">${b.ev.map(([t, n, late, revealAt]) => `<li>${guard(revealAt, `<a href="/chapters/${n}/"><span class="n">${hui(n)}</span><span class="t">${esc(t)}</span>${late ? '<small>续书</small>' : ''}</a>`)}</li>`).join('')}</ul></section>` : ''}
+      ${seasons.length ? `<section class="js"><h3>時</h3><ul class="sea">${seasons.map(s => `<li>${guard(s.ch, `<b>${s.s}</b>${esc(s.t)}`)}</li>`).join('')}</ul></section>` : ''}
+      ${life.length ? `<section class="js"><h3>變</h3><ul class="sea">${life.map(l => `<li>${guard(l.ch, `<b>${D.cn[l.ch]}</b>${esc(l.t)}`)}</li>`).join('')}</ul></section>` : ''}`);
     history.replaceState(null, '', '#' + id);
   }
 
@@ -135,7 +154,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
       <h2 class="stop">${esc(st.name)}</h2>
       <ol class="steps">${D.tour.map((s, k) => `<li class="${k < i ? 'done' : k === i ? 'cur' : ''}"><button type="button" data-step="${k}" aria-label="${esc(s.name)}" title="${esc(s.name)}"></button></li>`).join('')}</ol>
       ${plaque}
-      <p class="said">${esc(st.text)}</p>
+      ${guard(17, `<p class="said">${esc(st.text)}</p>`)}
       <div class="go">
         <button type="button" data-tour="prev" ${i === 0 ? 'disabled' : ''}>上一处</button>
         <button type="button" class="on" data-tour="${i === n - 1 ? 'end' : 'next'}">${i === n - 1 ? '游罢' : '下一处'}</button>
@@ -153,7 +172,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     Garden.mark(null);
     write(`
       <header class="season"><span class="big">${s}</span><span class="line">${esc(SEASON_LINE[s])}</span></header>
-      <ol class="happen">${list.map((x, k) => `<li><button type="button" data-at="${x.at}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(x.t)}</b><small>${hui(x.ch)}　${esc(place(x.at).name)}</small><span>${esc(x.d)}</span></span></button></li>`).join('')}</ol>`);
+      <ol class="happen">${list.map((x, k) => `<li>${guard(x.ch, `<button type="button" data-at="${x.at}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(x.t)}</b><small>${hui(x.ch)}　${esc(place(x.at).name)}</small><span>${esc(x.d)}</span></span></button>`)}</li>`).join('')}</ol>`);
   }
 
   /* 雪：冬天才下。每片大小、快慢、左右摆的幅度都不一样，远的小而慢、淡，近的大而快；风一阵一阵地变 */
@@ -206,17 +225,19 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     snowRaf = requestAnimationFrame(step);
   }
   function stopSnow() { cancelAnimationFrame(snowRaf); snowRaf = 0; snowOn = false; }
-  /* 换季时雪先淡出，淡完了再停 */
-  new MutationObserver(() => {
-    if (map.dataset.ji === '冬') startSnow();
-    else setTimeout(() => { if (map.dataset.ji !== '冬') stopSnow(); }, 1300);
-  }).observe(map, { attributes: true, attributeFilter: ['data-ji'] });
+  let mapVisible = false;
+  const syncSnow = () => { if (map.dataset.ji === '冬' && mapVisible && !document.hidden) startSnow(); else stopSnow(); };
+  new IntersectionObserver(entries => { mapVisible = entries[0].isIntersecting; syncSnow(); }).observe(map);
+  new MutationObserver(syncSnow).observe(map, { attributes: true, attributeFilter: ['data-ji'] });
+  document.addEventListener('visibilitychange', syncSnow);
+  new ResizeObserver(() => { if (snowOn) { stopSnow(); syncSnow(); } }).observe(map);
 
   /* ---------- 盛衰 ---------- */
   const range = document.querySelector<HTMLInputElement>('[data-hui]')!;
   const out = document.querySelector<HTMLOutputElement>('[data-hui-out]')!;
   function showLife(n: number) {
     out.textContent = hui(n);
+    range.setAttribute('aria-valuetext', hui(n));
     const empty = new Set(Object.entries(D.vacate).filter(([, [a, b]]) => n < a || n > b).map(([id]) => id));
     Garden.vacant(empty);
     /* 抄检以后园子一点点褪色，到封园时只剩一层白 */
@@ -225,15 +246,15 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     const now = [...D.life].reverse().find(l => l.ch <= n)!;
     Garden.mark(now.at ?? null);
     const homes = D.places.filter(p => p.kind === 'home');
+    const homesHtml = guard(121, `<ul class="homes">${homes.map(h => `<li class="${empty.has(h.id) ? 'off' : ''}"><span>${esc(h.name)}</span><small>${empty.has(h.id) ? (n < D.vacate[h.id][0] ? '未住' : '已空') : esc(h.seal)}</small></li>`).join('')}</ul>`);
     const html = `
       <p class="kind">${hui(now.ch)}${now.ch > 80 ? '　续书' : ''}</p>
-      <h2 class="stop">${esc(now.t)}</h2>
-      <p class="said">${esc(now.d)}</p>
-      <ul class="homes">${homes.map(h => `<li class="${empty.has(h.id) ? 'off' : ''}"><span>${esc(h.name)}</span><small>${empty.has(h.id) ? (n < D.vacate[h.id][0] ? '未住' : '已空') : esc(h.seal)}</small></li>`).join('')}</ul>`;
+      ${guard(now.ch, `<h2 class="stop">${esc(now.t)}</h2><p class="said">${esc(now.d)}</p>`)}
+      <div data-life-homes>${homesHtml}</div>`;
     if (jian.dataset.life !== String(now.ch)) { jian.dataset.life = String(now.ch); write(html); }
     else {
-      const ul = jian.querySelector('.homes');
-      if (ul) ul.outerHTML = html.slice(html.indexOf('<ul class="homes">'));
+      const homesBox = jian.querySelector('[data-life-homes]');
+      if (homesBox) { homesBox.innerHTML = homesHtml; applyGuard(homesBox); }
     }
   }
   range.addEventListener('input', () => showLife(+range.value));
@@ -262,7 +283,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     write(`
       <p class="kind">${at.some(p => p.kind === 'home' && p.who[0] === id) ? '住在园里' : '在园里出现过'}</p>
       <h2 class="stop">${person(id)}</h2>
-      <ol class="happen">${at.map((p, k) => `<li><button type="button" data-at="${p.id}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(p.name)}</b><small>${esc(p.alias)}</small><span>${esc(p.note)}</span></span></button></li>`).join('')}</ol>`);
+      <ol class="happen">${at.map((p, k) => `<li><button type="button" data-at="${p.id}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(p.name)}</b><small>${esc(p.alias)}</small></span></button>${guard(121, `<p>${esc(p.note)}</p>`)}</li>`).join('')}</ol>`);
   }
   rens.forEach(b => b.addEventListener('click', () => showPerson(b.dataset.ren!)));
 
@@ -287,7 +308,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     if (m === 'sheng') showLife(+range.value);
     if (m === 'xun') showPerson(rens.find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.ren ?? '林黛玉');
   }
-  modes.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode!)));
+  modes.forEach(b => b.addEventListener('click', () => { setMode(b.dataset.mode!); nearby(); }));
   document.querySelectorAll<HTMLButtonElement>('[data-ji]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-ji]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     showSeason(b.dataset.ji!);
@@ -297,8 +318,8 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   jian.addEventListener('click', e => {
     const t = (e.target as HTMLElement).closest<HTMLElement>('[data-tour],[data-step],[data-goto],[data-at]');
     if (!t) return;
-    if (t.dataset.at) { Garden.mark(t.dataset.at); Garden.center(t.dataset.at); return; }
-    if (t.dataset.goto) { const id = t.dataset.goto; setMode('you'); showPlace(id); return; }
+    if (t.dataset.at) { Garden.mark(t.dataset.at); nearby(t.dataset.at); return; }
+    if (t.dataset.goto) { const id = t.dataset.goto; setMode('you'); showPlace(id); nearby(id); return; }
     if (t.dataset.step) { showStop(Garden.tourGo(+t.dataset.step)); return; }
     const a = t.dataset.tour;
     if (a === 'prev') showStop(Garden.tourGo(Garden.tourIndex() - 1));
@@ -312,11 +333,17 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   });
 
   /* 点图上的院落：游览时看详情，其余看法下先回到游览 */
-  Garden.init({ onPick: (id: string) => { if (mode !== 'you') setMode('you'); showPlace(id); } });
+  Garden.init({ onPick: (id: string) => { if (mode !== 'you') setMode('you'); showPlace(id); nearby(id); } });
   const start = decodeURIComponent(location.hash.slice(1));
   if (start && D.places.some(p => p.id === start)) cur = start;
   const q = new URLSearchParams(location.search);
   setMode(q.has('tour') ? 'ti' : 'you');
+  if (start && D.places.some(p => p.id === start)) requestAnimationFrame(() => nearby(start));
+  addEventListener('hashchange', () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (D.places.some(p => p.id === id)) { setMode('you'); showPlace(id); nearby(id); }
+  });
+  addEventListener('hlm:progress', () => applyGuard(jian));
 </script>
 
 <style>
@@ -362,6 +389,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   /* 笺 */
   .jian { position: sticky; top: calc(var(--header-h) + 18px); max-height: calc(100vh - var(--header-h) - 36px); overflow-y: auto; scrollbar-width: thin; padding: 26px 26px 24px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent), 0 20px 40px -30px rgb(40 26 10 / .5); transition: opacity .16s; }
   .jian.out { opacity: 0; }
+  .jian-close { display: none; }
   .jian :global(.kind) { font: 400 14px/1.6 var(--title); letter-spacing: .3em; color: var(--cinnabar); }
   .jian :global(.jh) { display: flex; gap: 20px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
   /* 竖匾：黑漆泥金 */
@@ -420,6 +448,8 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   @media (max-width: 1100px) {
     .stage { grid-template-columns: 1fr; }
     .jian { position: static; max-height: none; }
+    .jian.is-open { position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; top: auto; height: 38dvh; max-height: 38dvh; padding: 18px 24px max(20px, env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgb(30 20 10 / .16); }
+    .jian.is-open .jian-close { display: block; margin: 0 0 14px auto; padding: 6px 0 6px 14px; color: var(--cinnabar); font: 400 16px/1.4 var(--title); }
   }
   @media (max-width: 640px) {
     .mode { font-size: 17px; letter-spacing: .12em; padding: 8px 6px; }

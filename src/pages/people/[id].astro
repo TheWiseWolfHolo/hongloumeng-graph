@@ -7,9 +7,9 @@ import MentionStrip from '../../components/MentionStrip.astro';
 import EgoGraph from '../../components/EgoGraph.astro';
 import {
   PEOPLE, GROUPS, BOOKS, REL_TYPES, TYPE_ORDER, STATS, byId, tiesOf, eventsOf, homesOf, verseOf, namesOf, spanOf,
-  huiName, huiRange, chapter, cn, RANK, NOTES, noteLabel, type Person
+  huiName, huiRange, chapter, cn, RANK, NOTES, noteLabel, personPreview, endingAt, type Person
 } from '../../lib/data.ts';
-import { EVENT_KINDS } from '../../data/events.ts';
+import { EVENT_KINDS, eventRevealAt } from '../../data/events.ts';
 import { portraitImage } from '../../lib/portraits.ts';
 
 export function getStaticPaths() {
@@ -17,6 +17,7 @@ export function getStaticPaths() {
 }
 interface Props { p: Person }
 const { p } = Astro.props;
+const preview = personPreview(p);
 const g = GROUPS[p.group];
 const color = `var(--g-${p.group})`;
 const names = namesOf(p);
@@ -43,23 +44,9 @@ const sameGroup = PEOPLE.filter(x => x.group === p.group);
 const idx = sameGroup.indexOf(p);
 const prev = sameGroup[(idx - 1 + sameGroup.length) % sameGroup.length];
 const next = sameGroup[(idx + 1) % sameGroup.length];
-/* 前八十回里的结局写在哪一回，从文字里取“第N回”，取不到就用最后出场那回 */
-const CN_NUM: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
-const parseCn = (t: string) => {
-  let n = 0, cur = 0;
-  for (const ch of t) {
-    if (ch === '十') { n += (cur || 1) * 10; cur = 0; }
-    else if (ch === '百') { n += (cur || 1) * 100; cur = 0; }
-    else if (ch === '零') continue;
-    else cur = CN_NUM[ch] ?? 0;
-  }
-  return n + cur;
-};
-const endHui = /第([一二三四五六七八九十百零]+)回/.exec(p.end ?? '');
-const endCh = endHui ? parseCn(endHui[1]) : Math.min(span?.[1] ?? 80, 80);
 const sequelCount = STATS.sequel?.[p.id] ?? 0;
 const zhi = NOTES[p.id];
-const desc = `${p.id}，${p.title}。${p.bio}`;
+const desc = `${p.id}，${preview.title}。${preview.bio}`;
 ---
 <Base title={p.id} description={desc.slice(0, 150)} section="people" sub="index" bodyClass="pg-person">
   <article class="person" style={`--pc:${color}`}>
@@ -89,17 +76,27 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
             {p.tier === 'o' && <span class="tag">信物</span>}
           </div>
           <h1 class="name ink-in" style={`view-transition-name:nm-${PEOPLE.indexOf(p)}`}>{p.id}</h1>
-          <p class="title ink-in" style="--d:.15s">{p.title}</p>
-          <p class="bio ink-in" style="--d:.3s">{p.bio}</p>
+          <div class="profile-full">
+            <p class="title ink-in" style="--d:.15s">{p.title}</p>
+            <p class="bio ink-in" style="--d:.3s">{p.bio}</p>
+          </div>
+          <div class="profile-safe">
+            <p class="title">{preview.title}</p>
+            {preview.bio && <p class="bio">{preview.bio}</p>}
+            <details class="biography spoil" data-ch="121">
+              <summary>完整小传</summary>
+              <div class="spoil-body"><p class="title">{p.title}</p><p class="bio">{p.bio}</p></div>
+            </details>
+          </div>
           {names.length > 0 && (
             <p class="aka ink-in" style="--d:.4s"><span class="label">也叫</span>{names.map(n => <span class="aka-n">{n}</span>)}</p>
           )}
           <dl class="facts ink-in" style="--d:.5s">
             {(total > 0 || sequelCount > 0) && <div><dt>前八十回提到</dt><dd><b>{cn(total)}</b>次{sequelCount > 0 && <small class="xu-n">续书另有{cn(sequelCount)}次</small>}</dd></div>}
             {zhi && <div><dt>批语点到</dt><dd><b>{cn(zhi.total)}</b>次</dd></div>}
-            {span && <div><dt>出场</dt><dd><a href={`/chapters/${span[0]}/`}>{huiName(span[0])}</a>{span[1] !== span[0] && <> 至 <a href={`/chapters/${span[1]}/`}>{huiName(span[1])}</a></>}</dd></div>}
+            {span && <div><dt>提及回目</dt><dd><a href={`/chapters/${span[0]}/?ref=1`}>{huiName(span[0])}</a>{span[1] !== span[0] && <> 至 <a href={`/chapters/${span[1]}/?ref=1`}>{huiName(span[1])}</a></>}</dd></div>}
             {ties.length > 0 && <div><dt>亲友</dt><dd><b>{cn(ties.length)}</b>人</dd></div>}
-            {homes.length > 0 && <div><dt>园中住处</dt><dd>{homes.map(h => <a href={`/garden/#${h.id}`}>{h.name}</a>)}</dd></div>}
+            {homes.length > 0 && <div class="spoil" data-ch="121"><dt>园中住处</dt><dd class="spoil-body">{homes.map(h => <a href={`/garden/#${h.id}`}>{h.name}</a>)}</dd></div>}
           </dl>
         </div>
       </div>
@@ -121,7 +118,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
             <p><b>畫</b>{verse.pic}</p>
             {verse.song && <p><b>曲</b>{verse.song}</p>}
             {verse.flower && <p><b>籤</b>{verse.flower}</p>}
-            <details class="gloss spoil" data-ch="81">
+            <details class="gloss spoil" data-ch="121">
               <summary>判词暗示的结局</summary>
               <div class="spoil-body"><p>{verse.gloss}</p></div>
             </details>
@@ -134,16 +131,18 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
       <section class="wrap block">
         <div class="block-head reveal"><h2>親友</h2></div>
         <div class="ties">
-          <EgoGraph id={p.id} />
+          <div class="ego-guard spoil" data-ch="121"><div class="spoil-body"><EgoGraph id={p.id} /></div></div>
           <div class="tie-lists">
             {grouped.map(({ t, list }) => (
               <div class="tie-group reveal">
                 <h3>{REL_TYPES[t].name}</h3>
                 <ul>
                   {list.map(x => (
-                    <li>
-                      <PersonLink id={x.other} /><span class="role">{x.role}</span>
-                      {x.note && <span class="tnote">{x.note}</span>}
+                    <li class="tie-item spoil" data-ch={x.revealAt}>
+                      <div class="spoil-body">
+                        <PersonLink id={x.other} /><span class="role">{x.role}</span>
+                        {x.note && <span class="tnote spoil" data-ch={x.noteAt}><span class="spoil-body">{x.note}</span></span>}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -160,9 +159,9 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
         <div class="block-head reveal"><h2>書中經歷</h2></div>
         <ol class="evs">
           {events.map(e => (
-            <li class="ev spoil reveal" data-ch={e.c[0]} style={`--k:${EVENT_KINDS[e.k]}`}>
+            <li class="ev spoil reveal" data-ch={eventRevealAt(e)} style={`--k:${EVENT_KINDS[e.k]}`}>
               <div class="spoil-body">
-                <a class="ev-hui" href={`/chapters/${e.c[0]}/`}>{huiRange(e.c)}{e.c[0] > 80 && <span class="note-xu">续书</span>}</a>
+                <a class="ev-hui" href={`/chapters/${e.c[0]}/?ref=1`}>{huiRange(e.c)}{e.c[0] > 80 && <span class="note-xu">续书</span>}</a>
                 <div>
                   <h3>{e.t}<span class="ev-k">{e.k}</span></h3>
                   <p>{e.d}</p>
@@ -179,10 +178,12 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
         <div class="block-head reveal"><h2>批语</h2></div>
         <ol class="zhi">
           {zhi.top.map(x => (
-            <li class:list={['zhi-item reveal', { late: x.src.length > 0 && x.src.every(s => ['蒙府', '戚序', '梦稿', '列藏', '甲辰', '舒序'].includes(s)) }]}>
+            <li class:list={['zhi-item reveal spoil', { late: x.src.length > 0 && x.src.every(s => ['蒙府', '戚序', '梦稿', '列藏', '甲辰', '舒序'].includes(s)) }]} data-ch="121">
+              <div class="spoil-body">
               <a class="zhi-where" href={`/chapters/${x.n}/#p${x.block + 1}`}><span>{huiName(x.n)}</span><b>{noteLabel(x)}</b></a>
               {x.ctx && <p class="zhi-ctx">……{x.ctx}</p>}
               <p class="zhi-s">{x.s}</p>
+              </div>
             </li>
           ))}
         </ol>
@@ -192,15 +193,17 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
     {(first || companions.length > 0) && (
       <section class="wrap block two reveal">
         {first && (
-          <div>
-            <div class="block-head"><h2>原文初見</h2><p class="src"><a href={`/chapters/${first.n}/`}>{huiName(first.n)}　{chapter(first.n).title.join(' ')}</a></p></div>
+          <div class="spoil" data-ch={first.n}>
+            <div class="spoil-body">
+            <div class="block-head"><h2>原文初見</h2><p class="src"><a href={`/chapters/${first.n}/#p${first.block + 1}`}>{huiName(first.n)}　{chapter(first.n).title.join(' ')}</a></p></div>
             <blockquote class="first" set:html={firstHtml} />
-            <a class="more" href={`/chapters/${first.n}/?q=${encodeURIComponent(p.id)}`}>读这一回</a>
+            <a class="more" href={`/chapters/${first.n}/#p${first.block + 1}`}>读这一段</a>
+            </div>
           </div>
         )}
         {companions.length > 0 && (
           <div>
-            <div class="block-head"><h2>常在一處</h2></div>
+            <div class="block-head"><h2>同段提及</h2></div>
             <ol class="comp">
               {companions.map(([o, v], i) => {
                 const op = byId.get(o)!;
@@ -218,17 +221,17 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
           <summary><span class="end-t">結局</span></summary>
           <div class="ends">
             {p.end && (
-              <div class="end-row spoil" data-ch={endCh}>
+              <div class="end-row spoil" data-ch={endingAt(p, 'end')}>
                 <div class="spoil-body"><h3>前八十回</h3><p>{p.end}</p></div>
               </div>
             )}
             {p.fate && (
-              <div class="end-row fate spoil" data-ch="81">
-                <div class="spoil-body"><h3>原稿原意<small>据判词、伏笔与批语</small></h3><p>{p.fate}</p></div>
+              <div class="end-row fate spoil" data-ch="121">
+                <div class="spoil-body"><h3>结局推测<small>据判词、伏笔与批语</small></h3><p>{p.fate}</p></div>
               </div>
             )}
             {p.xu && (
-              <div class="end-row xu spoil" data-ch="81">
+              <div class="end-row xu spoil" data-ch={endingAt(p, 'xu')}>
                 <div class="spoil-body"><h3>续书写法<small>后四十回，非曹雪芹原作</small></h3><p>{p.xu}</p></div>
               </div>
             )}
@@ -279,6 +282,14 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
   .name { font: 400 clamp(64px, 9vw, 120px)/1 var(--title); letter-spacing: .1em; margin: 22px 0 10px; color: var(--ink); }
   .title { font-size: 18px; color: var(--ink-2); letter-spacing: .14em; }
   .bio { margin-top: 26px; font-size: clamp(17px, 1.6vw, 19px); line-height: 2.05; max-width: 34em; text-wrap: pretty; }
+  .profile-safe { display: none; }
+  :global(html.guard) .profile-full { display: none; }
+  :global(html.guard) .profile-safe { display: block; }
+  .biography { margin-top: 18px; font-size: 14px; color: var(--ink-2); }
+  .biography summary { cursor: pointer; width: fit-content; }
+  .biography[open] { padding-bottom: 8px; }
+  .biography[open] .spoil-body { margin-top: 12px; }
+  .biography .bio { margin-top: 12px; }
   .aka { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 15.5px; }
   .label { font: 400 14px/1 var(--title); letter-spacing: .24em; color: var(--cinnabar); margin-right: 4px; }
   .aka-n { color: var(--ink-2); }
@@ -315,6 +326,8 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
   .tie-group h3 { font: 400 16px/1 var(--title); letter-spacing: .26em; color: var(--cinnabar); margin-bottom: 12px; }
   .tie-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .tie-group li { font-size: 16px; line-height: 1.5; }
+  .tie-item.ahead { min-height: 44px; }
+  .tnote.ahead { min-height: 38px; }
   .role { font: 400 13px var(--serif); color: var(--ink-3); margin-left: 8px; }
   .tnote { display: block; font-size: 13.5px; color: var(--ink-3); line-height: 1.7; margin-top: 2px; }
   .more { display: inline-flex; align-items: center; gap: 10px; margin-top: 8px; font: 400 15px/1.4 var(--title); letter-spacing: .16em; color: var(--ink-3); transition: color .3s; }

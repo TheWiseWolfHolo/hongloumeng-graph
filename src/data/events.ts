@@ -1,6 +1,8 @@
 /* 回目大事。c 回目（单回或起止）；k 类别；s 眉批短名；m 要紧的大事，画双圈；第八十回以后为续书。 */
 export type EventKind = '神话' | '家事' | '情缘' | '诗社' | '风波' | '生死';
 export interface StoryEvent { c: number[]; k: EventKind; s: string; m?: 1; t: string; ids: string[]; d: string }
+/* 概述覆盖多回时，读完整个范围后才展示。 */
+export const eventRevealAt = (event: StoryEvent) => Math.max(...event.c);
 
 export const EVENT_KINDS: Record<EventKind, string> = { 神话: 'var(--k-my)', 家事: 'var(--k-fam)', 情缘: 'var(--k-lv)', 诗社: 'var(--k-poem)', 风波: 'var(--k-storm)', 生死: 'var(--k-death)' };
 

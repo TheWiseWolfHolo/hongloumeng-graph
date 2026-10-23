@@ -279,6 +279,18 @@ export class Curl {
   /* 手拖时每动一下都要重画一帧 */
   kick() { if (!this.raf) this.raf = requestAnimationFrame(this.frame); }
 
+  cancel() {
+    cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    for (const leaf of this.leaves) {
+      leaf.done = true;
+      this.gl.deleteTexture(leaf.tf!);
+      this.gl.deleteTexture(leaf.tb!);
+    }
+    this.leaves = [];
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  }
+
   /* 松手：已过一半就翻过去，不到就落回原处 */
   release(l: Leaf, forward: boolean, onBack: () => void) {
     const from = l.manual ?? 0;
@@ -286,6 +298,7 @@ export class Curl {
     const dur = 260 + Math.abs(to - from) * 700;
     const t0 = performance.now();
     const step = () => {
+      if (l.done) return;
       const t = Math.min(1, (performance.now() - t0) / dur);
       const k = 1 - Math.pow(1 - t, 3);
       l.manual = from + (to - from) * k;

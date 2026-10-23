@@ -1,6 +1,6 @@
 /* 页面共用的数据查询。所有页面都在构建时调用，结果写进静态 HTML。 */
-import { PEOPLE, GROUPS, BOOKS, type Person, type GroupId } from '../data/people.ts';
-import { EDGES, REL_TYPES, type RelType } from '../data/relations.ts';
+import { PEOPLE, GROUPS, BOOKS, PERSON_PREVIEWS, PERSON_ENDINGS_AT, type Person, type GroupId } from '../data/people.ts';
+import { EDGES, REL_TYPES, relationRevealAt, relationNoteAt, type RelType } from '../data/relations.ts';
 import { EVENTS, type StoryEvent } from '../data/events.ts';
 import { SUMMARIES } from '../data/summaries.ts';
 import { GARDEN } from '../data/garden.ts';
@@ -25,6 +25,8 @@ export const has = (id: string) => byId.has(id);
 export const personUrl = (id: string) => `/people/${id}/`;
 export const chapterUrl = (n: number) => `/chapters/${n}/`;
 export const groupColor = (g: GroupId) => `var(--g-${g})`;
+export const personPreview = (p: Person) => PERSON_PREVIEWS[p.id] ?? { title: GROUPS[p.group].name, bio: '' };
+export const endingAt = (p: Person, kind: 'end' | 'xu') => PERSON_ENDINGS_AT[p.id]?.[kind] ?? 121;
 
 export { cn } from './cn.ts';
 import { cn } from './cn.ts';
@@ -46,13 +48,14 @@ export function namesOf(p: Person): string[] {
 }
 
 /* ---- 关系：从某人这边看，对方是他的什么人 ---- */
-export interface Tie { other: string; type: RelType; role: string; note?: string }
+export interface Tie { other: string; type: RelType; role: string; note?: string; revealAt: number; noteAt: number }
 export function tiesOf(id: string): Tie[] {
   const out: Tie[] = [];
-  for (const [a, b, type, label, note] of EDGES) {
+  for (const edge of EDGES) {
+    const [a, b, type, label, note] = edge;
     if (a !== id && b !== id) continue;
     const [p, q] = label.includes('/') ? label.split('/') : [label, label];
-    out.push(a === id ? { other: b, type, role: q, note } : { other: a, type, role: p, note });
+    out.push(a === id ? { other: b, type, role: q, note, revealAt: relationRevealAt(edge), noteAt: relationNoteAt(edge) } : { other: a, type, role: p, note, revealAt: relationRevealAt(edge), noteAt: relationNoteAt(edge) });
   }
   return out;
 }
@@ -107,7 +110,7 @@ export function castOf(n: number, limit = 40): [string, number][] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit);
 }
-/* 第一回和最后一回出场 */
+/* 第一次和最后一次被原文提及 */
 export function spanOf(id: string): [number, number] | null {
   const m = MENTIONS[id];
   if (!m) return null;

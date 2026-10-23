@@ -1,0 +1,52 @@
+---
+import Base from '../layouts/Base.astro';
+import { CHAPTERS } from '../lib/data.ts';
+---
+<Base title="搜原文" description="按回目查找一百二十回原文，逐处跳回正文。" section="chapters">
+  <div class="wrap-narrow">
+    <header class="search-head"><h1 class="brush">搜原文</h1></header>
+    <form class="text-search" data-text-search role="search">
+      <div class="search-query"><label for="text-query">原文里的字句</label>
+        <span><input id="text-query" type="search" name="q" required autocomplete="off" placeholder="输入字句，简繁皆可"><button class="btn" type="submit">查找</button></span>
+      </div>
+      <div class="search-range">
+        <label>从<select name="from" aria-label="起始回目">{CHAPTERS.map(c => <option value={c.n}>{c.cn}</option>)}</select></label>
+        <label>至<select name="to" aria-label="结束回目">{CHAPTERS.map(c => <option value={c.n} selected={c.n === 120}>{c.cn}</option>)}</select></label>
+        <label data-unread-control hidden><input type="checkbox" name="unread">包含未读回目</label>
+      </div>
+    </form>
+    <p class="search-status" data-search-status role="status" aria-live="polite">输入要找的字句。</p>
+    <ol class="text-results" data-text-results></ol>
+    <nav class="result-pages" aria-label="搜索结果翻页" data-result-pages hidden>
+      <button class="btn ghost" type="button" data-result-prev>上一页</button>
+      <span data-result-page></span>
+      <button class="btn ghost" type="button" data-result-next>下一页</button>
+    </nav>
+  </div>
+</Base>
+<script>
+  import '../client/search-page.ts';
+</script>
+<style>
+  .search-head { padding: 34px 0 26px; }
+  .search-head h1 { font: 400 clamp(36px, 5vw, 52px)/1.3 var(--title); letter-spacing: .12em; }
+  .text-search { display: grid; gap: 18px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .search-query { display: grid; gap: 10px; font: 400 18px/1.6 var(--title); }
+  .search-query > span { display: flex; gap: 12px; }
+  .search-query input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line-2); background: var(--card); font: 400 18px/1.6 var(--serif); }
+  .search-range { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+  .search-range label { display: inline-flex; align-items: center; gap: 8px; font: 400 16px/1.6 var(--title); }
+  .search-range select { max-width: 11em; padding: 7px 9px; background: var(--card); border: 1px solid var(--line-2); font: inherit; }
+  .search-range input { accent-color: var(--cinnabar); }
+  .search-status { padding: 22px 0; color: var(--ink-2); font: 400 17px/1.7 var(--title); }
+  .text-results { list-style: none; margin: 0; padding: 0; }
+  .text-results :global(li) { border-top: 1px solid var(--line); }
+  .text-results :global(a) { display: block; padding: 20px 4px; }
+  .text-results :global(a:hover) { background: var(--cinnabar-soft); }
+  .text-results :global(b) { display: block; margin-bottom: 8px; color: var(--cinnabar); font: 400 18px/1.5 var(--title); }
+  .text-results :global(p) { font: 400 17px/1.9 var(--serif); }
+  .text-results :global(mark) { color: inherit; background: var(--gold-soft); }
+  .result-pages { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 26px 0; font: 400 16px/1.6 var(--title); }
+  .result-pages button:disabled { opacity: .4; cursor: default; }
+  @media (max-width: 420px) { .search-range { gap: 10px; } .search-range select { max-width: 9em; } }
+</style>

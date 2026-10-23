@@ -72,11 +72,12 @@ const current = NAV.find(n => n.key === section);
       <button type="submit" class="pal-esc" aria-label="关闭搜索">Esc</button>
     </div>
     <div class="pal-list" id="pal-list" role="listbox" data-pal-list></div>
-    <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd> 挑选</span><span><kbd>Enter</kbd> 打开</span><span>输入两个字以上会同时查原文</span></div>
+    <a class="pal-text-link" data-pal-text hidden>搜原文</a>
+    <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd> 挑选</span><span><kbd>Enter</kbd> 打开</span></div>
   </form>
 </dialog>
 
-<dialog class="progress" data-progress aria-labelledby="progress-title">
+<dialog class="progress" data-progress-dialog aria-labelledby="progress-title">
   <form method="dialog" class="prog-box">
     <h2 id="progress-title" class="brush">读到第几回</h2>
     <p class="muted small">设好以后，人物结局、回目提要和大事里超出这一回的内容会先遮住，点开才显示。只存在这台设备的浏览器里。</p>

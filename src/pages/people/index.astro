@@ -4,15 +4,14 @@ import Base from '../../layouts/Base.astro';
 import Seal from '../../components/Seal.astro';
 import Spark from '../../components/Spark.astro';
 import PageHead from '../../components/PageHead.astro';
-import { PEOPLE, BOOKS, STATS, peopleByGroup, namesOf, spanOf, cn } from '../../lib/data.ts';
+import { PEOPLE, BOOKS, STATS, peopleByGroup, namesOf, spanOf, cn, personPreview } from '../../lib/data.ts';
 import { portraitImage } from '../../lib/portraits.ts';
 
 const groups = peopleByGroup();
-const rank = [...PEOPLE].filter(p => p.tier !== 'o').sort((a, b) => (STATS.totals[b.id] ?? 0) - (STATS.totals[a.id] ?? 0));
-const top = rank.slice(0, 24);
-const max = STATS.totals[top[0].id];
+const rank = [...PEOPLE].sort((a, b) => (STATS.totals[b.id] ?? 0) - (STATS.totals[a.id] ?? 0));
+const max = STATS.totals[rank[0].id];
 ---
-<Base title="人物谱" description={`《红楼梦》${PEOPLE.length} 位人物与信物：按家族排开，可按姓名、别称、身份查找，看每人在一百二十回原文里出场多少。`} section="people" sub="index">
+<Base title="人物谱" description={`《红楼梦》${cn(PEOPLE.length)}位人物与信物，按家族排开，可按姓名、别称、身份查找，看每人在原文里被提及多少次。`} section="people" sub="index">
   <div class="wrap">
     <PageHead title="人物谱" slip="人物譜" quote="千红一窟｜万艳同杯" from="第五回　警幻的茶与酒" />
 
@@ -22,12 +21,12 @@ const max = STATS.totals[top[0].id];
         <input type="search" placeholder="寻一个人，名字、别称或身份都可" data-f-q aria-label="筛选人物">
       </label>
       <div class="chips" role="group" aria-label="按家族筛选">
-        <button class="fam" type="button" data-f-g="" aria-pressed="true" title="全部">全</button>
-        {groups.map(({ g, info }) => <button class="fam" type="button" data-f-g={g} aria-pressed="false" style={`--c:var(--g-${g})`} title={info.name}>{info.seal}</button>)}
+        <button class="fam" type="button" data-f-g="" aria-pressed="true">全部</button>
+        {groups.map(({ g, info }) => <button class="fam" type="button" data-f-g={g} aria-pressed="false" style={`--c:var(--g-${g})`}>{info.name}</button>)}
       </div>
       <div class="view" role="group" aria-label="排列方式">
         <button type="button" class="on" data-view="group" aria-pressed="true">按家族</button>
-        <button type="button" data-view="rank" aria-pressed="false">按出场多寡</button>
+        <button type="button" data-view="rank" aria-pressed="false">按提及多寡</button>
       </div>
     </div>
     <p class="count" data-f-count aria-live="polite">共{cn(PEOPLE.length)}位</p>
@@ -44,17 +43,18 @@ const max = STATS.totals[top[0].id];
             {list.map((p, i) => {
               const img = portraitImage(p.portrait);
               const span = spanOf(p.id);
+              const preview = personPreview(p);
               return (
-                <li class:list={['pc reveal', `t-${p.tier}`]} style={`--d:${Math.min(i, 12) * 30}ms`} data-q={[p.id, ...namesOf(p), p.title, p.bio].join(' ')} data-g={g}>
+                <li class:list={['pc reveal', `t-${p.tier}`]} style={`--d:${Math.min(i, 12) * 30}ms`} data-id={p.id} data-q={[p.id, ...namesOf(p), p.title, p.bio].join(' ')} data-safe-q={[p.id, ...namesOf(p), preview.title, preview.bio].join(' ')} data-g={g}>
                   <a href={`/people/${p.id}/`} data-peek>
                     {img ? <Image src={img} width={96} height={128} alt="" class="thumb" loading="lazy" style={`view-transition-name:pic-${PEOPLE.indexOf(p)}`} />
                       : <span class="thumb name-thumb" aria-hidden="true">{p.id.slice(-1)}</span>}
                     <span class="pc-main">
                       <span class="pc-name" style={`view-transition-name:nm-${PEOPLE.indexOf(p)}`}>{p.id}</span>
-                      <span class="pc-title">{p.title}</span>
-                      <span class="pc-meta" title="一百二十回里出场的疏密，虚线以后是续书">
+                      <span class="pc-title" data-person-title={p.title} data-preview-title={preview.title}>{preview.title}</span>
+                      <span class="pc-meta" title="一百二十回里的原文提及，虚线以后是续书；次数统计前八十回">
                         <Spark id={p.id} color={`var(--g-${g})`} />
-                        <span>{STATS.totals[p.id] ? `${cn(STATS.totals[p.id])}见` : span ? '只见于续书' : '原文未直呼'}</span>
+                        <span>{STATS.totals[p.id] ? `${cn(STATS.totals[p.id])}次` : span ? '只见于续书' : '原文未直呼'}</span>
                       </span>
                     </span>
                     {p.book && <span class="pc-book" title={BOOKS[p.book]}>{p.book === 'z' ? '正' : p.book === 'f' ? '副' : '又副'}</span>}
@@ -65,43 +65,53 @@ const max = STATS.totals[top[0].id];
           </ul>
         </section>
       ))}
-      <p class="empty" data-f-empty hidden>册上没有这个名字。<button type="button" class="link" data-f-reset>从头翻</button></p>
     </div>
 
     <section class="by-rank" data-pane="rank" hidden>
       <ol class="rank">
-        {top.map((p, i) => (
-          <li class="reveal" style={`--w:${(STATS.totals[p.id] / max) * 100}%;--gc:var(--g-${p.group});--d:${i * 25}ms`}>
+        {rank.map((p, i) => (
+          <li class="reveal" data-rank-id={p.id} style={`--w:${(STATS.totals[p.id] / max) * 100}%;--gc:var(--g-${p.group});--d:${Math.min(i, 12) * 25}ms`}>
             <span class="r-n">{cn(i + 1)}</span>
             <a href={`/people/${p.id}/`} class="r-name" data-peek>{p.id}</a>
             <span class="r-bar"><i /></span>
-            <span class="r-v">{cn(STATS.totals[p.id])}</span>
+            <span class="r-v">{cn(STATS.totals[p.id])}次</span>
           </li>
         ))}
       </ol>
     </section>
+    <p class="empty" data-f-empty hidden>册上没有这个名字。<button type="button" class="link" data-f-reset>从头翻</button></p>
   </div>
 </Base>
 
 <script>
-  import { observeReveal, cn } from '../../client/site.ts';
+  import { observeReveal, cn, progress } from '../../client/site.ts';
+  import { normSearch as norm } from '../../lib/search.ts';
   const root = document.querySelector<HTMLElement>('[data-filter]')!;
   const q = root.querySelector<HTMLInputElement>('[data-f-q]')!;
   const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-f-g]')];
   const cards = [...document.querySelectorAll<HTMLElement>('.pc')];
   const groups = [...document.querySelectorAll<HTMLElement>('.grp')];
+  const ranked = [...document.querySelectorAll<HTMLElement>('[data-rank-id]')];
   const count = document.querySelector('[data-f-count]')!;
   const empty = document.querySelector<HTMLElement>('[data-f-empty]')!;
   let g = '';
-  const norm = (s: string) => s.normalize('NFKC').toLowerCase().replace(/\s+/g, '');
   const qs = cards.map(c => norm(c.dataset.q!));
+  const safeQs = cards.map(c => norm(c.dataset.safeQ!));
   function apply() {
     const v = norm(q.value);
     let n = 0;
+    const matched = new Set<string>();
     cards.forEach((c, i) => {
-      const ok = (!g || c.dataset.g === g) && (!v || qs[i].includes(v));
+      const ok = (!g || c.dataset.g === g) && (!v || (progress() ? safeQs : qs)[i].includes(v));
+      const title = c.querySelector<HTMLElement>('[data-person-title]')!;
+      title.textContent = progress() ? title.dataset.previewTitle! : title.dataset.personTitle!;
       c.hidden = !ok;
-      if (ok) { n++; c.classList.add('in'); }
+      if (ok) { n++; matched.add(c.dataset.id!); c.classList.add('in'); }
+    });
+    let order = 0;
+    ranked.forEach(el => {
+      el.hidden = !matched.has(el.dataset.rankId!);
+      if (!el.hidden) { el.querySelector('.r-n')!.textContent = cn(++order); el.classList.add('in'); }
     });
     groups.forEach(s => { s.hidden = !s.querySelector('.pc:not([hidden])'); });
     count.textContent = n === cards.length ? `共${cn(n)}位` : `寻得${cn(n)}位`;
@@ -112,6 +122,7 @@ const max = STATS.totals[top[0].id];
     history.replaceState(null, '', url);
   }
   q.addEventListener('input', apply);
+  addEventListener('hlm:progress', apply);
   chips.forEach(c => c.addEventListener('click', () => {
     g = c.dataset.fG!;
     chips.forEach(x => { x.setAttribute('aria-pressed', String(x === c)); });
@@ -120,7 +131,8 @@ const max = STATS.totals[top[0].id];
   document.querySelector('[data-f-reset]')?.addEventListener('click', () => { q.value = ''; g = ''; chips[0].click(); });
   const params = new URLSearchParams(location.search);
   if (params.get('q')) q.value = params.get('q')!;
-  if (params.get('g')) chips.find(c => c.dataset.fG === params.get('g'))?.click(); else if (q.value) apply();
+  if (params.get('g')) chips.find(c => c.dataset.fG === params.get('g'))?.click();
+  apply();
   /* 两种排法 */
   const views = [...document.querySelectorAll<HTMLButtonElement>('[data-view]')];
   views.forEach(b => b.addEventListener('click', () => {
@@ -137,12 +149,14 @@ const max = STATS.totals[top[0].id];
   .find:focus-within { border-color: var(--cinnabar); }
   .find input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: 400 16px/1.4 var(--serif); letter-spacing: .06em; color: var(--ink); }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .fam { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 3px; font: 400 18px/1 var(--title); color: var(--c, var(--ink)); box-shadow: inset 0 0 0 1.5px currentColor; opacity: .7; transition: background .3s, color .3s, opacity .3s; }
+  .fam { position: relative; display: grid; place-items: center; flex: none; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 0; font: 400 16px/1.3 var(--title); color: var(--ink-2); background: transparent; transition: border-color .3s, color .3s; white-space: nowrap; }
+  .fam::after { content: ''; position: absolute; left: 17%; right: 12%; bottom: 1px; height: 3px; border-bottom: 1.7px solid var(--cinnabar); border-radius: 18% 64% 38% 57%; transform: rotate(-2deg); opacity: 0; pointer-events: none; }
   .fam:hover { opacity: 1; }
-  .fam[aria-pressed="true"] { opacity: 1; color: #fff6ea; background: var(--c, var(--ink)); box-shadow: none; }
+  .fam[aria-pressed="true"] { color: var(--cinnabar); border-color: var(--line-2); }
+  .fam[aria-pressed="true"]::after { opacity: 1; }
   .view { margin-left: auto; display: inline-flex; gap: 22px; }
   .view button { position: relative; padding: 6px 2px; font: 400 17px/1 var(--title); letter-spacing: .2em; color: var(--ink-3); transition: color .3s; }
-  .view button::after { content: ''; position: absolute; right: -9px; top: 0; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--cinnabar); opacity: 0; transition: opacity .3s; }
+  .view button::after { content: ''; position: absolute; right: -9px; top: 0; width: 7px; height: 8px; border-radius: 42% 58% 47% 53% / 56% 43% 57% 44%; border: 1.4px solid var(--cinnabar); border-right-width: .8px; transform: rotate(-13deg); opacity: 0; transition: opacity .3s; pointer-events: none; }
   .view button.on { color: var(--ink); }
   .view button.on::after { opacity: 1; }
   .count { margin: 12px 0 0; font: 400 16px/1 var(--title); letter-spacing: .2em; color: var(--ink-3); }
@@ -181,7 +195,7 @@ const max = STATS.totals[top[0].id];
   .r-v { font: 400 14px/1 var(--title); color: var(--ink-2); text-align: right; letter-spacing: .04em; }
   @media (max-width: 640px) {
     .view { margin-left: 0; }
-    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 0 var(--gutter); }
+    .chips { flex-wrap: nowrap; max-width: calc(100% + 2 * var(--gutter)); overflow-x: auto; scrollbar-width: thin; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter) 8px; }
     .grid { grid-template-columns: 1fr 1fr; gap: 6px; }
     .pc a { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px; }
     .pc-meta :global(.spark) { width: 72px; }

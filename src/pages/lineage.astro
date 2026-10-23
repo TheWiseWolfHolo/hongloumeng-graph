@@ -21,6 +21,8 @@ const f = (n: number) => n.toFixed(1);
     </div>
   </div>
 
+  <div class="lineage-scope spoil" data-ch="121">
+  <div class="spoil-body">
   <div class="tree-shell">
     <div class="tree-tools" role="toolbar" aria-label="世系图操作">
       <button type="button" data-jump="ning">宁国府</button>
@@ -35,7 +37,7 @@ const f = (n: number) => n.toFixed(1);
         <div class="tlabels" aria-hidden="true">
           {L.bands.map(b => <div class="tlab" data-mid={b.mid}><i>{b.nth}</i><b>{b.ch}</b><span>{b.note}</span></div>)}
         </div>
-        <svg class="tsvg" viewBox={`0 0 ${L.W} ${L.H}`} width={L.W} height={L.H} role="img" aria-label="宁荣二府世系图">
+        <svg class="tsvg" viewBox={`0 0 ${L.W} ${L.H}`} width={L.W} height={L.H} role="group" aria-label="宁荣二府世系图">
           {L.bands.map(b => <rect class="gen-band" x="0" y={b.y} width={L.W} height={b.h} />)}
           <g>
             {L.houses.map(h => <text class="tr-house" x={h.x} y={h.y} style={`--c:var(--g-${h.grp})`}>{h.name}</text>)}
@@ -95,6 +97,8 @@ const f = (n: number) => n.toFixed(1);
       ))}
     </div>
   </section>
+  </div>
+  </div>
 </Base>
 
 <script>
@@ -111,6 +115,7 @@ const f = (n: number) => n.toFixed(1);
     labels.style.height = Math.round(H * scale) + 'px';
     labels.querySelectorAll<HTMLElement>('.tlab').forEach(el => { el.style.top = Math.round(+el.dataset.mid! * scale - el.offsetHeight / 2) + 'px'; });
   }
+  new ResizeObserver(() => { if (box.clientWidth) apply(); }).observe(box);
   /* 桌面上整幅放得下就整幅显示；手机上按可读的大小显示，先停在宝玉那一带 */
   const f0 = fit();
   scale = f0 >= .78 ? f0 : .8;
@@ -158,7 +163,7 @@ const f = (n: number) => n.toFixed(1);
   .lg-x { color: var(--ink-4); }
   .legend span { display: inline-flex; align-items: center; gap: 8px; }
   .tree-shell { position: relative; margin: 22px auto 0; max-width: calc(var(--wrap) + 160px); padding: 0 var(--gutter); }
-  .tree-tools { position: absolute; top: 14px; right: calc(var(--gutter) + 16px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px 6px; background: color-mix(in srgb, var(--card) 94%, transparent); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .tree-tools { position: absolute; top: 14px; right: calc(var(--gutter) + 16px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px 6px; background: var(--card); border-block: 1px solid var(--line-2); }
   .tree-tools button { height: 32px; min-width: 32px; padding: 0 10px; font: 400 16px/1 var(--title); letter-spacing: .1em; color: var(--ink-2); transition: color .3s; }
   .tree-tools button:hover { color: var(--cinnabar); }
   .tree-tools .sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
@@ -171,7 +176,7 @@ const f = (n: number) => n.toFixed(1);
   .tlab i { font: normal 400 13px/1.4 var(--title); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
   .tlab b { font: 400 38px/1.2 var(--title); color: var(--cinnabar); }
   .tlab span { font: 400 12px/1.5 var(--serif); color: var(--ink-3); padding: 0 10px; }
-  .tsvg { display: block; margin: 0 auto; }
+  .tsvg { display: block; max-width: none; margin: 0 auto; }
   .tn { cursor: pointer; outline: none; }
   .tn.xx { cursor: default; }
   .tn text { dominant-baseline: central; text-anchor: middle; }
@@ -216,7 +221,7 @@ const f = (n: number) => n.toFixed(1);
   .clan-g .ch a { font: 400 13px/1.6 var(--title); color: var(--cinnabar); transition: color .3s; }
   .clan-g .ch a:hover { color: var(--ink); }
   .gens-h { display: flex; align-items: center; gap: 14px; font: 400 30px/1.2 var(--title); letter-spacing: .24em; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
-  .gens-h::before { content: ''; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.6px var(--cinnabar); }
+  .gens-h::before { content: ''; width: 18px; height: 3px; background: var(--cinnabar); clip-path: polygon(0 40%, 100% 0, 94% 70%, 9% 100%); transform: rotate(-5deg); }
   .gens ol { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
   .gens li { padding: 18px 18px 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 6px; }
   .gens li b { font: 400 40px/1 var(--title); color: var(--cinnabar); }

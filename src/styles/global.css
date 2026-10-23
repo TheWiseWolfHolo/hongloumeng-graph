@@ -179,7 +179,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   gap: 6px;
   padding: 4px 12px;
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  border-radius: 1px;
   font: 500 13.5px/1.5 var(--label);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--card) 70%, transparent);
@@ -188,7 +188,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .chip:hover { border-color: var(--cinnabar); color: var(--cinnabar); }
 .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--ink-3)); }
-.chip[aria-pressed="true"], .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip[aria-pressed="true"], .chip.on { background: var(--cinnabar-soft); color: var(--cinnabar); border-color: transparent; box-shadow: inset 0 -1.5px 0 var(--cinnabar); }
 a.person {
   color: inherit;
   background-image: linear-gradient(var(--pc, var(--cinnabar)), var(--pc, var(--cinnabar)));
@@ -209,14 +209,15 @@ a.person:hover { color: var(--pc, var(--cinnabar)); background-size: 100% 2px; }
   gap: 8px;
   height: 42px;
   padding: 0 20px;
-  border-radius: 999px;
+  border-radius: 2px;
   font: 600 14.5px/1 var(--label);
   letter-spacing: .04em;
-  background: var(--ink);
+  background: var(--cinnabar);
   color: var(--paper);
-  transition: transform .25s var(--ease), background .2s, box-shadow .25s;
+  box-shadow: inset 0 0 0 2px var(--cinnabar), inset 0 0 0 3px color-mix(in srgb, var(--paper) 40%, transparent);
+  transition: background .2s, box-shadow .25s;
 }
-.btn:hover { background: var(--cinnabar); transform: translateY(-1px); box-shadow: 0 10px 24px -12px var(--cinnabar); }
+.btn:hover { background: var(--cinnabar-2); box-shadow: inset 0 0 0 2px var(--cinnabar-2), inset 0 0 0 3px color-mix(in srgb, var(--paper) 55%, transparent); }
 .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
 .btn.ghost:hover { color: var(--cinnabar); box-shadow: inset 0 0 0 1px var(--cinnabar); }
 
@@ -311,18 +312,19 @@ a.person:hover { color: var(--pc, var(--cinnabar)); background-size: 100% 2px; }
 
 /* ---- 剧透遮挡：读到第几回之后的内容先收起 ---- */
 .spoil { position: relative; }
-html.guard .spoil.ahead > .spoil-body { filter: blur(6px); user-select: none; pointer-events: none; opacity: .7; }
+html.guard .spoil:not([data-guard-ready]) > .spoil-body { visibility: hidden; }
+html.guard .spoil.ahead > .spoil-body { display: none; }
 html.guard .spoil.ahead > .spoil-tip { display: flex; }
 .spoil-tip {
   display: none;
-  position: absolute;
-  inset: 0;
-  z-index: 2;
+  min-height: 52px;
   align-items: center;
   justify-content: center;
   font: 600 13px/1.4 var(--label);
   color: var(--ink-2);
   text-align: center;
-  padding: 8px;
+  padding: 12px 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .spoil-tip button { color: var(--cinnabar); text-decoration: underline; text-underline-offset: 3px; margin-left: 6px; font-weight: 600; }
