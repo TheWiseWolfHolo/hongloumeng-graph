@@ -5,7 +5,7 @@
 import { Converter } from 'opencc-js';
 import { loadChapter, type Note } from './render-text.ts';
 
-/* 原文库是简体，刻本页面转成繁体；转换逐字对应，长度不变，脂批挂的位置不受影响 */
+/* 原文库是简体，刻本页面转成繁体；转换逐字对应，长度不变，批语挂的位置不受影响 */
 const s2t = Converter({ from: 'cn', to: 't' });
 export const toTrad = (s: string) => { const t = s2t(s); return t.length === s.length ? t : s; };
 

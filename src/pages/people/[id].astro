@@ -96,7 +96,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
           )}
           <dl class="facts ink-in" style="--d:.5s">
             {(total > 0 || sequelCount > 0) && <div><dt>前八十回提到</dt><dd><b>{cn(total)}</b>次{sequelCount > 0 && <small class="xu-n">续书另有{cn(sequelCount)}次</small>}</dd></div>}
-            {zhi && <div><dt>脂批点到</dt><dd><b>{cn(zhi.total)}</b>次</dd></div>}
+            {zhi && <div><dt>批语点到</dt><dd><b>{cn(zhi.total)}</b>次</dd></div>}
             {span && <div><dt>出场</dt><dd><a href={`/chapters/${span[0]}/`}>{huiName(span[0])}</a>{span[1] !== span[0] && <> 至 <a href={`/chapters/${span[1]}/`}>{huiName(span[1])}</a></>}</dd></div>}
             {ties.length > 0 && <div><dt>亲友</dt><dd><b>{cn(ties.length)}</b>人</dd></div>}
             {homes.length > 0 && <div><dt>园中住处</dt><dd>{homes.map(h => <a href={`/garden/#${h.id}`}>{h.name}</a>)}</dd></div>}
@@ -176,7 +176,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
 
     {zhi && (
       <section class="wrap block">
-        <div class="block-head reveal"><h2>脂批</h2></div>
+        <div class="block-head reveal"><h2>批语</h2></div>
         <ol class="zhi">
           {zhi.top.map(x => (
             <li class:list={['zhi-item reveal', { late: x.src.length > 0 && x.src.every(s => ['蒙府', '戚序', '梦稿', '列藏', '甲辰', '舒序'].includes(s)) }]}>
@@ -224,7 +224,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
             )}
             {p.fate && (
               <div class="end-row fate spoil" data-ch="81">
-                <div class="spoil-body"><h3>原稿原意<small>据判词、伏笔与脂批</small></h3><p>{p.fate}</p></div>
+                <div class="spoil-body"><h3>原稿原意<small>据判词、伏笔与批语</small></h3><p>{p.fate}</p></div>
               </div>
             )}
             {p.xu && (
@@ -302,7 +302,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
   .verse-lines { writing-mode: vertical-rl; padding: 18px 0; font: 400 calc(var(--u) * .5)/var(--u) var(--title); letter-spacing: .36em; color: var(--ink); box-shadow: inset 1px 0 0 color-mix(in srgb, var(--cinnabar) 30%, transparent), inset -1px 0 0 color-mix(in srgb, var(--cinnabar) 30%, transparent); background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), color-mix(in srgb, var(--cinnabar) 22%, transparent) calc(var(--u) - 1px) var(--u)); background-position: right; }
   .verse-lines span { display: block; }
   .verse-side { display: grid; gap: 14px; align-content: start; font-size: 15.5px; line-height: 1.9; color: var(--ink-2); }
-  .verse-side p { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+  .verse-side > p { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
   .verse-side b { font: 400 17px/1.8 var(--title); color: var(--cinnabar); }
   .gloss summary, .ending summary { cursor: pointer; list-style: none; }
   .gloss summary { font: 400 15px/1.6 var(--title); color: var(--cinnabar); letter-spacing: .14em; padding-left: 40px; }
@@ -359,7 +359,7 @@ const desc = `${p.id}，${p.title}。${p.bio}`;
   .end-row.xu { box-shadow: inset 1px 0 0 var(--line-2); }
   .end-row.xu p { font-size: 15.5px; color: var(--ink-3); }
 
-  /* 脂批：朱笔小楷那样的红字，抄本出处写在上面 */
+  /* 批语：朱笔小楷那样的红字，抄本出处写在上面 */
   .zhi { list-style: none; margin: 0; padding: 0; columns: 3 300px; column-gap: 18px; }
   .zhi-item { position: relative; break-inside: avoid; margin-bottom: 18px; padding: 20px 22px; background: color-mix(in srgb, var(--cinnabar) 3%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cinnabar) 16%, var(--line)); }
   .zhi-item.late { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }

@@ -7,7 +7,7 @@ import { TWELVE, TWELVE_MORE, byId, noteLabel, cn } from '../lib/data.ts';
 import { portraitImage } from '../lib/portraits.ts';
 import { loadChapter, type Block } from '../lib/render-text.ts';
 
-/* 第五回原文：判词前后挂着的脂批，以及十二支曲的曲文 */
+/* 第五回原文：判词前后挂着的批语，以及十二支曲的曲文 */
 const ch5 = loadChapter(5);
 const plain = (s: string) => s.replace(/[^一-龥]/g, '');
 const overlap = (a: string, b: string) => { const set = new Set(a); let n = 0; for (const c of b) if (set.has(c)) n++; return n / Math.max(1, b.length); };

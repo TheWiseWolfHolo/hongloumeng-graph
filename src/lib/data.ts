@@ -80,14 +80,24 @@ export const STATS = statsJson as {
   companions: Record<string, [string, number][]>;
   topPairs: [string, string, number][];
 };
-/* 脂批里点到某人的批语，挑过的十来条 */
+/* 批语里点到某人的，挑过的十来条 */
 export interface ZhiNote { n: number; block: number; src: string[]; kind: string; s: string; ctx: string }
 export const NOTES = notesJson as Record<string, { total: number; top: ZhiNote[] }>;
 /* 批语出处的全称 */
 export const SRC_NAME: Record<string, string> = { 甲戌: '甲戌本', 庚辰: '庚辰本', 己卯: '己卯本', 蒙府: '蒙府本', 戚序: '戚序本', 靖藏: '靖藏本', 梦稿: '梦稿本', 列藏: '列藏本', 甲辰: '甲辰本', 舒序: '舒序本' };
-export const noteLabel = (x: { src: string[]; kind: string }) => {
+/* 批者：批语末尾署了名的才认，正文里提到某人不算。脂砚、畸笏的几种署法归成一个名字 */
+const SIGNERS: [RegExp, string][] = [[/脂砚斋?/, '脂砚斋'], [/畸笏(?:叟|老人)?/, '畸笏叟'], [/梅溪/, '梅溪'], [/松斋/, '松斋'], [/棠村/, '棠村'], [/绮园/, '绮园'], [/立松轩/, '立松轩'], [/鉴堂/, '鉴堂'], [/玉蓝坡/, '玉蓝坡']];
+const SIGN_RE = /(?:^|[。，！？；」』）\s]|[春夏秋冬])(脂砚斋?|畸笏(?:叟|老人)?|梅溪|松斋|棠村|绮园|立松轩|鉴堂|玉蓝坡)(?=[。！]|\s*$)/;
+export function signerOf(s: string) {
+  const m = SIGN_RE.exec(s);
+  return m ? SIGNERS.find(([re]) => re.test(m[1]))![1] : '';
+}
+/* 批语的标签：哪个本子、什么位置，署了名的再写批者 */
+export const noteLabel = (x: { src: string[]; kind: string; s?: string }) => {
   const kind = x.kind === '回前' ? '回前批' : x.kind === '回后' ? '回后批' : x.kind;
-  return x.src.length ? `${x.src.join('、')}${kind}` : kind === '批' ? '脂批' : kind;
+  const base = x.src.length ? `${x.src.join('、')}${kind}` : kind;
+  const who = x.s ? signerOf(x.s) : '';
+  return who ? `${base}　${who}` : base;
 };
 
 /* 某回里提到最多的人 */

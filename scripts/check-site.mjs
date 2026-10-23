@@ -9,7 +9,7 @@ if (!existsSync(dist)) { console.error('没有 dist，先跑 astro build'); proc
 
 const MUST = {
   'index.html': ['红楼梦', '/fonts/fonts.css'],
-  'graph/index.html': ['关系星图'],
+  'graph/index.html': ['关系总图'],
   'garden/index.html': ['大观园', '题对额'],
   'timeline/index.html': ['大事眉批'],
   'twelve/index.html': ['金陵十二钗'],

@@ -1,4 +1,4 @@
-/* 把一回原文排成 HTML：段落、诗词、题注，正文里的人名换成链接，脂批按位置嵌进去 */
+/* 把一回原文排成 HTML：段落、诗词、题注，正文里的人名换成链接，批语按位置嵌进去 */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { findNames } from './names.ts';
@@ -70,7 +70,7 @@ export function renderChapter(c: ChapterText) {
     }
     else if (b.t === 'center') html += `<p class="center" id="${id}">${inline(b.s, c.n)}</p>`;
     else if (b.t === 'pi') {
-      const label = noteLabel({ src: b.src ?? [], kind: b.kind ?? '批' });
+      const label = noteLabel({ src: b.src ?? [], kind: b.kind ?? '批', s: b.s });
       const where = b.kind === '回前' ? ' zb-front' : b.kind === '回后' ? ' zb-back' : '';
       html += `<aside class="zb${where}${lateClass(b.src ?? [])}" id="${id}"><b class="zb-label">${esc(label)}</b><div class="zb-text">${noteText(b.s)}</div></aside>`;
     }

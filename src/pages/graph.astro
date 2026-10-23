@@ -77,6 +77,11 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
       </svg>
     </div>
     <aside class="panel" data-panel hidden aria-live="polite"></aside>
+    <div class="zoomer" role="group" aria-label="缩放">
+      <button type="button" data-zoom="1" aria-label="放大">大</button>
+      <button type="button" data-zoom="-1" aria-label="缩小">小</button>
+      <button type="button" data-zoom="0" aria-label="看全幅">全</button>
+    </div>
   </div>
   <script is:inline type="application/json" id="g-data" set:html={JSON.stringify(client)} />
 </Base>
@@ -94,6 +99,54 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ties = (id: string) => D.t[id] ?? [];
   const touches = (p: SVGPathElement, id: string) => p.dataset.a === id || p.dataset.b === id;
+
+  /* ---------- 缩放：素绢放大了看细处，按住拖着走 ---------- */
+  const silk = document.querySelector<SVGSVGElement>('[data-silk]')!;
+  let zoom = 1, dragged = false;
+  const setZoom = (z: number, cx = frame.clientWidth / 2, cy = innerHeight / 2) => {
+    z = Math.max(1, Math.min(3.2, z));
+    if (Math.abs(z - zoom) < .001) return;
+    /* 让鼠标底下那一点在缩放前后不动 */
+    const r = silk.getBoundingClientRect();
+    const fx = (cx - r.left) / r.width, fy = (cy - r.top) / r.height;
+    zoom = z;
+    silk.style.width = `${z * 100}%`;
+    silk.style.minWidth = `${1080 * z}px`;
+    const r2 = silk.getBoundingClientRect();
+    frame.scrollLeft += r2.left + fx * r2.width - cx;
+    scrollBy({ top: r2.top + fy * r2.height - cy, behavior: 'instant' as ScrollBehavior });
+    frame.classList.toggle('zoomed', z > 1);
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach(b => b.addEventListener('click', () => {
+    const d = +b.dataset.zoom!;
+    setZoom(d ? zoom * (d > 0 ? 1.4 : 1 / 1.4) : 1);
+  }));
+  frame.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setZoom(zoom * Math.exp(-e.deltaY * .0025), e.clientX, e.clientY);
+  }, { passive: false });
+  let pan: { x: number; y: number; sl: number; id: number } | null = null;
+  frame.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.pointerType === 'touch' || (e.target as Element).closest('.slip, .panel')) return;
+    pan = { x: e.clientX, y: e.clientY, sl: frame.scrollLeft, id: e.pointerId };
+    dragged = false;
+  });
+  addEventListener('pointermove', e => {
+    if (!pan || e.pointerId !== pan.id) return;
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+    if (!dragged && Math.hypot(dx, dy) < 5) return;
+    if (!dragged) { dragged = true; frame.classList.add('panning'); }
+    frame.scrollLeft = pan.sl - dx;
+    scrollBy({ top: -(e.movementY || 0), behavior: 'instant' as ScrollBehavior });
+  });
+  addEventListener('pointerup', () => {
+    if (!pan) return;
+    pan = null;
+    frame.classList.remove('panning');
+    /* 拖完那一下的点击不算 */
+    setTimeout(() => { dragged = false; }, 0);
+  });
 
   /* ---------- 线轴：哪几种线露在外面 ---------- */
   const shown = new Set(['b', 'm', 'lv', 'my']);
@@ -183,7 +236,10 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     panel.hidden = true;
     if (resetUrl) { const url = new URL(location.href); url.search = ''; history.replaceState(null, '', url); }
   }
-  frame.addEventListener('click', () => { if (focusId || frame.classList.contains('paired')) clear(); });
+  frame.addEventListener('click', e => {
+    if (dragged) { e.stopPropagation(); return; }
+    if (focusId || frame.classList.contains('paired')) clear();
+  });
   addEventListener('keydown', e => { if (e.key === 'Escape') { if (pairOn) setPair(false); clear(); } });
 
   /* ---------- 旁边的笺：这个人和他的亲友 ---------- */
@@ -311,7 +367,13 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .spool[aria-pressed="true"] { color: var(--ink); }
 
   /* 素绢挂在纸上，四周留白 */
-  .frame { margin: 36px auto 0; width: min(100% - 2 * var(--gutter), 1560px); overflow-x: auto; overscroll-behavior-x: contain; }
+  .frame { margin: 36px auto 0; width: min(100% - 2 * var(--gutter), 1560px); overflow-x: auto; overscroll-behavior-x: contain; cursor: grab; }
+  .frame.panning { cursor: grabbing; }
+  .frame.panning :global(*) { cursor: grabbing !important; }
+  .zoomer { position: fixed; z-index: 30; right: max(16px, calc(var(--gutter) - 8px)); bottom: 24px; display: grid; background: color-mix(in srgb, var(--card) 94%, transparent); box-shadow: inset 0 0 0 1px var(--line-2), 0 12px 24px -18px rgb(40 26 10 / .5); }
+  .zoomer button { width: 40px; height: 40px; font: 400 17px/1 var(--title); color: var(--ink-2); transition: color .2s, background .2s; }
+  .zoomer button + button { box-shadow: inset 0 1px 0 var(--line); }
+  .zoomer button:hover { color: var(--cinnabar); background: color-mix(in srgb, var(--cinnabar) 6%, transparent); }
   .silk { display: block; width: 100%; min-width: 1080px; height: auto; box-shadow: 0 0 0 1px rgb(90 66 30 / .18), 0 30px 60px -40px rgb(40 26 10 / .55); user-select: none; -webkit-user-select: none; }
 
   .cloud { color: #a99a7e; opacity: .35; }
