@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "cn-font-split": "7.4.3",
-    "opencc-js": "1.4.2",
+    "opencc-js": "^1.0.5",
     "playwright-core": "1.64.1"
   },
   "allowScripts": {

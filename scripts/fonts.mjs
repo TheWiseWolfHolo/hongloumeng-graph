@@ -38,6 +38,13 @@ function collect(dir, set) {
 }
 const chars = new Set();
 collect(join(root, 'src'), chars);
+/* 首页刻本页把原文转成繁体（src/lib/kanben.ts），转出来的字也要收 */
+{
+  const { Converter } = await import('opencc-js');
+  const s2t = Converter({ from: 'cn', to: 't' });
+  const dir = join(root, 'src', 'data', 'text');
+  for (const name of readdirSync(dir)) for (const ch of s2t(readFileSync(join(dir, name), 'utf8'))) chars.add(ch);
+}
 /* 常用标点和 ASCII 全收，搜索框里也可能输入 */
 for (let c = 0x20; c < 0x7f; c++) chars.add(String.fromCodePoint(c));
 for (const ch of '，。、；：？！“”‘’（）《》〈〉【】—…·「」『』〔〕｜～０１２３４５６７８９') chars.add(ch);
@@ -64,13 +71,18 @@ writeFileSync(textFile, text);
 for (const f of FONTS) {
   const out = join(outRoot, f.key);
   const stamp = join(out, '.stamp');
-  const want = `${f.file}|${textHash}|${f.hanOnly ? 'han' : 'all'}|${f.clean ? 'clean2' : ''}`;
+  const want = `${f.file}|${textHash}|${f.hanOnly ? 'han' : 'all'}|${f.clean ? 'clean3' : ''}`;
   if (!force && existsSync(stamp) && readFileSync(stamp, 'utf8') === want) { console.log(f.key, '没有新字，跳过'); continue; }
   let src = await source(f);
-  /* 扫描字形里带着邻字残笔的，先洗一遍 */
+  /* 扫描字形里带着邻字残笔的先洗掉，大小不匀的按配套的规整字体统一 */
   if (f.clean) {
     const c = join(cache, f.key + '.clean.ttf');
-    if (!existsSync(c)) execFileSync('python', [join(root, f.clean), src, c], { stdio: 'inherit' });
+    if (!existsSync(c)) {
+      const rel = 'https://github.com/LingDong-/qiji-font/releases/download/0.0.4/';
+      const pure = await source({ file: 'qiji.ttf', url: rel + 'qiji.ttf' });
+      const ref = await source({ file: 'qiji-fallback.ttf', url: rel + 'qiji-fallback.ttf' });
+      execFileSync('python', [join(root, f.clean), src, c, pure, ref], { stdio: 'inherit' });
+    }
     src = c;
   }
   const sub = join(cache, `${f.key}.subset.ttf`);

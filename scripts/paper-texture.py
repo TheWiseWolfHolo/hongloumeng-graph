@@ -1,4 +1,4 @@
-# 生成一张可平铺的竹纸纹理：大片的深浅不匀、细长的纤维、零星的纸屑。
+# 生成一张可平铺的竹纸纹理：极淡的深浅、细长的纤维、帘纹。纸屑和斑点由页面按页随机加，每页不同。
 # 输出接近白色的灰度图，页面上用 multiply 叠在纸色上，深色模式也不受影响。
 # 用法 python scripts/paper-texture.py public/textures/zhuzhi.webp
 import random
@@ -60,7 +60,7 @@ lian = lian.filter(ImageFilter.GaussianBlur(.8))
 # 纸屑与小斑点
 spk = Image.new('L', (S * 3, S * 3), 0)
 ds = ImageDraw.Draw(spk)
-for _ in range(40):
+for _ in range(0):
     x, y, r = rnd.uniform(0, S), rnd.uniform(0, S), rnd.uniform(.5, 1.6)
     v = rnd.randint(18, 50)
     for ox in (0, S, 2 * S):
@@ -70,7 +70,7 @@ spk = spk.crop((S, S, 2 * S, 2 * S)).filter(ImageFilter.GaussianBlur(.6))
 
 # 合成：以 255 为白，往下减
 img = Image.new('L', (S, S), 255)
-img = ImageChops.subtract(img, ImageChops.invert(base).point(lambda v: max(0, v - 112) * .45))
+img = ImageChops.subtract(img, ImageChops.invert(base).point(lambda v: max(0, v - 118) * .16))
 img = ImageChops.subtract(img, fib)
 img = ImageChops.subtract(img, lian)
 img = ImageChops.subtract(img, spk)

@@ -1,0 +1,65 @@
+---
+/* 首页那本线装书。每一叶是一张纸对折，折口在书口，所以翻开以后中缝是装订的一边，
+   版心各剩一半在左右两页的外缘。页面由 src/client/kanben 画在 canvas 上，翻页用 WebGL 卷纸。 */
+import { CHAPTERS } from '../lib/data.ts';
+const titles = CHAPTERS.map(c => [c.cn, c.title.join('　')]);
+---
+<div class="kb-wrap" data-kb>
+  <span class="kb-u" data-kb-u aria-hidden="true"></span>
+  <div class="kb">
+    <div class="kb-board" aria-hidden="true"></div>
+    <div class="kb-spread" data-kb-spread>
+      <a class="kb-block kb-l" data-kb-l href="/chapters/1/" tabindex="-1" aria-hidden="true" draggable="false"><span class="kb-edge"></span><canvas data-kb-cl></canvas></a>
+      <a class="kb-block kb-r" data-kb-r href="/chapters/1/" tabindex="-1" aria-hidden="true" draggable="false"><span class="kb-edge"></span><canvas data-kb-cr></canvas></a>
+      <span class="kb-crease" aria-hidden="true"></span>
+      <canvas class="kb-gl" data-kb-gl aria-hidden="true"></canvas>
+    </div>
+  </div>
+  <div class="kb-cap">
+    <a class="kb-where" data-kb-link href="/chapters/1/"><small data-kb-label>今日一回</small><b data-kb-cn>第一回</b><span data-kb-title></span></a>
+    <button type="button" class="kb-turn" data-kb-turn>隨手翻</button>
+  </div>
+  <script is:inline type="application/json" data-kb-titles set:html={JSON.stringify(titles)} />
+</div>
+
+<script>
+  import { mountBook } from '../client/kanben/book.ts';
+  const root = document.querySelector<HTMLElement>('[data-kb]');
+  if (root) mountBook(root);
+</script>
+
+<style>
+  .kb-wrap { overflow-x: clip; overflow-clip-margin: 0; width: 100%; --pw: 340px; --ph: 640px; --tl: 6; --tr: 6; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+  /* 行宽 u：脚本量它来定版面大小 */
+  .kb-u { position: absolute; width: clamp(24px, 3vw, 36px); height: 0; visibility: hidden; }
+  .kb { position: relative; padding: calc(var(--ph) * .035) calc(var(--pw) * .07) calc(var(--ph) * .06); }
+  /* 底下摊开的磁青纸书衣 */
+  .kb-board { position: absolute; inset: 0; border-radius: 3px; background-color: #27324c; background-image: url(/textures/zhuzhi.webp), linear-gradient(90deg, rgb(255 255 255 / .06), transparent 22%, transparent 78%, rgb(0 0 0 / .12)); background-blend-mode: multiply, normal; background-size: 260px, auto; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .05), inset 0 -3px 0 rgb(0 0 0 / .25), 0 42px 60px -40px rgb(20 12 4 / .75), 0 3px 8px rgb(20 12 4 / .28); }
+  .kb-spread { position: relative; display: flex; }
+  .kb-block { position: relative; display: block; width: var(--pw); height: var(--ph); cursor: grab; touch-action: pan-y; -webkit-user-drag: none; user-select: none; }
+  .kb-wrap.dragging .kb-block { cursor: grabbing; }
+  .kb-block canvas { position: relative; display: block; z-index: 1; transition: opacity .26s; }
+  /* 书叶摞起来的厚度：整块往书口和书根方向错出一点，露出纸边。纸边比页面旧，带极细的纹 */
+  .kb-edge { position: absolute; inset: 0; z-index: 0; border-radius: 0 0 2px 2px; background-color: #d9c79c; background-image: repeating-linear-gradient(0deg, rgb(120 90 40 / .16) 0 .6px, transparent .6px 1.9px), linear-gradient(rgb(255 250 235 / .25), rgb(100 70 30 / .12)); transition: transform .5s cubic-bezier(.3, .1, .2, 1), box-shadow .5s; }
+  .kb-l .kb-edge { transform: translate(calc(var(--tl) * -.32px), calc(var(--tl) * .62px)); box-shadow: calc(var(--tl) * -.2px) calc(var(--tl) * .5px + 4px) 10px -4px rgb(10 6 2 / .45); }
+  .kb-r .kb-edge { transform: translate(calc(var(--tr) * .32px), calc(var(--tr) * .62px)); box-shadow: calc(var(--tr) * .2px) calc(var(--tr) * .5px + 4px) 10px -4px rgb(10 6 2 / .45); }
+  /* 中缝：两页在这里压进书脊 */
+  .kb-crease { position: absolute; z-index: 2; top: 0; bottom: 0; left: var(--pw); width: 1px; translate: -.5px 0; background: linear-gradient(rgb(60 38 10 / .1), rgb(60 38 10 / .35) 12%, rgb(60 38 10 / .35) 88%, rgb(60 38 10 / .1)); pointer-events: none; }
+  .kb-gl { position: absolute; z-index: 3; pointer-events: none; }
+  .kb-wrap.fade .kb-block canvas { opacity: 0; }
+
+  .kb-cap { display: flex; align-items: baseline; gap: 14px 40px; flex-wrap: wrap; justify-content: center; }
+  .kb-where { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; justify-content: center; font: 400 17px/1.5 var(--title); letter-spacing: .12em; color: var(--ink-2); transition: color .3s; }
+  .kb-where small { font-size: 14px; letter-spacing: .3em; color: var(--ink-3); }
+  .kb-where b { font-weight: 400; color: var(--cinnabar); }
+  .kb-where:hover { color: var(--ink); }
+  .kb-turn { font: 400 17px/1 var(--title); letter-spacing: .4em; color: var(--ink-3); padding: 8px 4px 8px 10px; box-shadow: inset 0 -1px 0 var(--line-2); transition: color .3s, box-shadow .3s; }
+  .kb-turn:hover { color: var(--cinnabar); box-shadow: inset 0 -1px 0 var(--cinnabar); }
+
+  /* 手机上只摊右页 */
+  @media (max-width: 760px) {
+    .kb-u { width: calc((100vw - 2 * var(--gutter) - 48px) / 9.7); }
+    .kb-l, .kb-crease, .kb-gl { display: none; }
+    .kb-block { cursor: pointer; }
+  }
+</style>

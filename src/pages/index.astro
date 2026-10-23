@@ -9,8 +9,8 @@ import imgRelations from '../assets/paintings/door-relations.webp';
 import imgGarden from '../assets/paintings/door-garden.webp';
 import imgChapters from '../assets/paintings/door-chapters.webp';
 import InkRiver from '../components/InkRiver.astro';
-import { PEOPLE, EDGES, CHAPTERS, TOTAL_CHARS, TOTAL_NOTES, STATS, byId, verseOf, huiName } from '../lib/data.ts';
-import { FAMOUS_NOTES } from '../data/famous-notes.ts';
+import Kanben from '../components/Kanben.astro';
+import { byId, verseOf } from '../lib/data.ts';
 import { portraitImage } from '../lib/portraits.ts';
 
 const TWELVE_ORDER = ['林黛玉', '薛宝钗', '贾元春', '贾探春', '史湘云', '妙玉', '贾迎春', '贾惜春', '王熙凤', '巧姐', '李纨', '秦可卿', '香菱', '晴雯', '袭人'];
@@ -28,7 +28,6 @@ const DOORS = [
   { href: '/garden/', title: '大觀園', img: imgGarden, line: '天上人间诸景备' },
   { href: '/chapters/', title: '一百二十回', img: imgChapters, line: '无材可去补苍天' }
 ];
-const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary]);
 ---
 <Base section="home" bodyClass="pg-home">
   <section class="hero">
@@ -69,30 +68,7 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   </section>
 
   <section class="section wrap spread-wrap reveal">
-    <div class="book" data-book>
-      <div class="ye" data-spread>
-        <div class="half hui" data-half="hui">
-          <a class="hui-in" href="/chapters/1/" data-today-link>
-            <span class="juan">脂硯齋重評石頭記</span>
-            <span class="hui-cn" data-today-cn>第一回</span>
-            <span class="hui-t" data-today-title>{CHAPTERS[0].title.map(t => <span>{t}</span>)}</span>
-            <span class="hui-label" data-today-eyebrow>今日一回</span>
-          </a>
-        </div>
-        <div class="banxin" aria-hidden="true">
-          <span class="bx-name">石頭記</span>
-          <svg class="yuwei" viewBox="0 0 20 14"><path d="M0 0h20v14L10 7 0 14Z" /></svg>
-          <span class="bx-hui" data-bx-hui>第一回</span>
-          <svg class="yuwei down" viewBox="0 0 20 14"><path d="M0 14h20V0L10 7 0 0Z" /></svg>
-        </div>
-        <figure class="half zhu" data-half="zhu">
-          <figcaption><a href={`/chapters/${FAMOUS_NOTES[0].n}/`} data-zhu-link>{huiName(FAMOUS_NOTES[0].n)}　{FAMOUS_NOTES[0].label}</a></figcaption>
-          <blockquote class="zhu-s" data-zhu-s>{FAMOUS_NOTES[0].s}</blockquote>
-          <Seal text="脂硯" size={40} class="zhu-seal" />
-        </figure>
-      </div>
-    </div>
-    <button type="button" class="turn" data-turn>翻一頁</button>
+    <Kanben />
   </section>
 
   <section class="section twelve-sec">
@@ -119,102 +95,15 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
     <InkRiver />
   </section>
 
-  <script is:inline type="application/json" id="chapter-data" set:html={JSON.stringify(chapterData)} />
-  <script is:inline type="application/json" id="zhu-data" set:html={JSON.stringify(FAMOUS_NOTES.map(x => ({ n: x.n, label: x.label, s: x.s, hui: huiName(x.n) })))} />
 </Base>
 
 <script>
-  /* 翻开的书：一叶古书，右半叶是今日一回（或者接着上次读），左半叶是一则朱批，按日子轮换。
-     “翻一页”时先把新字形取回来，再让右半叶像纸一样翻过去，新的两半叶在底下现出来；字形没到之前不换字，免得先用别的字体排一遍再跳回来。 */
-  const data: [number, string, string, string][] = JSON.parse(document.getElementById('chapter-data')!.textContent!);
-  const notes: { n: number; label: string; s: string; hui: string }[] = JSON.parse(document.getElementById('zhu-data')!.textContent!);
-  const ye = document.querySelector<HTMLElement>('[data-spread]')!;
-  const book = document.querySelector<HTMLElement>('[data-book]')!;
-  const $s = <T extends Element = HTMLElement>(sel: string, root: ParentNode = ye) => root.querySelector<T>(sel)!;
-  const setHui = (n: number, label: string, root: ParentNode = ye) => {
-    const c = data[n - 1];
-    $s<HTMLAnchorElement>('[data-today-link]', root).href = `/chapters/${n}/`;
-    $s('[data-today-eyebrow]', root).textContent = label;
-    $s('[data-today-cn]', root).textContent = c[1];
-    $s('[data-today-title]', root).replaceChildren(...c[2].split('　').map(t => Object.assign(document.createElement('span'), { textContent: t })));
-  };
-  const setZhu = (i: number, root: ParentNode = ye) => {
-    const x = notes[i];
-    $s('[data-zhu-s]', root).textContent = x.s;
-    const a = $s<HTMLAnchorElement>('[data-zhu-link]', root);
-    a.textContent = `${x.hui}　${x.label}`;
-    a.href = `/chapters/${x.n}/`;
-  };
-  const setBx = (n: number) => { $s('[data-bx-hui]').textContent = data[n - 1][1]; };
-  let last: { n: number } | null = null;
-  try { last = JSON.parse(localStorage.getItem('hlm-last') || 'null'); } catch { /* 读不到就当没读过 */ }
-  const day = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5);
-  let zi = day % notes.length;
-  let hn = last?.n || (day % 120) + 1;
-  setHui(hn, last?.n ? '接着讀' : '今日一回');
-  setZhu(zi);
-  setBx(hn);
-
-  const turnBtn = document.querySelector<HTMLButtonElement>('[data-turn]')!;
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const wide = matchMedia('(min-width: 761px)');
-  let turning = false;
-  turnBtn.addEventListener('click', async () => {
-    if (turning) return;
-    turning = true;
-    const nz = (zi + 1) % notes.length;
-    let nh = 1 + Math.floor(Math.random() * 120);
-    if (nh === hn) nh = (nh % 120) + 1;
-    const text = notes[nz].s + data[nh - 1][1] + data[nh - 1][2] + notes[nz].hui + notes[nz].label + '隨手翻到';
-    /* 字形按需分包下载，等这些字都到了再翻 */
-    try { await Promise.race([document.fonts.load('20px "HLM Qiji"', text), new Promise(r => setTimeout(r, 1200))]); } catch { /* 取不到也照样翻 */ }
-
-    if (reducedMotion || !wide.matches) {
-      ye.classList.add('fade');
-      await new Promise(r => setTimeout(r, reducedMotion ? 0 : 260));
-      zi = nz; hn = nh;
-      setHui(hn, '隨手翻到'); setZhu(zi); setBx(hn);
-      ye.classList.remove('fade');
-      turning = false;
-      return;
-    }
-
-    /* 翻页的那张纸：正面是旧的右半叶，背面是新的左半叶 */
-    const hui = $s('[data-half="hui"]'), zhu = $s('[data-half="zhu"]');
-    const leaf = document.createElement('div');
-    leaf.className = 'turner';
-    const front = hui.cloneNode(true) as HTMLElement;
-    const back = zhu.cloneNode(true) as HTMLElement;
-    front.classList.add('face', 'front');
-    back.classList.add('face', 'back');
-    setZhu(nz, back);
-    leaf.append(front, back);
-    const bx = $s('.banxin');
-    leaf.style.left = hui.offsetLeft + 'px';
-    leaf.style.top = hui.offsetTop + 'px';
-    leaf.style.width = hui.offsetWidth + 'px';
-    leaf.style.height = hui.offsetHeight + 'px';
-    /* 以版心正中为轴 */
-    leaf.style.transformOrigin = `${-(hui.offsetLeft - bx.offsetLeft - bx.offsetWidth / 2)}px 50%`;
-    ye.append(leaf);
-    /* 底下的右半叶先换成新的，被翻页的纸盖着 */
-    zi = nz; hn = nh;
-    setHui(hn, '隨手翻到');
-    setBx(hn);
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    leaf.classList.add('go');
-    leaf.addEventListener('animationend', () => {
-      setZhu(zi);
-      leaf.remove();
-      turning = false;
-    }, { once: true });
-  });
-
   /* 十二钗画卷：鼠标可以按住拖 */
   const rail = document.querySelector<HTMLElement>('[data-rail]')!;
   let down = false, sx = 0, sl = 0, moved = false;
-  rail.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; down = true; moved = false; sx = e.clientX; sl = rail.scrollLeft; rail.classList.add('drag'); });
-  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx; if (Math.abs(dx) > 4) moved = true; rail.scrollLeft = sl - dx; });
+  /* 真拖动起来才挂 drag：按下就挂的话，链接在松手前失去指针事件，点击落不到链接上 */
+  rail.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; down = true; moved = false; sx = e.clientX; sl = rail.scrollLeft; });
+  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx; if (Math.abs(dx) > 4 && !moved) { moved = true; rail.classList.add('drag'); } if (moved) rail.scrollLeft = sl - dx; });
   addEventListener('pointerup', () => { down = false; rail.classList.remove('drag'); });
   rail.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; } }, true);
 </script>
@@ -281,56 +170,7 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   }
   @keyframes unfurl { from { --p: 0; } to { --p: 1; } }
 
-  /* 一本翻开的书，竖排，右页回目，左页朱批 */
-  /* 一叶古书：四周双边，中间版心有书名、鱼尾和回数；两个半叶都打着界行，字一行一格 */
-  .spread-wrap { display: flex; flex-direction: column; align-items: center; gap: 30px; }
-  .book { --u: clamp(34px, 3.9vw, 46px); --rows: 9; --ink-line: rgb(58 40 24 / .55); position: relative; padding: 10px 12px; background: #2e3852; border-radius: 3px; box-shadow: 0 34px 50px -34px rgb(20 14 6 / .6), 0 2px 4px rgb(20 14 6 / .25); }
-  /* 底下露出的书页厚度 */
-  .book::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 6px; background: repeating-linear-gradient(#efe5cc 0 1px, #d8c9a6 1px 2px); border-radius: 0 0 2px 2px; }
-  .ye { position: relative; z-index: 1; display: grid; grid-template-columns: auto calc(var(--u) * .9) auto; height: calc(var(--u) * 10.4); padding: calc(var(--u) * .5); background-color: #f4ecd8; background-image: radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(120 90 40 / .14)), radial-gradient(circle at 18% 78%, rgb(150 110 50 / .07) 0 6px, transparent 7px), radial-gradient(circle at 83% 22%, rgb(150 110 50 / .06) 0 4px, transparent 5px), var(--paper-fiber); perspective: 2200px; }
-  /* 四周双边：外粗内细 */
-  .ye::before { content: ''; position: absolute; inset: calc(var(--u) * .3); border: 2.2px solid var(--ink-line); box-shadow: inset 0 0 0 3px #f4ecd8, inset 0 0 0 3.8px var(--ink-line); pointer-events: none; }
-  /* 中缝的一点阴影 */
-  .ye::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: calc(var(--u) * 2); translate: -50% 0; background: linear-gradient(90deg, transparent, rgb(80 55 20 / .08) 45%, rgb(80 55 20 / .14) 50%, rgb(80 55 20 / .08) 55%, transparent); pointer-events: none; }
-  .hui { grid-column: 3; grid-row: 1; }
-  .banxin { grid-column: 2; grid-row: 1; }
-  .zhu { grid-column: 1; grid-row: 1; }
-  .half { position: relative; margin: 0; width: calc(var(--u) * 9); height: 100%; padding: calc(var(--u) * .45) 0; writing-mode: vertical-rl; background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), var(--rule) calc(var(--u) - 1px) var(--u)); background-position: right; --rule: rgb(58 40 24 / .16); }
-  .zhu { --rule: rgb(176 45 34 / .2); }
-  .banxin { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: calc(var(--u) * .45) 0; border-left: 1px solid var(--ink-line); border-right: 1px solid var(--ink-line); }
-  .bx-name, .bx-hui { writing-mode: vertical-rl; font: 400 calc(var(--u) * .34)/1 var(--title); letter-spacing: .2em; color: #3a2c1e; }
-  .yuwei { width: 70%; height: auto; fill: #2a2018; }
-  .yuwei.down { margin-top: auto; }
-  .hui-in { display: block; height: 100%; color: inherit; }
-  .hui-in > span { display: block; line-height: var(--u); }
-  .juan { font: 400 calc(var(--u) * .42)/var(--u) var(--title); letter-spacing: .14em; color: #3a2c1e; }
-  .hui-cn { padding-inline-start: 1em; font: 400 calc(var(--u) * .56)/var(--u) var(--title); letter-spacing: .14em; color: var(--cinnabar); }
-  .hui-t { font: 400 calc(var(--u) * .56)/var(--u) var(--title); letter-spacing: .12em; color: #1d1712; transition: color .3s; }
-  /* 回目两句，上句低两格，下句低三格 */
-  .hui-t span { display: block; padding-inline-start: 2em; }
-  .hui-t span + span { padding-inline-start: 3em; }
-  .hui-label { margin-block-start: calc(var(--u) * 4); text-align: end; padding-inline-end: .6em; font: 400 calc(var(--u) * .34)/var(--u) var(--title); letter-spacing: .5em; color: rgb(58 40 24 / .55); }
-  .hui-in:hover .hui-t { color: var(--cinnabar); }
-  .zhu figcaption { font: 400 calc(var(--u) * .34)/var(--u) var(--title); letter-spacing: .3em; padding-inline-start: 1em; }
-  .zhu figcaption a { color: rgb(58 40 24 / .6); transition: color .3s; }
-  .zhu figcaption a:hover { color: var(--ink); }
-  .zhu-s { margin: 0; font: 400 calc(var(--u) * .46)/var(--u) var(--title); letter-spacing: .1em; color: #a8291f; }
-  .zhu-s::before, .zhu-s::after { content: none; }
-  .zhu :global(.zhu-seal) { position: absolute; left: calc(var(--u) * .6); bottom: calc(var(--u) * .5); rotate: -3deg; opacity: .9; }
-  .ye.fade .half > * { opacity: 0; transition: opacity .25s; }
-  .ye .half > * { transition: opacity .35s; }
-
-  /* 翻页：右半叶以中缝为轴翻到左边，正面旧字，背面新批。这张纸是脚本临时造的，样式要写成全局的 */
-  :global(.turner) { position: absolute; transform-style: preserve-3d; z-index: 3; pointer-events: none; }
-  :global(.turner .face) { position: absolute; inset: 0; width: 100%; backface-visibility: hidden; background-color: #f4ecd8; background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), var(--rule) calc(var(--u) - 1px) var(--u)); background-position: right; }
-  :global(.turner .back) { transform: rotateY(180deg); left: auto; right: 0; }
-  :global(.turner .face)::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgb(60 40 15 / .26), rgb(60 40 15 / .04) 70%); opacity: 0; animation: shade 1.1s ease-in-out both; }
-  :global(.turner.go) { animation: turn 1.1s cubic-bezier(.45, .05, .35, 1) both; }
-  @keyframes turn { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
-  @keyframes shade { 50% { opacity: 1; } }
-
-  .turn { font: 400 17px/1 var(--title); letter-spacing: .5em; color: var(--ink-3); padding: 10px 6px 10px 14px; transition: color .3s; }
-  .turn:hover { color: var(--cinnabar); }
+  .spread-wrap { padding-top: clamp(40px, 6vw, 80px); }
 
   .twelve-sec { overflow: hidden; }
   .rail { --pad: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: var(--pad); padding: 8px var(--pad) 26px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; cursor: grab; }
@@ -366,14 +206,6 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
     .scroll :global(.painting) { object-position: 56% 50%; }
     .hero-poem { font-size: 15px; letter-spacing: .14em; }
     .line { font-size: 13px; letter-spacing: .14em; }
-    /* 手机上两个半叶上下叠着，不要版心 */
-    .book { --u: calc((100vw - 2 * var(--gutter) - 24px - 24px) / 9); padding: 8px; }
-    .ye { grid-template-columns: 1fr; height: auto; }
-    .hui, .zhu { grid-column: 1; }
-    .zhu { grid-row: 2; }
-    .ye::after, .banxin { display: none; }
-    .half { height: calc(var(--u) * 9.4); }
-    .zhu { border-top: 1px solid var(--ink-line); }
     .pairs { grid-template-columns: 1fr; }
   }
 </style>
