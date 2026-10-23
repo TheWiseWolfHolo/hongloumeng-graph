@@ -425,6 +425,9 @@ const Garden = (() => {
       <filter id="gdSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
       <clipPath id="gdIn"><rect x="64" y="66" width="1072" height="666"/></clipPath>
       <filter id="gdBlur3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+      <filter id="gdBrush" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>
+      <filter id="gdWash" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".011 .016" numOctaves="3" seed="21"/><feColorMatrix values="0 0 0 0 .16  0 0 0 0 .3  0 0 0 0 .28  0 0 0 -1.5 .95"/></filter>
+      <filter id="gdPigment" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".022" numOctaves="3" seed="5"/><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .3  0 0 0 0 .2  0 0 0 -1.6 .78"/></filter>
       <mask id="gdTourMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><path id="gdTourReveal" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round"/></mask>`;
 
     /* 装裱、绢地与园内地面 */
@@ -435,7 +438,8 @@ const Garden = (() => {
     for (let i = 0; i < 22; i++) el('ellipse', { class: 'g-lawn', cx: r1(rr(100, 1100)), cy: r1(rr(100, 700)), rx: r1(rr(40, 90)), ry: r1(rr(18, 40)) }, lawn);
 
     /* 水 */
-    const water = el('g', { 'clip-path': 'url(#gdIn)' }, svg);
+    /* 水、山、树都过一道毛笔边：线条不再是尺子画的，颜料在水面和山脚积得深浅不一 */
+    const water = el('g', { 'clip-path': 'url(#gdIn)', filter: 'url(#gdBrush)' }, svg);
     STREAMS.forEach(s => {
       const d = spline(s.pts, false);
       el('path', { class: 'g-bank', d, 'stroke-width': s.w + 4 }, water);
@@ -444,6 +448,10 @@ const Garden = (() => {
     el('path', { class: 'g-lake', d: spline(POND, true) }, water);
     const lakeD = spline(LAKE, true);
     el('path', { class: 'g-lake', d: lakeD }, water);
+    /* 水面的颜料积得不匀，近岸处深些 */
+    const washClip = el('clipPath', { id: 'gdLakeClip' }, defs);
+    el('path', { d: lakeD }, washClip);
+    el('rect', { class: 'g-wash', x: 400, y: 300, width: 430, height: 230, filter: 'url(#gdWash)', 'clip-path': 'url(#gdLakeClip)' }, water);
     el('path', { class: 'g-lakewave', d: lakeD }, water);
     [.9, .78].forEach(k => el('path', { class: 'g-ripple', d: lakeD, transform: `translate(608 412) scale(${k}) translate(-608 -412)` }, water));
     el('ellipse', { class: 'g-moonref', cx: 652, cy: 404, rx: 34, ry: 10, filter: 'url(#gdBlur3)' }, water);
@@ -485,7 +493,7 @@ const Garden = (() => {
     el('path', { class: 'g-pile', d: 'M958 662v18M980 670v18' }, walks);
 
     /* 山石 */
-    const hills = el('g', { 'clip-path': 'url(#gdIn)' }, svg);
+    const hills = el('g', { 'clip-path': 'url(#gdIn)', filter: 'url(#gdBrush)' }, svg);
     const mist = el('g', { filter: 'url(#gdSoft)' }, hills);
     [...HILLS].sort((a, b) => a[1] - b[1]).forEach(([x, b, w, h]) => {
       peak(hills, x, b, w, h);
@@ -519,7 +527,7 @@ const Garden = (() => {
     block(530, 636, 670, 726);
 
     /* 园中的树 */
-    const veg = el('g', { 'clip-path': 'url(#gdIn)' }, svg);
+    const veg = el('g', { 'clip-path': 'url(#gdIn)', filter: 'url(#gdBrush)' }, svg);
     const planted = [];
     const special = [
       ['willow', 404, 396], ['willow', 396, 462], ['willow', 524, 520], ['willow', 690, 520], ['willow', 760, 514], ['willow', 826, 400], ['willow', 826, 486], ['willow', 580, 326], ['willow', 456, 312],

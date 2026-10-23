@@ -59,7 +59,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     <div class="stage">
       <div class="gmap" data-map>
         <div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园图"></svg></div>
-        <div class="snow" aria-hidden="true"></div>
+        <canvas class="snow" data-snow aria-hidden="true"></canvas>
         <div class="mist" aria-hidden="true"></div>
       </div>
       <aside class="jian" data-jian aria-live="polite"></aside>
@@ -155,6 +155,62 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
       <header class="season"><span class="big">${s}</span><span class="line">${esc(SEASON_LINE[s])}</span></header>
       <ol class="happen">${list.map((x, k) => `<li><button type="button" data-at="${x.at}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(x.t)}</b><small>${hui(x.ch)}　${esc(place(x.at).name)}</small><span>${esc(x.d)}</span></span></button></li>`).join('')}</ol>`);
   }
+
+  /* 雪：冬天才下。每片大小、快慢、左右摆的幅度都不一样，远的小而慢、淡，近的大而快；风一阵一阵地变 */
+  const snowCv = map.querySelector<HTMLCanvasElement>('[data-snow]')!;
+  let snowRaf = 0, snowOn = false;
+  type Flake = { x: number; y: number; r: number; v: number; ph: number; sw: number; a: number };
+  function startSnow() {
+    if (snowOn) return;
+    snowOn = true;
+    const box = map.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    const w = box.width, h = box.height;
+    snowCv.width = Math.round(w * d);
+    snowCv.height = Math.round(h * d);
+    const mk = (y?: number): Flake => {
+      const near = Math.random() ** 1.7;
+      return { x: Math.random() * w, y: y ?? Math.random() * h, r: 1 + near * 2.6, v: 12 + near * 38 + Math.random() * 6, ph: Math.random() * 6.28, sw: 3 + Math.random() * 12, a: .7 + near * .3 };
+    };
+    const flakes = Array.from({ length: Math.round((w * h) / 2600) }, () => mk());
+    const ctx = snowCv.getContext('2d')!;
+    const paint = () => {
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#fff';
+      /* 冬景本来就淡，雪片带一圈极淡的灰边才看得出 */
+      ctx.shadowColor = 'rgb(70 80 90 / .45)';
+      ctx.shadowBlur = 2 * d;
+      for (const f of flakes) {
+        ctx.globalAlpha = f.a;
+        ctx.beginPath();
+        ctx.arc(f.x + Math.sin(f.ph) * f.sw, f.y, f.r, 0, 7);
+        ctx.fill();
+      }
+    };
+    if (reduced) { paint(); return; }
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(.05, (now - last) / 1000);
+      last = now;
+      const wind = Math.sin(now / 5300) * Math.sin(now / 2300) * 22;
+      for (const f of flakes) {
+        f.y += f.v * dt;
+        f.x += wind * dt * (.4 + f.r * .3);
+        f.ph += dt * (.5 + Math.random() * .3);
+        if (f.y > h + 4) Object.assign(f, mk(-4));
+        if (f.x < -24) f.x += w + 48; else if (f.x > w + 24) f.x -= w + 48;
+      }
+      paint();
+      snowRaf = requestAnimationFrame(step);
+    };
+    snowRaf = requestAnimationFrame(step);
+  }
+  function stopSnow() { cancelAnimationFrame(snowRaf); snowRaf = 0; snowOn = false; }
+  /* 换季时雪先淡出，淡完了再停 */
+  new MutationObserver(() => {
+    if (map.dataset.ji === '冬') startSnow();
+    else setTimeout(() => { if (map.dataset.ji !== '冬') stopSnow(); }, 1300);
+  }).observe(map, { attributes: true, attributeFilter: ['data-ji'] });
 
   /* ---------- 盛衰 ---------- */
   const range = document.querySelector<HTMLInputElement>('[data-hui]')!;
@@ -300,12 +356,8 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .gmap[data-ji="秋"] :global(svg) { filter: sepia(.32) saturate(1.15) hue-rotate(-10deg); }
   .gmap[data-ji="冬"] :global(svg) { filter: saturate(.3) brightness(1.08) contrast(.94); }
   .mist { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgb(250 247 240 / .55), rgb(250 247 240 / .85)); opacity: calc(var(--decay) * .8); transition: opacity 1.2s; }
-  .snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s; background-image: radial-gradient(circle, #fff 0 1.4px, transparent 1.8px), radial-gradient(circle, rgb(255 255 255 / .8) 0 1px, transparent 1.4px); background-size: 48px 52px, 31px 37px; background-position: 0 0, 13px 7px; }
-  .gmap[data-ji="冬"] .snow { opacity: .85; }
-  @media (prefers-reduced-motion: no-preference) {
-    .gmap[data-ji="冬"] .snow { animation: snow 16s linear infinite; }
-  }
-  @keyframes snow { to { background-position: 30px 520px, -20px 370px; } }
+  .snow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.2s; }
+  .gmap[data-ji="冬"] .snow { opacity: 1; }
 
   /* 笺 */
   .jian { position: sticky; top: calc(var(--header-h) + 18px); max-height: calc(100vh - var(--header-h) - 36px); overflow-y: auto; scrollbar-width: thin; padding: 26px 26px 24px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent), 0 20px 40px -30px rgb(40 26 10 / .5); transition: opacity .16s; }

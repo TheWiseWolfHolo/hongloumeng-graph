@@ -247,7 +247,9 @@ let peekTimer = 0;
 let peekFor: Element | null = null;
 const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
 async function showPeek(a: HTMLAnchorElement) {
-  const id = decodeURIComponent(a.pathname.split('/')[2] || '');
+  /* SVG 里的链接没有 pathname，统一从 href 解析 */
+  const href = a.getAttribute('href') ?? (a as unknown as SVGAElement).href?.baseVal ?? '';
+  const id = decodeURIComponent(new URL(href, location.href).pathname.split('/')[2] || '');
   if (!id) return;
   peopleMap ??= await (await fetch('/people.json')).json();
   const p = peopleMap![id];

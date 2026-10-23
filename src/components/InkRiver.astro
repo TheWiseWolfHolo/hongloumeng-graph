@@ -1,6 +1,7 @@
 ---
-/* 一百二十回的人物长河：原文提到最多的十几个人，每人一道墨，按回目从左往右流，
-   一回里提到得越多，这道墨越宽。数据平滑过，形状看大势，细数请进人物页。 */
+/* 一百二十回谁在场，照《史记》年表的样子画：人名列在右边，回次从右往左排，
+   每一格点一个墨点，这一回提到他越多，墨点越大；后四十回是续书，墨色淡下去。
+   十回一道界栏，顶上标回次。指着一行，这一行转成朱色，底下写出他前八十回提到多少次、哪一回最多。 */
 import { MENTIONS, STATS, byId, cn } from '../lib/data.ts';
 interface Props { count?: number }
 const { count = 14 } = Astro.props;
@@ -9,98 +10,71 @@ const ids = Object.entries(STATS.totals)
   .sort((a, b) => b[1] - a[1])
   .slice(0, count)
   .map(([id]) => id);
-const W = 1200, H = 360, N = 120;
-/* 每人一种旧颜料，按出场多少依次取：胭脂、黛、赭、石青、石绿、藕荷、泥金…… */
-const INKS = ['#b2343a', '#2e4a5c', '#a86a2e', '#3d6f99', '#4f8068', '#86699c', '#b58b3a', '#7f3b52', '#5c6b4a', '#c46a55', '#3a5960', '#9b7c5c', '#6a5a8c', '#8d4a2f'];
-/* 高斯平滑 */
-const smooth = (arr: number[], s = 1.6) => arr.map((_, i) => {
-  let sum = 0, wsum = 0;
-  for (let k = -5; k <= 5; k++) {
-    const j = i + k;
-    if (j < 0 || j >= arr.length) continue;
-    const w = Math.exp(-(k * k) / (2 * s * s));
-    sum += arr[j] * w; wsum += w;
-  }
-  return sum / wsum;
+const N = 120, NAME = 84, TOP = 30, ROW = 28, W = 1200;
+const CW = (W - NAME - 6) / N;
+const H = TOP + ids.length * ROW + 6;
+/* 第 n 回在第几格：第一回贴着人名，往左排 */
+const cx = (n: number) => W - NAME - 6 - (n - .5) * CW;
+const vmax = Math.max(...ids.flatMap(id => MENTIONS[id]));
+const f = (v: number) => +v.toFixed(1);
+const rows = ids.map((id, i) => {
+  const m = MENTIONS[id];
+  const y = TOP + (i + .5) * ROW;
+  const dots = m.map((v, k) => (v > 0 ? { x: f(cx(k + 1)), r: f(Math.max(.9, Math.sqrt(v / vmax) * CW * .62)), xu: k >= 80 } : null)).filter(Boolean) as { x: number; r: number; xu: boolean }[];
+  const peak = m.slice(0, 80).reduce((b, v, k) => (v > m[b] ? k : b), 0) + 1;
+  return { id, y, dots, total: STATS.totals[id], peak };
 });
-/* 由里往外排，最大的居中，河面才像两岸对称 */
-const sorted = [...ids];
-const order: string[] = [];
-sorted.forEach((id, i) => (i % 2 ? order.push(id) : order.unshift(id)));
-const series = order.map(id => smooth(MENTIONS[id]));
-const totals = Array.from({ length: N }, (_, i) => series.reduce((a, s) => a + s[i], 0));
-const maxT = Math.max(...totals);
-const k = (H * .92) / maxT;
-const x = (i: number) => (i / (N - 1)) * W;
-const layers = order.map((id, li) => {
-  const top: number[] = [], bot: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const below = series.slice(0, li).reduce((a, s) => a + s[i], 0);
-    const y0 = H / 2 - (totals[i] * k) / 2 + below * k;
-    top.push(y0);
-    bot.push(y0 + series[li][i] * k);
-  }
-  /* 平滑曲线：取相邻点的中点做二次贝塞尔 */
-  const curve = (ys: number[], rev = false) => {
-    const pts = ys.map((y, i) => [x(i), y]);
-    if (rev) pts.reverse();
-    let d = '';
-    for (let i = 1; i < pts.length; i++) {
-      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-      d += ` Q${x0.toFixed(1)} ${y0.toFixed(1)} ${((x0 + x1) / 2).toFixed(1)} ${((y0 + y1) / 2).toFixed(1)}`;
-    }
-    const last = pts[pts.length - 1];
-    return d + ` L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
-  };
-  const d = `M0 ${top[0].toFixed(1)}${curve(top)} L${W} ${bot[N - 1].toFixed(1)}${curve(bot, true)} Z`;
-  /* 在最宽处写名字 */
-  let best = 0, bw = 0;
-  for (let i = 4; i < N - 4; i++) { const w = bot[i] - top[i]; if (w > bw) { bw = w; best = i; } }
-  const p = byId.get(id)!;
-  return { id, d, color: INKS[sorted.indexOf(id) % INKS.length], lx: x(best), ly: (top[best] + bot[best]) / 2, bw, total: STATS.totals[id], peak: best + 1 };
-});
+const tens = Array.from({ length: 12 }, (_, i) => (i + 1) * 10);
 ---
-<figure class="river reveal">
-  <div class="river-box">
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`原文提到最多的${count}个人在一百二十回里的出场变化`}>
-      <line x1={x(79.5)} x2={x(79.5)} y1="0" y2={H} class="xu" />
-      {layers.map((l, i) => (
-        <a href={`/people/${l.id}/`} class="lyr" style={`--c:${l.color};--i:${i}`} data-name={l.id} data-total={l.total}>
-          <title>{`${l.id}，前八十回提到 ${l.total} 次，最浓在第${cn(l.peak)}回前后`}</title>
-          <path d={l.d} />
+<figure class="nianbiao reveal">
+  <div class="nb-box">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`原文提到最多的${count}个人在一百二十回里各回被提到的多少`}>
+      <rect class="xu-bg" x={f(cx(120) - CW / 2)} y={TOP} width={f(CW * 40)} height={H - TOP - 6} />
+      <g class="grid">
+        <line x1="0" x2={W} y1={TOP} y2={TOP} />
+        <line x1="0" x2={W} y1={H - 6} y2={H - 6} />
+        <line x1={W - NAME} x2={W - NAME} y1="0" y2={H - 6} />
+        {tens.slice(0, -1).map(n => <line x1={f(cx(n) - CW / 2)} x2={f(cx(n) - CW / 2)} y1={TOP - 8} y2={H - 6} class:list={{ eighty: n === 80 }} />)}
+      </g>
+      <g class="hd">
+        {[1, ...tens.slice(0, -1)].map(n => <text x={f(cx(n))} y={TOP - 12} text-anchor="middle">{cn(n)}</text>)}
+      </g>
+      {rows.map((r, i) => (
+        <a href={`/people/${r.id}/`} class="row" style={`--i:${i}`} aria-label={`${r.id}，前八十回提到${r.total}次`}>
+          <rect class="hit" x="0" y={r.y - ROW / 2} width={W} height={ROW} />
+          <text class="nm" x={W - NAME / 2} y={r.y}>{r.id}</text>
+          {r.dots.map(d => <circle cx={d.x} cy={r.y} r={d.r} class:list={{ xu: d.xu }} />)}
+          <text class="cap" x={W - NAME - 14} y={H + 22}>{`${r.id}　前八十回提到${cn(r.total)}次，第${cn(r.peak)}回最多`}</text>
         </a>
       ))}
     </svg>
-    <div class="xu-veil" aria-hidden="true"><span>续书</span></div>
-    <div class="labels" aria-hidden="true">
-      {layers.filter(l => l.bw > 22).map(l => (
-        <span style={`left:${(l.lx / W) * 100}%;top:${(l.ly / H) * 100}%;--c:${l.color}`} data-for={l.id}>{l.id}</span>
-      ))}
-    </div>
   </div>
-  <div class="river-axis" aria-hidden="true">
-    {[1, 20, 40, 60, 80, 100, 120].map(n => <span style={`left:${(x(n - 1) / W) * 100}%`}>{cn(n)}</span>)}
-  </div>
+  <p class="nb-note" aria-hidden="true"><span>右起第一回</span><span>左边四十回是续书，墨淡</span></p>
 </figure>
 
 <style>
-  .river { margin: 0; }
-  .river-box { position: relative; height: clamp(240px, 32vw, 400px); }
-  .river svg { width: 100%; height: 100%; display: block; overflow: visible; }
-  .lyr path { fill: var(--c); opacity: .5; mix-blend-mode: multiply; transition: opacity .3s; }
-  :global(:root[data-theme="dark"]) .lyr path { mix-blend-mode: screen; opacity: .42; }
-  .river svg:has(.lyr:hover) .lyr:not(:hover) path { opacity: .1; }
-  .lyr:hover path { opacity: .85; }
-  .xu { stroke: var(--line-2); stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
-  .xu-veil { position: absolute; top: -6px; bottom: -6px; right: 0; width: calc(100% * 40.5 / 119); background: color-mix(in srgb, var(--paper) 58%, transparent); pointer-events: none; border-left: 1px dashed var(--line-2); }
-  .xu-veil span { position: absolute; top: 4px; left: 10px; font: 600 11px/1 var(--label); letter-spacing: .3em; color: var(--ink-3); }
-  .labels { position: absolute; inset: 0; pointer-events: none; }
-  .labels span { position: absolute; transform: translate(-50%, -50%); font: 700 clamp(13px, 1.4vw, 18px)/1 var(--display); color: var(--ink); writing-mode: vertical-rl; letter-spacing: .1em; text-shadow: 0 0 6px var(--paper), 0 0 2px var(--paper); transition: opacity .3s; }
-  .river:has(.lyr:hover) .labels span { opacity: .25; }
-  .river-axis { position: relative; height: 22px; margin-top: 10px; font: 500 11.5px/1 var(--label); color: var(--ink-3); border-top: 1px solid var(--line); }
-  .river-axis span { position: absolute; top: 8px; transform: translateX(-50%); }
+  .nianbiao { margin: 0; }
+  .nb-box { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  .nianbiao svg { display: block; width: 100%; min-width: 760px; height: auto; overflow: visible; margin-bottom: 30px; }
+  .xu-bg { fill: color-mix(in srgb, var(--ink) 3%, transparent); }
+  .grid line { stroke: color-mix(in srgb, var(--cinnabar) 30%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .grid line.eighty { stroke: color-mix(in srgb, var(--cinnabar) 55%, transparent); stroke-dasharray: 3 3; }
+  .hd text { font: 400 12px var(--title); fill: var(--ink-3); letter-spacing: .05em; }
+  .hit { fill: transparent; }
+  .nm { font: 400 15px var(--title); fill: var(--ink); text-anchor: middle; dominant-baseline: central; letter-spacing: .12em; transition: fill .25s; }
+  .row circle { fill: var(--ink); opacity: .82; transition: fill .25s, opacity .25s; }
+  .row circle.xu { opacity: .3; }
+  .row:hover circle, .row:focus-visible circle { fill: var(--cinnabar); opacity: 1; }
+  .row:hover circle.xu, .row:focus-visible circle.xu { opacity: .45; }
+  .row:hover .nm, .row:focus-visible .nm { fill: var(--cinnabar); }
+  .row:hover .hit { fill: color-mix(in srgb, var(--cinnabar) 5%, transparent); }
+  .nianbiao svg:has(.row:hover) .row:not(:hover) circle { opacity: .18; }
+  .cap { font: 400 15px var(--title); fill: var(--ink-2); text-anchor: end; letter-spacing: .12em; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .row:hover .cap, .row:focus-visible .cap { opacity: 1; }
+  .nb-note { display: flex; justify-content: space-between; flex-direction: row-reverse; margin-top: -22px; font: 400 13px/1.6 var(--title); letter-spacing: .2em; color: var(--ink-3); }
+  .nianbiao svg:has(.row:hover) + .nb-note, .nianbiao:has(.row:hover) .nb-note { opacity: 0; }
   @media (prefers-reduced-motion: no-preference) {
-    .river.in .lyr path { animation: flow 1.6s var(--ease-ink) backwards; animation-delay: calc(var(--i) * 60ms); }
+    .nianbiao.in .row circle { animation: drop .9s var(--ease-ink) backwards; animation-delay: calc(var(--i) * 50ms); }
   }
-  @keyframes flow { from { opacity: 0; transform: scaleY(.2); transform-origin: 50% 50%; } }
+  @keyframes drop { from { opacity: 0; } }
 </style>

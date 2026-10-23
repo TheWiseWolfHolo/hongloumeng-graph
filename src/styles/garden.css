@@ -25,6 +25,9 @@
 }
 .gmap { position: relative; background: var(--gd-mount); box-shadow: 0 0 0 1px var(--line), 0 30px 50px -36px rgb(40 26 10 / .55); overflow: hidden; }
 .gscroll { overflow-x: auto; overscroll-behavior-x: contain; }
+/* 整幅压一层绢纹，四角旧一些 */
+.gmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 120% at 50% 45%, transparent 55%, rgb(90 60 20 / .14)), url(/textures/zhuzhi.webp) 0 0 / 360px; mix-blend-mode: multiply; opacity: .75; }
+:root[data-theme="dark"] .gmap::after { opacity: .25; }
 .gscroll svg { width: 100%; min-width: 760px; height: auto; display: block; transition: filter 1.2s ease; }
 
 .gd-h1 { stop-color: var(--gd-hill1); } .gd-h2 { stop-color: var(--gd-hill2); } .gd-h3 { stop-color: var(--gd-hill3); }
@@ -37,6 +40,8 @@
 .g-lawn { fill: var(--gd-lawn); opacity: .6; }
 .g-bank { fill: none; stroke: var(--gd-bank); stroke-linecap: round; stroke-linejoin: round; }
 .g-stream { fill: none; stroke: var(--gd-water2); stroke-linecap: round; stroke-linejoin: round; }
+.g-wash { opacity: .5; mix-blend-mode: multiply; pointer-events: none; }
+:root[data-theme="dark"] .g-wash { opacity: .35; mix-blend-mode: normal; }
 .g-lake { fill: url(#gdLake); stroke: var(--gd-bank); stroke-width: 2.2; stroke-linejoin: round; }
 .g-lakewave { fill: url(#gdWave); opacity: .5; pointer-events: none; }
 .g-ripple { fill: none; stroke: var(--gd-wave); stroke-width: 1; stroke-dasharray: 2 9; stroke-linecap: round; opacity: .5; }
