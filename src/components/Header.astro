@@ -40,14 +40,14 @@ const current = NAV.find(n => n.key === section);
       </button>
     </div>
   </div>
-  {current?.subs && (
+</header>
+{current?.subs && (
     <nav class="subnav wrap" aria-label={`${current.label}下的页面`}>
       {current.subs.map(s => (
         <a href={s.href} class:list={{ on: s.key === sub }} aria-current={s.key === sub ? 'page' : undefined}>{s.label}</a>
       ))}
     </nav>
-  )}
-</header>
+)}
 
 <div class="menu" id="menu" data-menu hidden>
   <div class="menu-inner">

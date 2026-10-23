@@ -1,48 +1,377 @@
 ---
+/* 大观园。一幅园图，五种看法：
+   游览，点院落景致看住户、景致与旧事；
+   题对额，随第十七回贾政一行走一遍，每到一处看宝玉题的匾和联；
+   岁时，春夏秋冬各有几件事落在园里，图也换了季节的颜色；
+   盛衰，从第十七回落成拉到第一百一十二回，看院子一处处空下去，园子褪了颜色；
+   寻人，挑一个人，看她在园里到过哪几处。 */
 import Base from '../layouts/Base.astro';
-import { PEOPLE } from '../lib/data.ts';
-import { GARDEN } from '../data/garden.ts';
+import PageHead from '../components/PageHead.astro';
+import { PEOPLE, cn } from '../lib/data.ts';
+import { GARDEN, GARDEN_TOUR, SEASONS, LIFE, VACATE } from '../data/garden.ts';
+import { EVENTS } from '../data/events.ts';
 import '../styles/garden.css';
 
 const groups = Object.fromEntries(PEOPLE.map(p => [p.id, p.group]));
-const homes = GARDEN.filter(b => b.kind === 'home');
+/* 园里出现过的人，按人物谱的次序 */
+const inGarden = new Set(GARDEN.flatMap(b => b.who));
+const walkers = PEOPLE.filter(p => inGarden.has(p.id)).map(p => p.id);
+const evByTitle = Object.fromEntries(EVENTS.map(e => [e.t, e.c]));
+const data = {
+  places: GARDEN.map(b => ({ id: b.id, kind: b.kind, name: b.name, seal: b.seal ?? '', alias: b.alias, who: b.who, scene: b.scene, note: b.note, ev: b.ev.map(t => [t, evByTitle[t]?.[0] ?? 0, (evByTitle[t]?.[0] ?? 0) > 80 ? 1 : 0]) })),
+  tour: GARDEN_TOUR.map(t => ({ name: t.name, site: t.site ?? '', text: t.text, plq: t.plq ?? '', dui: t.dui ?? null })),
+  seasons: SEASONS,
+  life: LIFE,
+  vacate: VACATE,
+  groups,
+  cn: Object.fromEntries(Array.from({ length: 120 }, (_, i) => [i + 1, cn(i + 1)]))
+};
+const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['sheng', '盛衰'], ['xun', '尋人']];
 ---
-<Base title="大观园" description={`为元春省亲而建的园子，后来成了宝玉和姐妹们的住处。手绘的园子示意图，${homes.length} 处院落各有住户与旧事，还能随贾政一行把第十七回的游园走一遍。`} section="garden">
+<Base title="大观园" description="为元春省亲而建的园子，后来成了宝玉和姐妹们的住处。一幅园图，可以游览各处院落，随贾政一行题对额，看园中四时，看园子从落成到荒废，也可以挑一个人看她到过哪里。" section="garden">
   <div class="wrap">
-    <header class="page-head">
-      <div>
-        <span class="eyebrow ink-in">园 · 壹</span>
-        <h1 class="ink-in" style="--d:.1s">大观园</h1>
-      </div>
-      <p class="lede ink-in" style="--d:.25s">为元春省亲而建，后来成了宝玉和姐妹们的住处。点院落、匾额或下面的名字，看住户和旧事；也可以跟着第十七回贾政一行，看宝玉一路题匾额对联。</p>
-    </header>
+    <PageHead title="大观园" slip="大觀園" quote="天上人间诸景备｜芳园应锡大观名" from="第十八回　元春题咏" />
+  </div>
 
-    <div class="garden-grid">
-      <div class="gmain">
-        <div class="gtools">
-          <button class="btn primary" type="button" id="gTour">随贾政一行游园</button>
-          <span class="gt-hint">第十七回 · 大观园试才题对额，共九处</span>
+  <div class="yuan">
+    <div class="modes" role="tablist" aria-label="看园子的法子">
+      {MODES.map(([k, t], i) => <button type="button" role="tab" class="mode" data-mode={k} aria-selected={i === 0 ? 'true' : 'false'}>{t}</button>)}
+    </div>
+
+    <div class="ctl" data-ctl="shi" hidden>
+      {['春', '夏', '秋', '冬'].map((s, i) => <button type="button" class="ji" data-ji={s} aria-pressed={i === 0 ? 'true' : 'false'}>{s}</button>)}
+    </div>
+    <div class="ctl sheng" data-ctl="sheng" hidden>
+      <button type="button" class="play" data-play aria-label="让回数自己往下走">流年</button>
+      <div class="track">
+        <input type="range" min="17" max="112" value="17" step="1" data-hui aria-label="回数">
+        <div class="ticks" aria-hidden="true">
+          {LIFE.map(l => <span style={`--x:${(l.ch - 17) / 95}`} class:list={{ late: l.ch > 80 }}></span>)}
+          <i class="eighty" style={`--x:${(80 - 17) / 95}`}></i>
         </div>
-        <div class="gmap"><div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园示意图"></svg></div></div>
-        <div class="gplaces" id="gPlaces" aria-label="园中各处"></div>
-        <p class="map-note">示意图。方位按书中叙述大致安排，并非考据地图。水从东北山坳引进来，流过全园，经沁芳闸出去。</p>
       </div>
-      <aside class="gcard" id="gcard" aria-live="polite"></aside>
+      <output data-hui-out>第十七回</output>
+    </div>
+    <div class="ctl xun" data-ctl="xun" hidden>
+      {walkers.map(id => <button type="button" class="ren" data-ren={id} style={`--pc:var(--g-${groups[id]})`} aria-pressed="false">{id}</button>)}
+    </div>
+
+    <div class="stage">
+      <div class="gmap" data-map>
+        <div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="img" aria-label="大观园图"></svg></div>
+        <div class="snow" aria-hidden="true"></div>
+        <div class="mist" aria-hidden="true"></div>
+      </div>
+      <aside class="jian" data-jian aria-live="polite"></aside>
     </div>
   </div>
   <script is:inline type="application/json" id="garden-people" set:html={JSON.stringify(groups)} />
+  <script is:inline type="application/json" id="garden-data" set:html={JSON.stringify(data)} />
 </Base>
 
 <script>
   import Garden from '../client/garden-map.js';
-  Garden.init();
-  const id = decodeURIComponent(location.hash.slice(1));
-  if (id) Garden.select(id, true);
-  if (new URLSearchParams(location.search).has('tour')) Garden.startTour();
+
+  type Place = { id: string; kind: string; name: string; seal: string; alias: string; who: string[]; scene: string; note: string; ev: [string, number, number][] };
+  const D: {
+    places: Place[]; tour: { name: string; site: string; text: string; plq: string; dui: [string, string] | null }[];
+    seasons: { s: string; ch: number; at: string; t: string; d: string }[];
+    life: { ch: number; t: string; d: string; at?: string }[];
+    vacate: Record<string, [number, number]>; groups: Record<string, string>; cn: Record<string, string>;
+  } = JSON.parse(document.getElementById('garden-data')!.textContent!);
+  const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  const hui = (n: number) => `第${D.cn[n]}回`;
+  const place = (id: string) => D.places.find(p => p.id === id)!;
+  const person = (id: string) => D.groups[id] ? `<a class="person" href="/people/${encodeURIComponent(id)}/" data-peek style="--pc:var(--g-${D.groups[id]})">${esc(id)}</a>` : `<span>${esc(id)}</span>`;
+  const vert = (s: string, cls: string) => `<span class="${cls}">${[...s].map(c => `<i>${esc(c)}</i>`).join('')}</span>`;
+  const jian = document.querySelector<HTMLElement>('[data-jian]')!;
+  const map = document.querySelector<HTMLElement>('[data-map]')!;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* 笺换内容时先淡出再淡入，不在原地跳 */
+  let swapT = 0;
+  const write = (html: string) => {
+    clearTimeout(swapT);
+    jian.classList.add('out');
+    swapT = window.setTimeout(() => { jian.innerHTML = html; jian.scrollTop = 0; jian.classList.remove('out'); }, reduced ? 0 : 160);
+  };
+
+  let mode = 'you';
+  let cur = 'yhy';
+
+  /* ---------- 游览 ---------- */
+  function showPlace(id: string) {
+    cur = id;
+    Garden.mark(id);
+    const b = place(id);
+    const seasons = D.seasons.filter(s => s.at === id);
+    const life = D.life.filter(l => l.at === id);
+    write(`
+      <header class="jh">
+        ${vert(b.name, 'bian')}
+        <div class="jh-r">
+          <p class="kind">${b.kind === 'home' ? '院落' : '景致'}</p>
+          <p class="alias">${esc(b.alias)}</p>
+          <p class="who">${b.who.map(person).join('')}</p>
+        </div>
+      </header>
+      <section class="js"><h3>景</h3><p>${esc(b.scene)}</p></section>
+      <section class="js"><h3>事</h3><p>${esc(b.note)}</p></section>
+      ${b.ev.length ? `<section class="js"><h3>回</h3><ul class="evs">${b.ev.map(([t, n, late]) => `<li><a href="/chapters/${n}/"><span class="n">${hui(n)}</span><span class="t">${esc(t)}</span>${late ? '<small>续书</small>' : ''}</a></li>`).join('')}</ul></section>` : ''}
+      ${seasons.length ? `<section class="js"><h3>時</h3><ul class="sea">${seasons.map(s => `<li><b>${s.s}</b>${esc(s.t)}</li>`).join('')}</ul></section>` : ''}
+      ${life.length ? `<section class="js"><h3>變</h3><ul class="sea">${life.map(l => `<li><b>${D.cn[l.ch]}</b>${esc(l.t)}</li>`).join('')}</ul></section>` : ''}`);
+    history.replaceState(null, '', '#' + id);
+  }
+
+  /* ---------- 题对额 ---------- */
+  function showStop(i: number) {
+    const st = D.tour[i], n = D.tour.length;
+    const plaque = st.plq ? `<div class="men">
+        ${st.dui ? vert(st.dui[1], 'lian') : ''}
+        ${vert(st.plq, 'bian big')}
+        ${st.dui ? vert(st.dui[0], 'lian') : ''}
+      </div>` : '';
+    write(`
+      <p class="kind">第十七回　大观园试才题对额</p>
+      <h2 class="stop">${esc(st.name)}</h2>
+      <ol class="steps">${D.tour.map((s, k) => `<li class="${k < i ? 'done' : k === i ? 'cur' : ''}"><button type="button" data-step="${k}" aria-label="${esc(s.name)}" title="${esc(s.name)}"></button></li>`).join('')}</ol>
+      ${plaque}
+      <p class="said">${esc(st.text)}</p>
+      <div class="go">
+        <button type="button" data-tour="prev" ${i === 0 ? 'disabled' : ''}>上一处</button>
+        <button type="button" class="on" data-tour="${i === n - 1 ? 'end' : 'next'}">${i === n - 1 ? '游罢' : '下一处'}</button>
+      </div>
+      ${st.site ? `<button type="button" class="more" data-goto="${st.site}">看${esc(place(st.site).name)}的住户与旧事</button>` : ''}`);
+  }
+
+  /* ---------- 岁时 ---------- */
+  const SEASON_LINE: Record<string, string> = { 春: '桃花帘外东风软', 夏: '一夜蝉声', 秋: '秋花惨淡秋草黄', 冬: '琉璃世界白雪红梅' };
+  function showSeason(s: string) {
+    map.dataset.ji = s;
+    const list = D.seasons.filter(x => x.s === s);
+    Garden.pins(list.map((x, k) => ({ id: x.at, n: k + 1 })));
+    Garden.focusOn(new Set(list.map(x => x.at)));
+    Garden.mark(null);
+    write(`
+      <header class="season"><span class="big">${s}</span><span class="line">${esc(SEASON_LINE[s])}</span></header>
+      <ol class="happen">${list.map((x, k) => `<li><button type="button" data-at="${x.at}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(x.t)}</b><small>${hui(x.ch)}　${esc(place(x.at).name)}</small><span>${esc(x.d)}</span></span></button></li>`).join('')}</ol>`);
+  }
+
+  /* ---------- 盛衰 ---------- */
+  const range = document.querySelector<HTMLInputElement>('[data-hui]')!;
+  const out = document.querySelector<HTMLOutputElement>('[data-hui-out]')!;
+  function showLife(n: number) {
+    out.textContent = hui(n);
+    const empty = new Set(Object.entries(D.vacate).filter(([, [a, b]]) => n < a || n > b).map(([id]) => id));
+    Garden.vacant(empty);
+    /* 抄检以后园子一点点褪色，到封园时只剩一层白 */
+    const decay = Math.max(0, Math.min(1, (n - 73) / 39));
+    map.style.setProperty('--decay', decay.toFixed(3));
+    const now = [...D.life].reverse().find(l => l.ch <= n)!;
+    Garden.mark(now.at ?? null);
+    const homes = D.places.filter(p => p.kind === 'home');
+    const html = `
+      <p class="kind">${hui(now.ch)}${now.ch > 80 ? '　续书' : ''}</p>
+      <h2 class="stop">${esc(now.t)}</h2>
+      <p class="said">${esc(now.d)}</p>
+      <ul class="homes">${homes.map(h => `<li class="${empty.has(h.id) ? 'off' : ''}"><span>${esc(h.name)}</span><small>${empty.has(h.id) ? (n < D.vacate[h.id][0] ? '未住' : '已空') : esc(h.seal)}</small></li>`).join('')}</ul>`;
+    if (jian.dataset.life !== String(now.ch)) { jian.dataset.life = String(now.ch); write(html); }
+    else {
+      const ul = jian.querySelector('.homes');
+      if (ul) ul.outerHTML = html.slice(html.indexOf('<ul class="homes">'));
+    }
+  }
+  range.addEventListener('input', () => showLife(+range.value));
+  let timer = 0;
+  const playBtn = document.querySelector<HTMLButtonElement>('[data-play]')!;
+  const stopPlay = () => { clearInterval(timer); timer = 0; playBtn.classList.remove('on'); };
+  playBtn.addEventListener('click', () => {
+    if (timer) { stopPlay(); return; }
+    if (+range.value >= 112) range.value = '17';
+    playBtn.classList.add('on');
+    timer = window.setInterval(() => {
+      range.value = String(+range.value + 1);
+      showLife(+range.value);
+      if (+range.value >= 112) stopPlay();
+    }, 260);
+  });
+
+  /* ---------- 寻人 ---------- */
+  const rens = [...document.querySelectorAll<HTMLButtonElement>('[data-ren]')];
+  function showPerson(id: string) {
+    rens.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ren === id)));
+    const at = D.places.filter(p => p.who.includes(id));
+    Garden.focusOn(new Set(at.map(p => p.id)));
+    Garden.pins(at.map((p, k) => ({ id: p.id, n: k + 1 })));
+    Garden.mark(null);
+    write(`
+      <p class="kind">${at.some(p => p.kind === 'home' && p.who[0] === id) ? '住在园里' : '在园里出现过'}</p>
+      <h2 class="stop">${person(id)}</h2>
+      <ol class="happen">${at.map((p, k) => `<li><button type="button" data-at="${p.id}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(p.name)}</b><small>${esc(p.alias)}</small><span>${esc(p.note)}</span></span></button></li>`).join('')}</ol>`);
+  }
+  rens.forEach(b => b.addEventListener('click', () => showPerson(b.dataset.ren!)));
+
+  /* ---------- 换看法 ---------- */
+  const modes = [...document.querySelectorAll<HTMLButtonElement>('[data-mode]')];
+  const ctls = [...document.querySelectorAll<HTMLElement>('[data-ctl]')];
+  function setMode(m: string) {
+    if (Garden.touring()) Garden.endTour();
+    stopPlay();
+    mode = m;
+    modes.forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    ctls.forEach(c => { c.hidden = c.dataset.ctl !== m; });
+    Garden.pins(null);
+    Garden.focusOn(null);
+    Garden.vacant(new Set());
+    map.dataset.ji = '';
+    map.style.setProperty('--decay', '0');
+    delete jian.dataset.life;
+    if (m === 'you') showPlace(cur);
+    if (m === 'ti') showStop(Garden.startTour());
+    if (m === 'shi') showSeason(document.querySelector<HTMLElement>('[data-ji][aria-pressed="true"]')!.dataset.ji!);
+    if (m === 'sheng') showLife(+range.value);
+    if (m === 'xun') showPerson(rens.find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.ren ?? '林黛玉');
+  }
+  modes.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode!)));
+  document.querySelectorAll<HTMLButtonElement>('[data-ji]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-ji]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    showSeason(b.dataset.ji!);
+  }));
+
+  /* 笺里的按钮 */
+  jian.addEventListener('click', e => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-tour],[data-step],[data-goto],[data-at]');
+    if (!t) return;
+    if (t.dataset.at) { Garden.mark(t.dataset.at); Garden.center(t.dataset.at); return; }
+    if (t.dataset.goto) { const id = t.dataset.goto; setMode('you'); showPlace(id); return; }
+    if (t.dataset.step) { showStop(Garden.tourGo(+t.dataset.step)); return; }
+    const a = t.dataset.tour;
+    if (a === 'prev') showStop(Garden.tourGo(Garden.tourIndex() - 1));
+    else if (a === 'next') showStop(Garden.tourGo(Garden.tourIndex() + 1));
+    else setMode('you');
+  });
+  document.addEventListener('keydown', e => {
+    if (mode !== 'ti' || /INPUT|TEXTAREA/.test((document.activeElement as HTMLElement).tagName)) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); showStop(Garden.tourGo(Garden.tourIndex() + 1)); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); showStop(Garden.tourGo(Garden.tourIndex() - 1)); }
+  });
+
+  /* 点图上的院落：游览时看详情，其余看法下先回到游览 */
+  Garden.init({ onPick: (id: string) => { if (mode !== 'you') setMode('you'); showPlace(id); } });
+  const start = decodeURIComponent(location.hash.slice(1));
+  if (start && D.places.some(p => p.id === start)) cur = start;
+  const q = new URLSearchParams(location.search);
+  setMode(q.has('tour') ? 'ti' : 'you');
 </script>
 
 <style>
-  .garden-grid { margin-top: 32px; }
-  .gcard { position: sticky; top: calc(var(--header-h) + 16px); }
-  @media (max-width: 960px) { .garden-grid { grid-template-columns: 1fr; } .gcard { position: static; } }
+  .yuan { width: min(100% - 2 * var(--gutter), 1480px); margin: 0 auto; }
+  /* 看法：刻本字，当前一种右上角一个朱圈 */
+  .modes { display: flex; justify-content: center; gap: clamp(10px, 3vw, 44px); margin-bottom: 22px; }
+  .mode { position: relative; padding: 10px 14px; font: 400 21px/1 var(--title); letter-spacing: .24em; color: var(--ink-3); transition: color .3s; }
+  .mode::after { content: ''; position: absolute; right: 4px; top: 3px; width: 8px; height: 8px; border-radius: 50%; border: 1.6px solid var(--cinnabar); opacity: 0; transform: scale(.4); transition: opacity .3s, transform .4s var(--ease); }
+  .mode:hover { color: var(--ink); }
+  .mode[aria-selected="true"] { color: var(--ink); }
+  .mode[aria-selected="true"]::after { opacity: 1; transform: none; }
+
+  .ctl { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px 18px; min-height: 52px; margin-bottom: 20px; }
+  .ji { width: 44px; height: 44px; border-radius: 50%; font: 400 21px/1 var(--title); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s, box-shadow .3s; }
+  .ji:hover { color: var(--ink); }
+  .ji[aria-pressed="true"] { color: #fff6ea; background: var(--cinnabar); box-shadow: none; }
+  .sheng { gap: 18px; }
+  .play { padding: 8px 14px; font: 400 17px/1 var(--title); letter-spacing: .3em; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s; }
+  .play.on, .play:hover { color: var(--cinnabar); }
+  .track { position: relative; width: min(60vw, 640px); }
+  .track input { width: 100%; accent-color: var(--cinnabar); }
+  .ticks { position: absolute; left: 8px; right: 8px; top: -6px; height: 6px; pointer-events: none; }
+  .ticks span { position: absolute; left: calc(var(--x) * 100%); width: 1px; height: 6px; background: var(--ink-3); }
+  .ticks span.late { background: var(--line-2); }
+  .ticks .eighty { position: absolute; left: calc(var(--x) * 100%); top: -4px; width: 1.5px; height: 10px; background: var(--cinnabar); }
+  .sheng output { min-width: 7.5em; font: 400 19px/1 var(--title); letter-spacing: .16em; color: var(--cinnabar); }
+  .xun { gap: 8px 16px; max-width: 980px; margin-inline: auto; }
+  .ren { position: relative; padding: 4px 2px; font: 400 15.5px/1.4 var(--serif); color: var(--ink-3); background: linear-gradient(var(--pc), var(--pc)) 0 100% / 0 1.5px no-repeat; transition: color .3s, background-size .3s; }
+  .ren:hover { color: var(--ink); }
+  .ren[aria-pressed="true"] { color: var(--ink); background-size: 100% 1.5px; }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+  /* 季节与盛衰都只是给画加一层颜色 */
+  .gmap { --decay: 0; }
+  .gmap :global(svg) { filter: saturate(calc(1 - var(--decay) * .8)) sepia(calc(var(--decay) * .3)); }
+  .gmap[data-ji="夏"] :global(svg) { filter: saturate(1.15) brightness(1.01); }
+  .gmap[data-ji="秋"] :global(svg) { filter: sepia(.32) saturate(1.15) hue-rotate(-10deg); }
+  .gmap[data-ji="冬"] :global(svg) { filter: saturate(.3) brightness(1.08) contrast(.94); }
+  .mist { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgb(250 247 240 / .55), rgb(250 247 240 / .85)); opacity: calc(var(--decay) * .8); transition: opacity 1.2s; }
+  .snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s; background-image: radial-gradient(circle, #fff 0 1.4px, transparent 1.8px), radial-gradient(circle, rgb(255 255 255 / .8) 0 1px, transparent 1.4px); background-size: 48px 52px, 31px 37px; background-position: 0 0, 13px 7px; }
+  .gmap[data-ji="冬"] .snow { opacity: .85; }
+  @media (prefers-reduced-motion: no-preference) {
+    .gmap[data-ji="冬"] .snow { animation: snow 16s linear infinite; }
+  }
+  @keyframes snow { to { background-position: 30px 520px, -20px 370px; } }
+
+  /* 笺 */
+  .jian { position: sticky; top: calc(var(--header-h) + 18px); max-height: calc(100vh - var(--header-h) - 36px); overflow-y: auto; scrollbar-width: thin; padding: 26px 26px 24px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent), 0 20px 40px -30px rgb(40 26 10 / .5); transition: opacity .16s; }
+  .jian.out { opacity: 0; }
+  .jian :global(.kind) { font: 400 14px/1.6 var(--title); letter-spacing: .3em; color: var(--cinnabar); }
+  .jian :global(.jh) { display: flex; gap: 20px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  /* 竖匾：黑漆泥金 */
+  .jian :global(.bian) { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; background: #231c17; color: #e2c27a; font: 400 24px/1.1 var(--title); box-shadow: 0 0 0 3px #6a4a2c, 0 0 0 4px #3b2a19, 0 10px 18px -10px rgb(30 18 6 / .6); }
+  .jian :global(.bian i), .jian :global(.lian i) { font-style: normal; }
+  .jian :global(.bian.big) { font-size: 26px; padding: 14px 9px; }
+  .jian :global(.jh-r) { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .jian :global(.alias) { font: 400 15px/1.7 var(--serif); color: var(--ink-2); }
+  .jian :global(.who) { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 15px; }
+  .jian :global(.js) { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 10px; padding-top: 16px; }
+  .jian :global(.js h3) { font: 400 17px/1.8 var(--title); color: var(--cinnabar); }
+  .jian :global(.js p) { font-size: 15px; line-height: 1.95; color: var(--ink); }
+  .jian :global(.evs), .jian :global(.sea) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .jian :global(.evs a) { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; color: var(--ink); transition: color .2s; }
+  .jian :global(.evs a:hover) { color: var(--cinnabar); }
+  .jian :global(.evs .n) { flex: none; min-width: 6.4em; font: 400 14px/1.6 var(--title); color: var(--ink-3); letter-spacing: .06em; }
+  .jian :global(.evs .t) { font-size: 15px; line-height: 1.6; }
+  .jian :global(.evs small), .jian :global(.homes small) { font: 400 12.5px/1 var(--title); color: var(--ink-3); }
+  .jian :global(.sea li) { display: flex; gap: 10px; font-size: 15px; line-height: 1.7; }
+  .jian :global(.sea b) { flex: none; min-width: 2.4em; font: 400 14px/1.7 var(--title); color: var(--ink-3); }
+  .jian :global(.stop) { margin-top: 8px; font: 400 32px/1.2 var(--title); letter-spacing: .14em; }
+  .jian :global(.stop a) { font: inherit; }
+  .jian :global(.steps) { list-style: none; display: flex; margin: 16px 0 6px; padding: 0; }
+  .jian :global(.steps li) { flex: 1; position: relative; display: flex; justify-content: center; }
+  .jian :global(.steps li::before) { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--line-2); }
+  .jian :global(.steps li:first-child::before) { left: 50%; }
+  .jian :global(.steps li:last-child::before) { right: 50%; }
+  .jian :global(.steps li.done::before) { border-color: var(--cinnabar); }
+  .jian :global(.steps button) { position: relative; width: 11px; height: 11px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--cinnabar); }
+  .jian :global(.steps .done button), .jian :global(.steps .cur button) { background: var(--cinnabar); }
+  /* 门：匾在中间，上联在右，下联在左 */
+  .jian :global(.men) { display: flex; justify-content: center; align-items: flex-start; gap: 18px; margin: 22px 0 6px; }
+  .jian :global(.lian) { display: flex; flex-direction: column; align-items: center; margin-top: 30px; padding: 10px 6px; background: #b8322a; color: #1d1712; font: 400 18px/1.25 var(--title); box-shadow: 0 6px 14px -8px rgb(60 20 10 / .6); }
+  .jian :global(.said) { margin-top: 16px; font-size: 15.5px; line-height: 2; color: var(--ink); }
+  .jian :global(.go) { display: flex; gap: 10px; margin-top: 18px; }
+  .jian :global(.go button) { padding: 9px 16px; font: 400 16px/1 var(--title); letter-spacing: .2em; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s; }
+  .jian :global(.go button.on) { color: #fff6ea; background: var(--cinnabar); box-shadow: none; }
+  .jian :global(.go button:disabled) { opacity: .4; }
+  .jian :global(.more) { display: block; margin-top: 16px; font: 400 15px/1.4 var(--title); letter-spacing: .14em; color: var(--cinnabar); }
+  .jian :global(.season) { display: flex; align-items: center; gap: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .jian :global(.season .big) { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--cinnabar); color: #fff6ea; font: 400 36px/1 var(--title); }
+  .jian :global(.season .line) { font: 400 18px/1.6 var(--title); letter-spacing: .2em; color: var(--ink-2); }
+  .jian :global(.happen) { list-style: none; margin: 8px 0 0; padding: 0; }
+  .jian :global(.happen button) { display: flex; gap: 12px; width: 100%; padding: 12px 0; text-align: left; border-bottom: 1px solid var(--line); }
+  .jian :global(.happen li:last-child button) { border-bottom: 0; }
+  .jian :global(.happen .no) { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 2px; border-radius: 50%; background: var(--cinnabar); color: #fff6ea; font: 400 12px/1 var(--title); }
+  .jian :global(.happen .b) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .jian :global(.happen b) { font: 400 18px/1.3 var(--title); letter-spacing: .08em; }
+  .jian :global(.happen small) { font: 400 13px/1.4 var(--title); color: var(--ink-3); letter-spacing: .08em; }
+  .jian :global(.happen .b > span) { font-size: 14.5px; line-height: 1.85; color: var(--ink-2); }
+  .jian :global(.happen button:hover b) { color: var(--cinnabar); }
+  .jian :global(.homes) { list-style: none; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .jian :global(.homes li) { display: flex; justify-content: space-between; align-items: baseline; font: 400 16px/1.5 var(--title); transition: opacity .5s; }
+  .jian :global(.homes li.off) { opacity: .35; }
+
+  @media (max-width: 1100px) {
+    .stage { grid-template-columns: 1fr; }
+    .jian { position: static; max-height: none; }
+  }
+  @media (max-width: 640px) {
+    .mode { font-size: 17px; letter-spacing: .12em; padding: 8px 6px; }
+    .modes { gap: 4px; }
+    .track { width: 52vw; }
+  }
 </style>

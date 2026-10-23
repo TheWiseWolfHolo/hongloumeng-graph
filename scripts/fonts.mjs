@@ -21,12 +21,8 @@ const FONTS = [
     url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf'
   },
   {
-    key: 'kai', family: 'HLM Kai', file: 'LXGWWenKai-Regular.ttf', weight: '400',
-    url: 'https://github.com/lxgw/LxgwWenKai/releases/download/v1.530/LXGWWenKai-Regular.ttf'
-  },
-  {
-    /* 齐伋体，取自明代闵齐伋刻本的木刻宋体，只用在大标题；简体字也映射到它的繁体字形上 */
-    key: 'qiji', family: 'HLM Qiji', file: 'qiji-combo.ttf', weight: '400',
+    /* 齐伋体，取自明代闵齐伋刻本的木刻宋体，标题、引文、批语都用它；简体字也映射到它的繁体字形上。字身偏上，用 metrics 按字面中心重设上下高度，按钮和印章里的单字才能上下居中 */
+    key: 'qiji', family: 'HLM Qiji', file: 'qiji-combo.ttf', weight: '400', metrics: 'ascent-override:79%;descent-override:21%;', hanOnly: true, clean: 'scripts/qiji-clean.py',
     url: 'https://github.com/LingDong-/qiji-font/releases/download/0.0.4/qiji-combo.ttf'
   }
 ];
@@ -68,11 +64,20 @@ writeFileSync(textFile, text);
 for (const f of FONTS) {
   const out = join(outRoot, f.key);
   const stamp = join(out, '.stamp');
-  const want = `${f.file}|${textHash}`;
+  const want = `${f.file}|${textHash}|${f.hanOnly ? 'han' : 'all'}|${f.clean ? 'clean2' : ''}`;
   if (!force && existsSync(stamp) && readFileSync(stamp, 'utf8') === want) { console.log(f.key, '没有新字，跳过'); continue; }
-  const src = await source(f);
+  let src = await source(f);
+  /* 扫描字形里带着邻字残笔的，先洗一遍 */
+  if (f.clean) {
+    const c = join(cache, f.key + '.clean.ttf');
+    if (!existsSync(c)) execFileSync('python', [join(root, f.clean), src, c], { stdio: 'inherit' });
+    src = c;
+  }
   const sub = join(cache, `${f.key}.subset.ttf`);
-  execFileSync('python', ['-m', 'fontTools.subset', src, `--text-file=${textFile}`, `--output-file=${sub}`,
+  /* 齐伋体只收汉字：它的标点和西文字形窄，混排时逗号像半角；标点、数字一律落回思源宋体 */
+  let tf = textFile;
+  if (f.hanOnly) { tf = join(cache, `${f.key}.chars.txt`); writeFileSync(tf, [...text].filter(ch => /\p{Script=Han}/u.test(ch)).join('')); }
+  execFileSync('python', ['-m', 'fontTools.subset', src, `--text-file=${tf}`, `--output-file=${sub}`,
     '--layout-features=*', '--no-hinting', '--desubroutinize'], { stdio: 'inherit' });
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
@@ -94,7 +99,8 @@ for (const f of FONTS) {
 let css = '';
 for (const f of FONTS) {
   const raw = readFileSync(join(outRoot, f.key, 'result.css'), 'utf8');
-  css += raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/url\("\.\/([^"]+)"\)/g, `url("/fonts/${f.key}/$1")`).replace(/src:local\("[^"]*"\),/g, 'src:').trim() + '\n';
+  css += raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/url\("\.\/([^"]+)"\)/g, `url("/fonts/${f.key}/$1")`).replace(/src:local\("[^"]*"\),/g, 'src:').trim()
+    .replace(/font-weight:400;/g, `font-weight:400;${f.metrics ?? ''}`) + '\n';
 }
 writeFileSync(join(outRoot, 'fonts.css'), css);
 console.log('fonts.css', (css.length / 1024).toFixed(0), 'KB');

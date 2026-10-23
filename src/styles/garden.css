@@ -23,17 +23,9 @@
   --gd-plq: #07090b; --gd-plq-on: #7c1d18; --gd-plq-ink: #e6c477; --gd-plq-line: #a4834a; --gd-seal-ink: #fdf6ea; --gd-sealred: #a62e27;
   --gd-moon: #f3ead0; --gd-moon-o: 1; --gd-grain-o: .3;
 }
-.garden-grid { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-.gmain { min-width: 0; }
-.gtools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
-.gt-hint { font-family: var(--label); font-size: 13px; color: var(--ink-3); }
-.gmap { border-radius: 12px; background: var(--gd-mount); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
+.gmap { position: relative; background: var(--gd-mount); box-shadow: 0 0 0 1px var(--line), 0 30px 50px -36px rgb(40 26 10 / .55); overflow: hidden; }
 .gscroll { overflow-x: auto; overscroll-behavior-x: contain; }
-.gscroll svg { width: 100%; height: auto; display: block; }
-.gplaces { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 7px; margin-top: 12px; }
-.gplaces > span { font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin-right: 2px; }
-.gplaces .br { flex-basis: 100%; height: 0; }
-.map-note { font-family: var(--label); font-size: 12px; color: var(--ink-3); margin: 10px 2px 2px; }
+.gscroll svg { width: 100%; min-width: 760px; height: auto; display: block; transition: filter 1.2s ease; }
 
 .gd-h1 { stop-color: var(--gd-hill1); } .gd-h2 { stop-color: var(--gd-hill2); } .gd-h3 { stop-color: var(--gd-hill3); }
 .gd-w1 { stop-color: var(--gd-water1); } .gd-w2 { stop-color: var(--gd-water2); }
@@ -157,35 +149,11 @@
 .g-marker .pulse { fill: none; stroke: var(--cinnabar); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: gpulse 1.8s ease-out infinite; }
 @keyframes gpulse { from { transform: scale(.7); opacity: .9; } to { transform: scale(2.6); opacity: 0; } }
 
-.gcard { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 16px 20px 18px; position: sticky; top: 64px; max-height: calc(100vh - 84px); overflow-y: auto; }
-.gc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; }
-.gc-seal { writing-mode: vertical-rl; background: var(--c); color: var(--gd-seal-ink); font-family: var(--serif); font-weight: 900; font-size: 13px; letter-spacing: .04em; line-height: 1.1; padding: 6px 4px; border-radius: 3px; }
-.gc-count { font-variant-numeric: tabular-nums; color: var(--cinnabar); }
-.gcard h3 { margin: 2px 0 0; font-family: var(--display); font-size: 42px; font-weight: 700; line-height: 1.25; letter-spacing: .06em; text-wrap: balance; }
-.gcard .al { font-family: var(--label); color: var(--ink-2); font-size: 13px; margin-bottom: 10px; }
-.gcard p { margin: 8px 0; font-size: 14.5px; line-height: 1.85; }
-.gcard p b { font-family: var(--label); font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: .2em; margin-right: 8px; padding: 1px 4px 1px 7px; border: 1px solid currentColor; border-radius: 3px; vertical-align: 1px; }
-.gc-sec { font-family: var(--label); font-size: 12px; color: var(--ink-3); letter-spacing: .2em; margin: 14px 0 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
-.gcard .mem { display: flex; flex-wrap: wrap; gap: 6px; }
-.gc-evs .rel .role { min-width: 4.8em; }
-.gc-steps { list-style: none; display: flex; margin: 12px 0 6px; padding: 0; }
-.gc-steps li { flex: 1; position: relative; display: flex; justify-content: center; }
-.gc-steps li::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.5px solid var(--line); }
-.gc-steps li:first-child::before { left: 50%; }
-.gc-steps li:last-child::before { right: 50%; }
-.gc-steps li.done::before { border-color: var(--cinnabar); }
-.gc-steps button { position: relative; width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--cinnabar); background: var(--card); padding: 0; }
-.gc-steps .done button, .gc-steps .cur button { background: var(--cinnabar); }
-.gc-steps .cur button { box-shadow: 0 0 0 4px var(--cinnabar-soft); }
-.gcard .gc-text { font-size: 15.5px; }
-.gc-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.btn[disabled] { opacity: .4; cursor: default; }
-.gc-more { display: block; margin-top: 12px; background: none; border: 0; padding: 0; color: var(--cinnabar); font-family: var(--label); font-size: 13px; text-decoration: underline dotted; text-underline-offset: 3px; }
-.gcard .gc-hint { font-family: var(--label); font-size: 12px; color: var(--ink-3); margin: 10px 0 0; }
-.gc-evs { display: grid; gap: 2px; }
-.gc-evs .rel { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; text-align: left; }
-.gc-evs .rel:hover { background: var(--paper-2); }
-.gc-evs .rel .role { font: 600 12px var(--label); color: var(--cinnabar); }
-.gc-evs .rel .nm { font-size: 15px; }
-.gc-evs .rel .note { margin-left: 8px; font: 600 10.5px var(--label); color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 4px; }
-.gcard .mem { gap: 6px 14px; }
+/* 各种看法下图上的变化：只留几处、空院、朱圈小标 */
+.narrow .g-home:not(.keep), .narrow .g-site:not(.keep) { opacity: .32; filter: grayscale(.85); }
+.g-home, .g-site { transition: opacity .6s, filter .6s; }
+.g-home.vacant { opacity: .42; filter: grayscale(1); }
+.g-pin circle { fill: var(--cinnabar); stroke: var(--gd-silk); stroke-width: 2; }
+.g-pin text { font-family: var(--title); font-size: 11px; fill: var(--gd-seal-ink); text-anchor: middle; dominant-baseline: central; }
+.g-pin { animation: gpin .6s var(--ease) both; }
+@keyframes gpin { from { opacity: 0; } }

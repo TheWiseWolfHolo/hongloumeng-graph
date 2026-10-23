@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
 import { layLineage } from '../lib/lineage-layout.ts';
-import { byId, CHAPTERS } from '../lib/data.ts';
+import { byId, CHAPTERS, cn } from '../lib/data.ts';
 import { CLAN } from '../data/lineage.ts';
 
 const L = layLineage();
@@ -9,20 +10,14 @@ const f = (n: number) => n.toFixed(1);
 ---
 <Base title="贾府世系" description="《红楼梦》宁荣二府五代世系，照旧时族谱的吊线图画法：水、代、文、玉、草五个字辈，配偶、妾室与女儿出嫁一并标出。" section="relations" sub="lineage">
   <div class="wrap">
-    <header class="page-head">
-      <div>
-        <span class="eyebrow ink-in">关系 · 贰</span>
-        <h1 class="ink-in" style="--d:.1s">贾府世系</h1>
-      </div>
-      <p class="lede ink-in" style="--d:.25s">宁荣二公是同胞兄弟，到宝玉这一辈已是第四代。图照旧时族谱的吊线法画，名字竖写，从父亲名下垂线到子女；配偶写在右边，头上标“配”“妾”，女儿出嫁标“适”。点名字进人物页。</p>
-    </header>
+    <PageHead title="贾府世系" slip="賈府世系" quote="这样钟鸣鼎食之家｜翰墨诗书之族｜如今的儿孙｜竟一代不如一代了" from="第二回　冷子兴演说荣国府" />
 
     <div class="legend" aria-hidden="true">
       <span><svg width="34" height="10"><path d="M2 3.2H32M2 6.8H32" class="t-tie w" /></svg>正室</span>
       <span><svg width="34" height="10"><path d="M2 5H32" class="t-tie c" /></svg>妾</span>
       <span><svg width="34" height="10"><path d="M2 5H32" class="t-tie l" /></svg>情缘</span>
       <span><svg width="34" height="10"><path d="M17 0V10" class="t-link" /></svg>父子、父女</span>
-      <span class="muted">灰字的人物不在人物谱里</span>
+      <span class="lg-x">淡字不入人物谱</span>
     </div>
   </div>
 
@@ -31,8 +26,8 @@ const f = (n: number) => n.toFixed(1);
       <button type="button" data-jump="ning">宁国府</button>
       <button type="button" data-jump="rong">荣国府</button>
       <span class="sep"></span>
-      <button type="button" data-zoom="-1" aria-label="缩小">−</button>
-      <button type="button" data-zoom="1" aria-label="放大">＋</button>
+      <button type="button" data-zoom="-1" aria-label="缩小">小</button>
+      <button type="button" data-zoom="1" aria-label="放大">大</button>
       <button type="button" data-fit>整幅</button>
     </div>
     <div class="tree-box" data-tree data-w={L.W} data-h={L.H} data-rong={L.rongLeft} tabindex="0" aria-label="世系图，可以拖动">
@@ -73,26 +68,26 @@ const f = (n: number) => n.toFixed(1);
   </div>
 
   <div class="wrap gens">
-    <h2 class="gens-h">五个字辈</h2>
+    <h2 class="gens-h">五輩</h2>
     <ol>
-      {L.bands.map(b => <li><b>{b.ch}</b><span>{b.nth} · {b.label}</span><p>{b.note}</p></li>)}
+      {L.bands.map(b => <li><b>{b.ch}</b><span>{b.nth}　{b.label}</span><p>{b.note}</p></li>)}
     </ol>
-    <p class="muted small">第二回冷子兴演说荣国府时，把这两府的家谱从头讲过一遍。玉字辈的“宝玉”本该从玉旁，他名里的“玉”字就是这么来的；贾蓉、贾蔷、贾兰都是草字头。</p>
+    
   </div>
 
   <section class="wrap clan">
-    <h2 class="gens-h">族中旁支</h2>
-    <p class="clan-lede">宁荣二府之外，贾家还有一大族人。书里点到名字的，多半只在秦可卿出殡、除夕祭宗祠这类场合列一串名单，说不清是哪一房所出，所以不挂进上面的树，按字辈列在这里。</p>
+    <h2 class="gens-h">族中</h2>
+    <p class="clan-lede">这些族人多半只在秦可卿出殡、除夕祭宗祠时列名，看不出是哪一房所出，不挂进上面的树。</p>
     <div class="clan-cols">
       {CLAN.map(g => (
         <div class="clan-g reveal">
-          <h3><b>{g.ch}</b>{g.label}<small>{g.ms.length} 人</small></h3>
+          <h3><b>{g.ch}</b>{g.label}<small>{cn(g.ms.length)}人</small></h3>
           <ul>
             {g.ms.map(m => (
               <li>
                 {byId.has(m.n) ? <a class="person" href={`/people/${m.n}/`} data-peek>{m.n}</a> : <span class="cn">{m.n}</span>}
                 <span class="cs">{m.s}</span>
-                <span class="ch">{m.hui.map(n => <a href={`/chapters/${n}/`} title={CHAPTERS[n - 1].cn}>{n}</a>)}</span>
+                <span class="ch">{m.hui.map(n => <a href={`/chapters/${n}/`} title={CHAPTERS[n - 1].cn}>{cn(n)}</a>)}</span>
               </li>
             ))}
           </ul>
@@ -159,22 +154,23 @@ const f = (n: number) => n.toFixed(1);
 </script>
 
 <style>
-  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; font: 500 12.5px/1 var(--label); color: var(--ink-2); }
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; font: 400 15px/1 var(--title); letter-spacing: .12em; color: var(--ink-2); }
+  .lg-x { color: var(--ink-4); }
   .legend span { display: inline-flex; align-items: center; gap: 8px; }
   .tree-shell { position: relative; margin: 22px auto 0; max-width: calc(var(--wrap) + 160px); padding: 0 var(--gutter); }
-  .tree-tools { position: absolute; top: 12px; right: calc(var(--gutter) + 12px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(6px); }
-  .tree-tools button { height: 32px; min-width: 32px; padding: 0 12px; border-radius: 999px; font: 600 13px/1 var(--label); color: var(--ink-2); }
-  .tree-tools button:hover { background: var(--paper-2); color: var(--cinnabar); }
+  .tree-tools { position: absolute; top: 14px; right: calc(var(--gutter) + 16px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px 6px; background: color-mix(in srgb, var(--card) 94%, transparent); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .tree-tools button { height: 32px; min-width: 32px; padding: 0 10px; font: 400 16px/1 var(--title); letter-spacing: .1em; color: var(--ink-2); transition: color .3s; }
+  .tree-tools button:hover { color: var(--cinnabar); }
   .tree-tools .sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
-  .tree-box { overflow: auto; max-height: min(86vh, 1000px); border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: grab; scrollbar-width: thin; }
+  .tree-box { overflow: auto; max-height: min(86vh, 1000px); background: var(--card); box-shadow: inset 0 0 0 1px var(--line-2), 0 26px 44px -36px rgb(40 26 10 / .5); cursor: grab; scrollbar-width: thin; }
   .tree-box.drag { cursor: grabbing; }
   .tree-box.drag a { pointer-events: none; }
   .tscroll { display: flex; width: max-content; min-width: 100%; }
   .tlabels { position: sticky; left: 0; width: 96px; flex: none; z-index: 2; background: var(--card); border-right: 1px solid var(--line); }
   .tlab { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; pointer-events: none; }
-  .tlab i { font: normal 500 11px/1.4 var(--label); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
-  .tlab b { font: 700 38px/1.15 var(--display); color: var(--cinnabar); }
-  .tlab span { font: 500 11px/1.45 var(--label); color: var(--ink-3); padding: 0 10px; }
+  .tlab i { font: normal 400 13px/1.4 var(--title); letter-spacing: .25em; padding-left: .25em; color: var(--ink-3); }
+  .tlab b { font: 400 38px/1.2 var(--title); color: var(--cinnabar); }
+  .tlab span { font: 400 12px/1.5 var(--serif); color: var(--ink-3); padding: 0 10px; }
   .tsvg { display: block; margin: 0 auto; }
   .tn { cursor: pointer; outline: none; }
   .tn.xx { cursor: default; }
@@ -184,12 +180,12 @@ const f = (n: number) => n.toFixed(1);
   .tn.xx .tn-bg { display: none; }
   .tn-dot { fill: var(--c); stroke: var(--card); stroke-width: 2.2; }
   .tn.ghost .tn-dot { fill: var(--card); stroke: var(--k-lv); stroke-width: 1.4; }
-  .tn .nm { font-family: var(--serif); font-weight: 700; font-size: 19px; fill: var(--ink); transition: fill .15s; }
-  .tn.sp .nm { font-size: 16px; font-weight: 600; fill: var(--ink-2); }
+  .tn .nm { font-family: var(--title); font-weight: 400; font-size: 20px; fill: var(--ink); transition: fill .15s; }
+  .tn.sp .nm { font-size: 17px; fill: var(--ink-2); }
   .tn.ghost .nm { fill: var(--k-lv); }
   .tn.xx .nm { fill: var(--ink-3); font-weight: 400; }
   .tn .sb { font-family: var(--serif); font-size: 11px; fill: var(--ink-3); }
-  .tn-lab { font-family: var(--serif); font-weight: 700; font-size: 10.5px; fill: var(--cinnabar); }
+  .tn-lab { font-family: var(--title); font-size: 11.5px; fill: var(--cinnabar); }
   .tn.ghost .tn-lab { fill: var(--k-lv); }
   .tn:hover .nm, .tn:focus-visible .nm, .tn.hl .nm { fill: var(--cinnabar); }
   .t-link { fill: none; stroke: var(--ink-3); stroke-width: 1.1; opacity: .85; }
@@ -200,31 +196,31 @@ const f = (n: number) => n.toFixed(1);
   .t-tie.bro { stroke: var(--gold); stroke-dasharray: 6 5; }
   .gen-band { fill: var(--paper-2); opacity: .5; }
   .gen-note { font-family: var(--serif); font-size: 11.5px; letter-spacing: .12em; fill: var(--ink-3); text-anchor: middle; }
-  .tr-house { font-family: var(--display); font-size: 27px; letter-spacing: .5em; text-anchor: middle; fill: var(--c); opacity: .85; }
+  .tr-house { font-family: var(--title); font-size: 27px; letter-spacing: .5em; text-anchor: middle; fill: var(--c); opacity: .85; }
 
-  .gens { margin-top: 44px; }
-  .clan { margin-top: 56px; }
-  .clan-lede { max-width: 46em; color: var(--ink-2); line-height: 1.9; margin-bottom: 20px; }
+  .gens { margin-top: 64px; }
+  .clan { margin-top: 72px; }
+  .clan-lede { max-width: 46em; font-size: 15px; color: var(--ink-3); line-height: 1.9; margin-bottom: 22px; }
   .clan-cols { columns: 3 280px; column-gap: 14px; }
   .clan-g { break-inside: avoid; margin-bottom: 14px; }
-  .clan-g { border: 1px solid var(--line); border-radius: 6px; background: var(--card); padding: 16px 18px 12px; }
-  .clan-g h3 { display: flex; align-items: baseline; gap: 10px; font: 700 15px var(--label); letter-spacing: .14em; color: var(--ink-2); padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  .clan-g h3 b { font: 700 30px/1 var(--display); color: var(--cinnabar); }
-  .clan-g h3 small { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+  .clan-g { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); padding: 18px 20px 12px; }
+  .clan-g h3 { display: flex; align-items: baseline; gap: 12px; font: 400 17px var(--title); letter-spacing: .14em; color: var(--ink-2); padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .clan-g h3 b { font: 400 30px/1 var(--title); color: var(--cinnabar); }
+  .clan-g h3 small { margin-left: auto; font-size: 14px; color: var(--ink-3); }
   .clan-g ul { list-style: none; margin: 0; padding: 0; }
   .clan-g li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .clan-g li:last-child { border-bottom: 0; }
-  .clan-g .cn, .clan-g .person { font: 700 16px var(--serif); }
+  .clan-g .cn, .clan-g .person { font: 400 18px var(--title); letter-spacing: .04em; }
   .clan-g .cs { grid-column: 1 / -1; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); }
-  .clan-g .ch { grid-column: 2; grid-row: 1; justify-self: end; display: flex; gap: 6px; }
-  .clan-g .ch a { font: 600 11px var(--label); color: var(--cinnabar); padding: 1px 5px; border: 1px solid var(--cinnabar-soft); border-radius: 3px; }
-  .clan-g .ch a::after { content: '回'; }
-  .clan-g .ch a:hover { background: var(--cinnabar); color: #fff6ea; }
-  .gens-h { font: 700 28px/1.2 var(--display); margin-bottom: 16px; }
+  .clan-g .ch { grid-column: 2; grid-row: 1; justify-self: end; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 10px; }
+  .clan-g .ch a { font: 400 13px/1.6 var(--title); color: var(--cinnabar); transition: color .3s; }
+  .clan-g .ch a:hover { color: var(--ink); }
+  .gens-h { display: flex; align-items: center; gap: 14px; font: 400 30px/1.2 var(--title); letter-spacing: .24em; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .gens-h::before { content: ''; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.6px var(--cinnabar); }
   .gens ol { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-  .gens li { padding: 16px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); display: grid; gap: 4px; }
-  .gens li b { font: 700 40px/1 var(--display); color: var(--cinnabar); }
-  .gens li span { font: 600 12px/1.5 var(--label); letter-spacing: .14em; color: var(--ink-3); }
+  .gens li { padding: 18px 18px 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 6px; }
+  .gens li b { font: 400 40px/1 var(--title); color: var(--cinnabar); }
+  .gens li span { font: 400 14px/1.5 var(--title); letter-spacing: .14em; color: var(--ink-3); }
   .gens li p { font-size: 14px; line-height: 1.75; color: var(--ink-2); }
   @media (max-width: 760px) {
     .tlabels { width: 46px; }

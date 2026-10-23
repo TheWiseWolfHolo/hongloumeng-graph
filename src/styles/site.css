@@ -7,10 +7,10 @@
   backdrop-filter: saturate(1.2) blur(14px);
   -webkit-backdrop-filter: saturate(1.2) blur(14px);
   border-bottom: 1px solid var(--line);
-  transition: transform .45s var(--ease), background .3s;
+  transition: box-shadow .4s, border-color .4s;
 }
-.site-header.hide { transform: translateY(-100%); }
-.hd { display: flex; align-items: center; gap: 28px; height: var(--header-h); }
+.site-header.lifted { box-shadow: 0 10px 24px -20px rgb(40 26 10 / .45); }
+.hd { display: flex; align-items: center; gap: 28px; height: calc(var(--header-h) - 1px); }
 .brand { display: flex; align-items: center; gap: 11px; flex: none; }
 .brand-seal { width: 34px; height: 34px; border-radius: 6px; filter: url(#rough); transition: transform .5s var(--ease); }
 .brand:hover .brand-seal { transform: rotate(-6deg) scale(1.05); }
@@ -88,7 +88,8 @@ kbd {
 }
 :root[data-theme="dark"] .i-moon, :root:not([data-theme="dark"]) .i-sun { display: none; }
 .menu-open { display: none; }
-.subnav { display: flex; gap: 34px; height: 44px; align-items: center; overflow-x: auto; scrollbar-width: none; border-top: 1px solid var(--line); }
+/* 子栏目不钉住，跟着页面一起滚走 */
+.subnav { display: flex; gap: 34px; height: 44px; align-items: center; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
 .subnav::-webkit-scrollbar { display: none; }
 .subnav a { position: relative; font: 400 15.5px/1 var(--kai); letter-spacing: .2em; color: var(--ink-3); white-space: nowrap; padding: 14px 0 14px 14px; transition: color .2s; }
 .subnav a::before { content: ''; position: absolute; left: 0; top: 50%; width: 5px; height: 5px; margin-top: -3px; border-radius: 50%; background: var(--cinnabar); opacity: 0; transition: opacity .3s; }
@@ -200,15 +201,18 @@ dialog::backdrop { background: rgba(20, 16, 12, .42); backdrop-filter: blur(3px)
 .prog-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 
 /* ============ 人物悬停卡 ============ */
+/* 一张小笺：细双边框，名字用刻本字，简介写全不截断 */
 .peek {
   position: fixed;
   z-index: 90;
   width: 300px;
   max-width: calc(100vw - 24px);
-  padding: 16px 18px 14px;
+  padding: 18px 20px 16px;
   background: var(--card);
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  outline: 1px solid var(--line);
+  outline-offset: -5px;
+  border-radius: 2px;
   box-shadow: var(--shadow-lg);
   pointer-events: auto;
   opacity: 0;
@@ -216,8 +220,10 @@ dialog::backdrop { background: rgba(20, 16, 12, .42); backdrop-filter: blur(3px)
   transition: opacity .2s, transform .25s var(--ease);
 }
 .peek.show { opacity: 1; transform: none; }
-.peek-head { display: flex; align-items: center; gap: 10px; }
-.peek-name { font: 700 24px/1.1 var(--display); }
-.peek-title { font: 500 12px/1.4 var(--label); color: var(--ink-3); margin-top: 2px; }
-.peek-bio { font-size: 14px; line-height: 1.8; color: var(--ink-2); margin-top: 10px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.peek-foot { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font: 500 12px/1 var(--label); color: var(--ink-3); }
+.peek-head { display: flex; align-items: center; gap: 12px; }
+.peek-img { width: 44px; height: 58px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px var(--line-2); }
+.peek-name { font: 400 24px/1.1 var(--title); letter-spacing: .08em; }
+.peek-title { font: 400 13px/1.5 var(--serif); color: var(--ink-3); margin-top: 4px; }
+.peek-bio { font-size: 14px; line-height: 1.85; color: var(--ink-2); margin-top: 12px; }
+.peek-end { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font: 400 13.5px/1.6 var(--serif); color: var(--ink-2); }
+.peek-end b { flex: none; font: 400 13px/1.6 var(--title); color: var(--cinnabar); letter-spacing: .1em; }

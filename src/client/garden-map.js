@@ -1,7 +1,6 @@
 /* 大观园地图。画法沿用旧版：按绢本青绿界画的路子，先铺绢地、水系和围墙，再起山石、种树，最后放院落、景致和匾额。
    这一段给旧代码补上它要用的几个小工具，数据从页面里的 JSON 和数据模块取。 */
 import { GARDEN, GARDEN_TOUR, GARDEN_TOUR_PATH } from '../data/garden.ts';
-import { EVENTS as EVENT_LIST } from '../data/events.ts';
 
 const NS = 'http://www.w3.org/2000/svg';
 const svgEl = (tag, attrs = {}, parent) => {
@@ -12,15 +11,9 @@ const svgEl = (tag, attrs = {}, parent) => {
 };
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const GROUP_OF = JSON.parse(document.getElementById('garden-people').textContent);
 const byId = new Map(Object.entries(GROUP_OF).map(([id, grp]) => [id, { id, grp }]));
 const gColor = g => `var(--g-${g})`;
-const pill = id => byId.has(id)
-  ? `<a class="person" href="/people/${encodeURIComponent(id)}/" data-peek style="--pc:var(--g-${byId.get(id).grp})">${esc(id)}</a>`
-  : `<span class="person-x">${esc(id)}</span>`;
-const EVENTS = EVENT_LIST.map((e, i) => ({ ...e, i, late: e.c[0] > 80 }));
-const chShort = c => (c.length > 1 && c[1] !== c[0] ? `${c[0]}–${c[c.length - 1]} 回` : `${c[0]} 回`);
 function cnNum(n) {
   const d = '零一二三四五六七八九';
   if (n < 10) return d[n];
@@ -31,7 +24,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const Garden = (() => {
   const W = 1200, H = 790, WALL = [60, 62, 1140, 736];
-  let svg, card, box, sel = 'yhy', seed = 11;
+  let svg, box, sel = null, seed = 11;
   let tour = null, route = null, reveal = null, marker = null, stops = [], stopEls = [], total = 0, raf = 0;
   const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
   const rr = (a, b) => a + rnd() * (b - a);
@@ -625,35 +618,46 @@ const Garden = (() => {
     stops = [];
   }
 
-  /* ---------- 交互 ---------- */
-  function mark() {
-    $$('.g-home, .g-site', svg).forEach(g => g.classList.toggle('on', g.dataset.id === sel));
-    $$('#gPlaces .chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.id === sel)));
-  }
-  function render() {
-    mark();
-    const b = GARDEN.find(x => x.id === sel);
-    if (!b) return;
-    const evs = (b.ev || []).map(t => EVENTS.find(e => e.t === t)).filter(Boolean);
-    const home = b.kind === 'home';
-    card.innerHTML = `<div class="gc-top"><span class="gc-kind">${home ? '院落' : '园中景致'}</span>${home ? `<span class="gc-seal" style="--c:${ownerColor(b)}">${esc(b.seal)}</span>` : ''}</div>
-      <h3>${esc(b.name)}</h3><div class="al">${esc(b.alias)}</div>
-      <p><b>景致</b>${esc(b.scene)}</p><p><b>旧事</b>${esc(b.note)}</p>
-      <div class="gc-sec">${home ? '住在这里' : '在这里出现过'}</div><div class="mem">${b.who.map(pill).join('')}</div>
-      ${evs.length ? `<div class="gc-sec">书中经历</div><div class="gc-evs">${evs.map(e => `<button class="rel" type="button" data-ev="${e.i}"><span class="role">${chShort(e.c)}</span><span class="main"><span class="nm">${esc(e.t)}</span>${e.late ? '<span class="note">续书</span>' : ''}</span></button>`).join('')}</div>` : ''}`;
-  }
-  function select(id, center) {
-    if (tour) endTour(true);
+  /* ---------- 交互：图只管亮哪里、暗哪里、走到哪；旁边的笺由页面来写 ---------- */
+  let onPick = () => {};
+  let pinG = null;
+  function mark(id) {
     sel = id;
-    render();
-    if (center && box.scrollWidth > box.clientWidth) {
-      const b = GARDEN.find(x => x.id === id), k = box.scrollWidth / W;
-      box.scrollTo({ left: b.pos[0] * k - box.clientWidth / 2, behavior: 'smooth' });
-    }
+    $$('.g-home, .g-site', svg).forEach(g => g.classList.toggle('on', g.dataset.id === id));
+  }
+  /* 只留下 keep 里的几处，其余淡下去；传 null 恢复 */
+  function focusOn(keep) {
+    svg.classList.toggle('narrow', !!keep);
+    $$('.g-home, .g-site', svg).forEach(g => g.classList.toggle('keep', !!keep && keep.has(g.dataset.id)));
+  }
+  /* 空了的院落 */
+  function vacant(ids) {
+    $$('.g-home', svg).forEach(g => g.classList.toggle('vacant', ids.has(g.dataset.id)));
+  }
+  /* 在几处插上朱笔圈的小标，n 是序号 */
+  function pins(list) {
+    pinG?.remove();
+    pinG = null;
+    if (!list || !list.length) return;
+    pinG = el('g', { class: 'g-pins' }, svg);
+    const count = {};
+    list.forEach(({ id, n }) => {
+      const b = GARDEN.find(x => x.id === id);
+      if (!b) return;
+      const k = count[id] = (count[id] || 0) + 1;
+      const x = b.pos[0] + (k - 1) * 22 - 10, y = (b.id === 'dgl' ? 138 : b.pos[1]) - (b.kind === 'home' ? 46 : 40);
+      const g = el('g', { class: 'g-pin', transform: `translate(${x} ${y})`, 'data-pin': n }, pinG);
+      el('circle', { r: 10 }, g);
+      el('text', { y: .5 }, g).textContent = cnNum(n);
+    });
+  }
+  function center(id) {
+    if (box.scrollWidth <= box.clientWidth) return;
+    const b = GARDEN.find(x => x.id === id), k = box.scrollWidth / W;
+    if (b) box.scrollTo({ left: b.pos[0] * k - box.clientWidth / 2, behavior: reduced ? 'auto' : 'smooth' });
   }
 
   /* 游园：路线按站点逐段展开，行人沿路走过去 */
-  const reduce = () => reduced;
   function measure() {
     total = route.getTotalLength();
     let from = 0;
@@ -679,14 +683,13 @@ const Garden = (() => {
     stopEls.forEach((s, k) => s.classList.toggle('done', stops[k] <= L + 1));
   }
   function tourGo(i) {
+    if (!tour) return;
     i = Math.max(0, Math.min(GARDEN_TOUR.length - 1, i));
     const from = tour.len, to = stops[i], st = GARDEN_TOUR[i];
     tour.i = i;
-    sel = st.site || null;
-    mark();
-    renderTour();
+    mark(st.site || null);
     cancelAnimationFrame(raf);
-    const dur = reduce() ? 0 : Math.min(2600, Math.max(400, Math.abs(to - from) * 2.4)), t0 = performance.now();
+    const dur = reduced ? 0 : Math.min(2600, Math.max(400, Math.abs(to - from) * 2.4)), t0 = performance.now();
     const step = now => {
       const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
       setLen(from + (to - from) * e);
@@ -695,69 +698,34 @@ const Garden = (() => {
     raf = requestAnimationFrame(step);
     if (box.scrollWidth > box.clientWidth) {
       const k = box.scrollWidth / W;
-      box.scrollTo({ left: st.at[0] * k - box.clientWidth / 2, behavior: reduce() ? 'auto' : 'smooth' });
+      box.scrollTo({ left: st.at[0] * k - box.clientWidth / 2, behavior: reduced ? 'auto' : 'smooth' });
     }
-  }
-  function renderTour() {
-    const st = GARDEN_TOUR[tour.i], n = GARDEN_TOUR.length, last = tour.i === n - 1;
-    const siteB = st.site && GARDEN.find(b => b.id === st.site);
-    card.innerHTML = `<div class="gc-top"><span class="gc-kind">第十七回 · 大观园试才题对额</span><span class="gc-count">${cnNum(tour.i + 1)} / ${cnNum(n)}</span></div>
-      <h3>${esc(st.name)}</h3>
-      <ol class="gc-steps">${GARDEN_TOUR.map((s, k) => `<li class="${k < tour.i ? 'done' : k === tour.i ? 'cur' : ''}"><button type="button" data-step="${k}" title="${esc(s.name)}" aria-label="第${cnNum(k + 1)}处 ${esc(s.name)}"></button></li>`).join('')}</ol>
-      <p class="gc-text">${esc(st.text)}</p>
-      <div class="gc-nav"><button class="btn" type="button" data-tour="prev"${tour.i === 0 ? ' disabled' : ''}>上一处</button><button class="btn primary" type="button" data-tour="${last ? 'end' : 'next'}">${last ? '游园结束' : '下一处'}</button>${last ? '' : '<button class="btn" type="button" data-tour="end">不走了</button>'}</div>
-      ${siteB ? `<button class="gc-more" type="button" data-goto="${siteB.id}">看${esc(siteB.name)}的住户与旧事 ›</button>` : ''}
-      <p class="gc-hint">键盘左右方向键也能换站。</p>`;
+    return i;
   }
   function startTour() {
     if (!stops.length) measure();
     tour = { i: 0, len: 0 };
     svg.classList.add('touring');
-    $('#gTour').textContent = '结束游园';
     setLen(0);
-    tourGo(0);
+    return tourGo(0);
   }
-  function endTour(silent) {
+  function endTour() {
     cancelAnimationFrame(raf);
     tour = null;
     svg.classList.remove('touring');
-    $('#gTour').textContent = '随贾政一行游园';
-    if (!silent) { sel = sel || 'yhy'; render(); }
   }
 
-  function init() {
+  function init(opts = {}) {
     svg = $('#gardenSvg');
-    card = $('#gcard');
     box = $('.gscroll');
+    onPick = opts.onPick || onPick;
     draw();
-    const pick = ev => { const g = ev.target.closest('.g-home, .g-site'); if (g) select(g.dataset.id); };
+    const pick = ev => { const g = ev.target.closest('.g-home, .g-site'); if (g) onPick(g.dataset.id); };
     svg.addEventListener('click', pick);
-    svg.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { const g = ev.target.closest('.g-home, .g-site'); if (g) { ev.preventDefault(); select(g.dataset.id); } } });
-    const homes = GARDEN.filter(b => b.kind === 'home'), sites = GARDEN.filter(b => b.kind === 'site');
-    $('#gPlaces').innerHTML = `<span>院落</span>${homes.map(b => `<button class="chip" type="button" data-id="${b.id}" aria-pressed="false"><i class="dot" style="--c:${ownerColor(b)}"></i>${esc(b.name)}</button>`).join('')}<i class="br"></i><span>景致</span>${sites.map(b => `<button class="chip" type="button" data-id="${b.id}" aria-pressed="false">${esc(b.name)}</button>`).join('')}`;
-    $('#gPlaces').addEventListener('click', ev => { const c = ev.target.closest('.chip'); if (c) select(c.dataset.id, true); });
-    $('#gTour').addEventListener('click', () => (tour ? endTour() : startTour()));
-    card.addEventListener('click', ev => {
-      const t = ev.target.closest('[data-tour],[data-step],[data-goto],[data-ev]');
-      if (!t) return;
-      if (t.dataset.ev) { location.href = '/timeline/#ev' + t.dataset.ev; return; }
-      if (t.dataset.goto) { select(t.dataset.goto); return; }
-      if (t.dataset.step) { tourGo(+t.dataset.step); return; }
-      const a = t.dataset.tour;
-      if (a === 'prev') tourGo(tour.i - 1);
-      else if (a === 'next') tourGo(tour.i + 1);
-      else endTour();
-    });
-    document.addEventListener('keydown', ev => {
-      if (!tour || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
-      if (ev.key === 'ArrowRight') { tourGo(tour.i + 1); ev.preventDefault(); }
-      else if (ev.key === 'ArrowLeft') { tourGo(tour.i - 1); ev.preventDefault(); }
-      else if (ev.key === 'Escape') endTour();
-    });
-    render();
+    svg.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { const g = ev.target.closest('.g-home, .g-site'); if (g) { ev.preventDefault(); onPick(g.dataset.id); } } });
     if (box.scrollWidth > box.clientWidth) box.scrollLeft = (box.scrollWidth - box.clientWidth) / 2;
   }
-  return { init, select, startTour };
+  return { init, mark, focusOn, vacant, pins, center, startTour, tourGo, endTour, touring: () => !!tour, tourIndex: () => tour?.i ?? -1 };
 })();
 
 export default Garden;

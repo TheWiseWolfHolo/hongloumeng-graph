@@ -44,7 +44,8 @@
   --k-death: #2a2622;
 
   --serif: "HLM Serif", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  --kai: "HLM Kai", "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", var(--serif);
+  /* 原先引文、批语用楷书，现在一律用齐伋体刻本字；变量名留着，免得各处都改 */
+  --kai: "HLM Qiji", var(--serif);
   /* 标题和小标签都用朱雀仿宋，有刻本的味道；不用黑体 */
   /* 大标题用齐伋体刻本字，小字和正文都用思源宋体；只有一档粗细的字不让浏览器假加粗，见 html 上的 font-synthesis */
   --display: "HLM Qiji", var(--serif);
@@ -197,6 +198,9 @@ a.person {
   transition: background-size .25s var(--ease), color .2s;
 }
 a.person:hover { color: var(--pc, var(--cinnabar)); background-size: 100% 2px; }
+/* 竖排里人名的线画在字的左边，就是古书的专名线 */
+.vt a.person { background-size: 1px 100%; background-position: 0 0; }
+.vt a.person:hover { background-size: 2px 100%; }
 
 .btn {
   display: inline-flex;

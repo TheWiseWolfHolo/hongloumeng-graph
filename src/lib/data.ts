@@ -26,22 +26,8 @@ export const personUrl = (id: string) => `/people/${id}/`;
 export const chapterUrl = (n: number) => `/chapters/${n}/`;
 export const groupColor = (g: GroupId) => `var(--g-${g})`;
 
-const NUM = '零一二三四五六七八九';
-export function cn(n: number): string {
-  if (n < 10) return NUM[n];
-  if (n < 20) return '十' + (n % 10 ? NUM[n % 10] : '');
-  const units = ['', '十', '百', '千'];
-  const ds = String(n).split('').map(Number);
-  let out = '', zero = false;
-  ds.forEach((d, i) => {
-    const u = units[ds.length - 1 - i];
-    if (d === 0) { zero = true; return; }
-    if (zero && out) out += '零';
-    zero = false;
-    out += NUM[d] + u;
-  });
-  return out;
-}
+export { cn } from './cn.ts';
+import { cn } from './cn.ts';
 export const huiName = (n: number) => `第${cn(n)}回`;
 /* 回目范围写成“第三十三至三十四回” */
 export function huiRange(c: number[]): string {

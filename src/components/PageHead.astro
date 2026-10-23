@@ -1,0 +1,37 @@
+---
+/* 各页的页头：像书衣，左上贴一枚题签，页名一笔一笔写出来；右边竖排一句书里的原话，其余留白。 */
+import TitleSlip from './TitleSlip.astro';
+
+interface Props { title: string; slip: string; quote?: string; from?: string }
+const { title, slip, quote, from } = Astro.props;
+const cols = quote ? quote.split('｜') : [];
+---
+<header class="ph">
+  <h1 class="sr-only">{title}</h1>
+  <TitleSlip text={slip} size="md" start={.15} class="ph-slip" />
+  {quote && (
+    <p class="ph-q">
+      {from && <small>{from}</small>}
+      {cols.map((c, i) => <span style={`--k:${i}`}>{c}</span>)}
+    </p>
+  )}
+  <slot />
+</header>
+
+<style>
+  .ph { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 40px; padding: clamp(32px, 4.5vw, 60px) 0 clamp(28px, 4vw, 48px); }
+  /* 竖排时块方向是从右往左，一句一行自然排开；出处写在最右，比正文低两格 */
+  .ph-q { margin: 0; writing-mode: vertical-rl; font: 400 clamp(18px, 1.6vw, 21px)/2.2 var(--title); letter-spacing: .3em; color: var(--ink-2); }
+  .ph-q span { display: block; }
+  .ph-q span + span { padding-block-start: 1em; }
+  .ph-q small { display: block; padding-block-start: 4em; margin-inline-end: .6em; font: 400 13px/1.6 var(--title); letter-spacing: .4em; color: var(--cinnabar); }
+  @media (prefers-reduced-motion: no-preference) {
+    .ph-q span, .ph-q small { animation: ph-in 1.6s var(--ease-ink) both; animation-delay: calc(1.6s + var(--k, 0) * .5s); }
+    .ph-q small { animation-delay: 1.4s; }
+  }
+  @keyframes ph-in { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0); } }
+  @media (max-width: 640px) {
+    .ph { gap: 20px; }
+    .ph-q { font-size: 16px; letter-spacing: .2em; }
+  }
+</style>

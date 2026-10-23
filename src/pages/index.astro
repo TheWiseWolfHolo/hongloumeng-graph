@@ -4,10 +4,10 @@ import Base from '../layouts/Base.astro';
 import Seal from '../components/Seal.astro';
 import TitleSlip from '../components/TitleSlip.astro';
 import daguanyuan from '../assets/paintings/sunwen-daguanyuan.jpg';
-import imgDaiyu from '../assets/paintings/tuyong-daiyu.jpg';
-import imgStone from '../assets/paintings/tuyong-stone.jpg';
-import imgGarden from '../assets/paintings/sunwen-garden.jpg';
-import imgJinghuan from '../assets/paintings/tuyong-jinghuan.jpg';
+import imgPeople from '../assets/paintings/door-people.webp';
+import imgRelations from '../assets/paintings/door-relations.webp';
+import imgGarden from '../assets/paintings/door-garden.webp';
+import imgChapters from '../assets/paintings/door-chapters.webp';
 import InkRiver from '../components/InkRiver.astro';
 import { PEOPLE, EDGES, CHAPTERS, TOTAL_CHARS, TOTAL_NOTES, STATS, byId, verseOf, huiName } from '../lib/data.ts';
 import { FAMOUS_NOTES } from '../data/famous-notes.ts';
@@ -21,13 +21,12 @@ const twelve = TWELVE_ORDER.map(id => {
   const lines = id === '林黛玉' ? ['堪怜咏絮才', '玉带林中挂'] : id === '薛宝钗' ? ['可叹停机德', '金簪雪里埋'] : v!.verse.slice(-2);
   return { p, img: portraitImage(p.portrait)!, lines, book: p.book === 'z' ? '正册' : p.book === 'f' ? '副册' : '又副册' };
 });
-/* 开卷四轴，画取改琦《红楼梦图咏》和孙温全景的左半边，句子都是书里的原话。
-   人物谱配黛玉绣像；关系配警幻，她“司人间之风情月债”；回目配通灵宝石，这部书原叫《石头记》，故事就刻在石上 */
+/* 开卷四轴，画是站长另画的意象插画：群芳围读、回廊往来、曲径临水、石上成书。句子都是书里的原话 */
 const DOORS = [
-  { href: '/people/', title: '人物譜', img: imgDaiyu, line: '千红一窟，万艳同杯' },
-  { href: '/graph/', title: '關係', img: imgJinghuan, line: '千里姻缘一线牵' },
+  { href: '/people/', title: '人物譜', img: imgPeople, line: '千红一窟，万艳同杯' },
+  { href: '/graph/', title: '關係', img: imgRelations, line: '千里姻缘一线牵' },
   { href: '/garden/', title: '大觀園', img: imgGarden, line: '天上人间诸景备' },
-  { href: '/chapters/', title: '一百二十回', img: imgStone, line: '无材可去补苍天' }
+  { href: '/chapters/', title: '一百二十回', img: imgChapters, line: '无材可去补苍天' }
 ];
 const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary]);
 ---
@@ -70,21 +69,30 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   </section>
 
   <section class="section wrap spread-wrap reveal">
-    <div class="spread" data-spread>
-      <figure class="leaf zhu" data-zhu>
-        <blockquote class="zhu-s kai" data-zhu-s>{FAMOUS_NOTES[0].s}</blockquote>
-        <figcaption><a href={`/chapters/${FAMOUS_NOTES[0].n}/`} data-zhu-link>{huiName(FAMOUS_NOTES[0].n)}　{FAMOUS_NOTES[0].label}</a></figcaption>
-      </figure>
-      <span class="fold" aria-hidden="true"></span>
-      <div class="leaf hui" data-today>
-        <a class="hui-in" href="/chapters/1/" data-today-link>
-          <span class="hui-label kai" data-today-eyebrow>今日一回</span>
-          <span class="hui-cn" data-today-cn>第一回</span>
-          <span class="hui-t" data-today-title>{CHAPTERS[0].title.map(t => <span>{t}</span>)}</span>
-        </a>
+    <div class="book" data-book>
+      <div class="ye" data-spread>
+        <div class="half hui" data-half="hui">
+          <a class="hui-in" href="/chapters/1/" data-today-link>
+            <span class="juan">脂硯齋重評石頭記</span>
+            <span class="hui-cn" data-today-cn>第一回</span>
+            <span class="hui-t" data-today-title>{CHAPTERS[0].title.map(t => <span>{t}</span>)}</span>
+            <span class="hui-label" data-today-eyebrow>今日一回</span>
+          </a>
+        </div>
+        <div class="banxin" aria-hidden="true">
+          <span class="bx-name">石頭記</span>
+          <svg class="yuwei" viewBox="0 0 20 14"><path d="M0 0h20v14L10 7 0 14Z" /></svg>
+          <span class="bx-hui" data-bx-hui>第一回</span>
+          <svg class="yuwei down" viewBox="0 0 20 14"><path d="M0 14h20V0L10 7 0 0Z" /></svg>
+        </div>
+        <figure class="half zhu" data-half="zhu">
+          <figcaption><a href={`/chapters/${FAMOUS_NOTES[0].n}/`} data-zhu-link>{huiName(FAMOUS_NOTES[0].n)}　{FAMOUS_NOTES[0].label}</a></figcaption>
+          <blockquote class="zhu-s" data-zhu-s>{FAMOUS_NOTES[0].s}</blockquote>
+          <Seal text="脂硯" size={40} class="zhu-seal" />
+        </figure>
       </div>
     </div>
-    <button type="button" class="turn kai" data-turn>翻一页</button>
+    <button type="button" class="turn" data-turn>翻一頁</button>
   </section>
 
   <section class="section twelve-sec">
@@ -116,38 +124,90 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
 </Base>
 
 <script>
-  /* 翻开的书：右页今日一回，或者接着上次读；左页一则朱批，按日子轮换。“翻一页”两页一起换 */
+  /* 翻开的书：一叶古书，右半叶是今日一回（或者接着上次读），左半叶是一则朱批，按日子轮换。
+     “翻一页”时先把新字形取回来，再让右半叶像纸一样翻过去，新的两半叶在底下现出来；字形没到之前不换字，免得先用别的字体排一遍再跳回来。 */
   const data: [number, string, string, string][] = JSON.parse(document.getElementById('chapter-data')!.textContent!);
   const notes: { n: number; label: string; s: string; hui: string }[] = JSON.parse(document.getElementById('zhu-data')!.textContent!);
-  const spread = document.querySelector<HTMLElement>('[data-spread]')!;
-  const $s = <T extends Element = HTMLElement>(sel: string) => spread.querySelector<T>(sel)!;
-  const setHui = (n: number, label: string) => {
+  const ye = document.querySelector<HTMLElement>('[data-spread]')!;
+  const book = document.querySelector<HTMLElement>('[data-book]')!;
+  const $s = <T extends Element = HTMLElement>(sel: string, root: ParentNode = ye) => root.querySelector<T>(sel)!;
+  const setHui = (n: number, label: string, root: ParentNode = ye) => {
     const c = data[n - 1];
-    $s<HTMLAnchorElement>('[data-today-link]').href = `/chapters/${n}/`;
-    $s('[data-today-eyebrow]').textContent = label;
-    $s('[data-today-cn]').textContent = c[1];
-    $s('[data-today-title]').replaceChildren(...c[2].split('　').map(t => Object.assign(document.createElement('span'), { textContent: t })));
+    $s<HTMLAnchorElement>('[data-today-link]', root).href = `/chapters/${n}/`;
+    $s('[data-today-eyebrow]', root).textContent = label;
+    $s('[data-today-cn]', root).textContent = c[1];
+    $s('[data-today-title]', root).replaceChildren(...c[2].split('　').map(t => Object.assign(document.createElement('span'), { textContent: t })));
   };
-  const setZhu = (i: number) => {
+  const setZhu = (i: number, root: ParentNode = ye) => {
     const x = notes[i];
-    $s('[data-zhu-s]').textContent = x.s;
-    const a = $s<HTMLAnchorElement>('[data-zhu-link]');
+    $s('[data-zhu-s]', root).textContent = x.s;
+    const a = $s<HTMLAnchorElement>('[data-zhu-link]', root);
     a.textContent = `${x.hui}　${x.label}`;
     a.href = `/chapters/${x.n}/`;
   };
+  const setBx = (n: number) => { $s('[data-bx-hui]').textContent = data[n - 1][1]; };
   let last: { n: number } | null = null;
   try { last = JSON.parse(localStorage.getItem('hlm-last') || 'null'); } catch { /* 读不到就当没读过 */ }
   const day = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5);
   let zi = day % notes.length;
-  if (last?.n) setHui(last.n, '接着读'); else setHui((day % 120) + 1, '今日一回');
+  let hn = last?.n || (day % 120) + 1;
+  setHui(hn, last?.n ? '接着讀' : '今日一回');
   setZhu(zi);
-  document.querySelector('[data-turn]')!.addEventListener('click', () => {
-    spread.classList.remove('flip');
-    void spread.offsetWidth;
-    spread.classList.add('flip');
-    zi = (zi + 1) % notes.length;
-    setHui(1 + Math.floor(Math.random() * 120), '随手翻到');
-    setZhu(zi);
+  setBx(hn);
+
+  const turnBtn = document.querySelector<HTMLButtonElement>('[data-turn]')!;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wide = matchMedia('(min-width: 761px)');
+  let turning = false;
+  turnBtn.addEventListener('click', async () => {
+    if (turning) return;
+    turning = true;
+    const nz = (zi + 1) % notes.length;
+    let nh = 1 + Math.floor(Math.random() * 120);
+    if (nh === hn) nh = (nh % 120) + 1;
+    const text = notes[nz].s + data[nh - 1][1] + data[nh - 1][2] + notes[nz].hui + notes[nz].label + '隨手翻到';
+    /* 字形按需分包下载，等这些字都到了再翻 */
+    try { await Promise.race([document.fonts.load('20px "HLM Qiji"', text), new Promise(r => setTimeout(r, 1200))]); } catch { /* 取不到也照样翻 */ }
+
+    if (reducedMotion || !wide.matches) {
+      ye.classList.add('fade');
+      await new Promise(r => setTimeout(r, reducedMotion ? 0 : 260));
+      zi = nz; hn = nh;
+      setHui(hn, '隨手翻到'); setZhu(zi); setBx(hn);
+      ye.classList.remove('fade');
+      turning = false;
+      return;
+    }
+
+    /* 翻页的那张纸：正面是旧的右半叶，背面是新的左半叶 */
+    const hui = $s('[data-half="hui"]'), zhu = $s('[data-half="zhu"]');
+    const leaf = document.createElement('div');
+    leaf.className = 'turner';
+    const front = hui.cloneNode(true) as HTMLElement;
+    const back = zhu.cloneNode(true) as HTMLElement;
+    front.classList.add('face', 'front');
+    back.classList.add('face', 'back');
+    setZhu(nz, back);
+    leaf.append(front, back);
+    const bx = $s('.banxin');
+    leaf.style.left = hui.offsetLeft + 'px';
+    leaf.style.top = hui.offsetTop + 'px';
+    leaf.style.width = hui.offsetWidth + 'px';
+    leaf.style.height = hui.offsetHeight + 'px';
+    /* 以版心正中为轴 */
+    leaf.style.transformOrigin = `${-(hui.offsetLeft - bx.offsetLeft - bx.offsetWidth / 2)}px 50%`;
+    ye.append(leaf);
+    /* 底下的右半叶先换成新的，被翻页的纸盖着 */
+    zi = nz; hn = nh;
+    setHui(hn, '隨手翻到');
+    setBx(hn);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    leaf.classList.add('go');
+    leaf.addEventListener('animationend', () => {
+      setZhu(zi);
+      leaf.remove();
+      turning = false;
+    }, { once: true });
   });
 
   /* 十二钗画卷：鼠标可以按住拖 */
@@ -200,7 +260,7 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   .tian::after { content: ''; position: absolute; left: 50%; bottom: calc(100% + 24px); width: 7px; height: 7px; translate: -50% 0; border-radius: 50%; background: #6b4a2a; }
   .mount { display: block; padding: 16% 8% 10%; background-color: #ddd3bc; background-image: linear-gradient(90deg, rgb(255 255 255 / .18), transparent 30%, transparent 70%, rgb(0 0 0 / .05)), var(--paper-fiber); box-shadow: inset 0 0 0 1px rgb(80 60 30 / .12), 0 18px 30px -18px rgb(40 26 10 / .45); clip-path: inset(0 0 calc((1 - var(--p)) * 100%) 0); }
   .hua { position: relative; display: block; box-shadow: 0 0 0 4px #efe7d3, 0 0 0 5px rgb(80 60 30 / .25); }
-  .hua :global(img) { display: block; width: 100%; aspect-ratio: 1130 / 1700; object-fit: cover; height: auto; transition: filter .8s var(--ease); }
+  .hua :global(img) { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; height: auto; transition: filter .8s var(--ease); }
   .di { position: absolute; left: -5%; right: -5%; top: calc(var(--p) * (100% - 14px)); height: 14px; border-radius: 7px; background: linear-gradient(#4a2f18, #8a6038 35%, #5b3d22 70%, #2e1c0c); box-shadow: 0 6px 10px -4px rgb(30 18 6 / .5); }
   .di::before, .di::after { content: ''; position: absolute; top: -3px; width: 12px; height: 20px; border-radius: 4px; background: linear-gradient(90deg, #6e4a26, #c99a5e 45%, #6e4a26); }
   .di::before { left: -6px; }
@@ -222,23 +282,54 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
   @keyframes unfurl { from { --p: 0; } to { --p: 1; } }
 
   /* 一本翻开的书，竖排，右页回目，左页朱批 */
-  .spread-wrap { display: flex; flex-direction: column; align-items: center; gap: 26px; }
-  .spread { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); width: min(100%, 980px); height: clamp(400px, 40vw, 480px); background: color-mix(in srgb, #fffaf0 55%, var(--paper)); box-shadow: 0 30px 50px -36px rgb(40 26 10 / .45), 0 1px 0 var(--line); }
-  .spread::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent 44%, rgb(60 40 15 / .07) 49.6%, rgb(60 40 15 / .12) 50%, rgb(60 40 15 / .07) 50.4%, transparent 56%); }
-  .fold { background: color-mix(in srgb, var(--ink) 10%, transparent); }
-  .leaf { margin: 0; height: 100%; min-height: 0; overflow: hidden; display: grid; place-content: center; writing-mode: vertical-rl; padding: clamp(36px, 5vw, 64px) clamp(28px, 4vw, 56px); }
-  .hui-in { display: grid; gap: 0 22px; color: inherit; }
-  .hui-label { font-size: 15px; letter-spacing: .4em; color: var(--ink-3); }
-  .hui-cn { font: 400 clamp(30px, 3.2vw, 40px)/1 var(--title); letter-spacing: .12em; color: var(--cinnabar); margin-inline-start: 1em; }
-  .hui-t { display: grid; gap: 0 16px; font: 400 clamp(22px, 2.3vw, 30px)/1.3 var(--title); letter-spacing: .14em; transition: color .3s; }
-  .hui-t span:last-child { margin-inline-start: 1.5em; }
+  /* 一叶古书：四周双边，中间版心有书名、鱼尾和回数；两个半叶都打着界行，字一行一格 */
+  .spread-wrap { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+  .book { --u: clamp(34px, 3.9vw, 46px); --rows: 9; --ink-line: rgb(58 40 24 / .55); position: relative; padding: 10px 12px; background: #2e3852; border-radius: 3px; box-shadow: 0 34px 50px -34px rgb(20 14 6 / .6), 0 2px 4px rgb(20 14 6 / .25); }
+  /* 底下露出的书页厚度 */
+  .book::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 6px; background: repeating-linear-gradient(#efe5cc 0 1px, #d8c9a6 1px 2px); border-radius: 0 0 2px 2px; }
+  .ye { position: relative; z-index: 1; display: grid; grid-template-columns: auto calc(var(--u) * .9) auto; height: calc(var(--u) * 10.4); padding: calc(var(--u) * .5); background-color: #f4ecd8; background-image: radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(120 90 40 / .14)), radial-gradient(circle at 18% 78%, rgb(150 110 50 / .07) 0 6px, transparent 7px), radial-gradient(circle at 83% 22%, rgb(150 110 50 / .06) 0 4px, transparent 5px), var(--paper-fiber); perspective: 2200px; }
+  /* 四周双边：外粗内细 */
+  .ye::before { content: ''; position: absolute; inset: calc(var(--u) * .3); border: 2.2px solid var(--ink-line); box-shadow: inset 0 0 0 3px #f4ecd8, inset 0 0 0 3.8px var(--ink-line); pointer-events: none; }
+  /* 中缝的一点阴影 */
+  .ye::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: calc(var(--u) * 2); translate: -50% 0; background: linear-gradient(90deg, transparent, rgb(80 55 20 / .08) 45%, rgb(80 55 20 / .14) 50%, rgb(80 55 20 / .08) 55%, transparent); pointer-events: none; }
+  .hui { grid-column: 3; grid-row: 1; }
+  .banxin { grid-column: 2; grid-row: 1; }
+  .zhu { grid-column: 1; grid-row: 1; }
+  .half { position: relative; margin: 0; width: calc(var(--u) * 9); height: 100%; padding: calc(var(--u) * .45) 0; writing-mode: vertical-rl; background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), var(--rule) calc(var(--u) - 1px) var(--u)); background-position: right; --rule: rgb(58 40 24 / .16); }
+  .zhu { --rule: rgb(176 45 34 / .2); }
+  .banxin { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: calc(var(--u) * .45) 0; border-left: 1px solid var(--ink-line); border-right: 1px solid var(--ink-line); }
+  .bx-name, .bx-hui { writing-mode: vertical-rl; font: 400 calc(var(--u) * .34)/1 var(--title); letter-spacing: .2em; color: #3a2c1e; }
+  .yuwei { width: 70%; height: auto; fill: #2a2018; }
+  .yuwei.down { margin-top: auto; }
+  .hui-in { display: block; height: 100%; color: inherit; }
+  .hui-in > span { display: block; line-height: var(--u); }
+  .juan { font: 400 calc(var(--u) * .42)/var(--u) var(--title); letter-spacing: .14em; color: #3a2c1e; }
+  .hui-cn { padding-inline-start: 1em; font: 400 calc(var(--u) * .56)/var(--u) var(--title); letter-spacing: .14em; color: var(--cinnabar); }
+  .hui-t { font: 400 calc(var(--u) * .56)/var(--u) var(--title); letter-spacing: .12em; color: #1d1712; transition: color .3s; }
+  /* 回目两句，上句低两格，下句低三格 */
+  .hui-t span { display: block; padding-inline-start: 2em; }
+  .hui-t span + span { padding-inline-start: 3em; }
+  .hui-label { margin-block-start: calc(var(--u) * 4); text-align: end; padding-inline-end: .6em; font: 400 calc(var(--u) * .34)/var(--u) var(--title); letter-spacing: .5em; color: rgb(58 40 24 / .55); }
   .hui-in:hover .hui-t { color: var(--cinnabar); }
-  .zhu-s { margin: 0; inline-size: min(100%, 14em); font-size: clamp(17px, 1.6vw, 20px); line-height: 2.1; letter-spacing: .08em; color: var(--cinnabar); }
-  .zhu figcaption { margin-inline-start: 2.4em; font: 400 13px/1 var(--kai); letter-spacing: .3em; }
-  .zhu figcaption a { color: var(--ink-3); transition: color .3s; }
+  .zhu figcaption { font: 400 calc(var(--u) * .34)/var(--u) var(--title); letter-spacing: .3em; padding-inline-start: 1em; }
+  .zhu figcaption a { color: rgb(58 40 24 / .6); transition: color .3s; }
   .zhu figcaption a:hover { color: var(--ink); }
-  .spread.flip .leaf > * { animation: ink-in .8s var(--ease-ink); }
-  .turn { font-size: 15px; letter-spacing: .4em; color: var(--ink-3); padding: 8px 4px 8px 10px; transition: color .3s; }
+  .zhu-s { margin: 0; font: 400 calc(var(--u) * .46)/var(--u) var(--title); letter-spacing: .1em; color: #a8291f; }
+  .zhu-s::before, .zhu-s::after { content: none; }
+  .zhu :global(.zhu-seal) { position: absolute; left: calc(var(--u) * .6); bottom: calc(var(--u) * .5); rotate: -3deg; opacity: .9; }
+  .ye.fade .half > * { opacity: 0; transition: opacity .25s; }
+  .ye .half > * { transition: opacity .35s; }
+
+  /* 翻页：右半叶以中缝为轴翻到左边，正面旧字，背面新批。这张纸是脚本临时造的，样式要写成全局的 */
+  :global(.turner) { position: absolute; transform-style: preserve-3d; z-index: 3; pointer-events: none; }
+  :global(.turner .face) { position: absolute; inset: 0; width: 100%; backface-visibility: hidden; background-color: #f4ecd8; background-image: repeating-linear-gradient(to left, transparent 0 calc(var(--u) - 1px), var(--rule) calc(var(--u) - 1px) var(--u)); background-position: right; }
+  :global(.turner .back) { transform: rotateY(180deg); left: auto; right: 0; }
+  :global(.turner .face)::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgb(60 40 15 / .26), rgb(60 40 15 / .04) 70%); opacity: 0; animation: shade 1.1s ease-in-out both; }
+  :global(.turner.go) { animation: turn 1.1s cubic-bezier(.45, .05, .35, 1) both; }
+  @keyframes turn { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
+  @keyframes shade { 50% { opacity: 1; } }
+
+  .turn { font: 400 17px/1 var(--title); letter-spacing: .5em; color: var(--ink-3); padding: 10px 6px 10px 14px; transition: color .3s; }
   .turn:hover { color: var(--cinnabar); }
 
   .twelve-sec { overflow: hidden; }
@@ -275,10 +366,14 @@ const chapterData = CHAPTERS.map(c => [c.n, c.cn, c.title.join('　'), c.summary
     .scroll :global(.painting) { object-position: 56% 50%; }
     .hero-poem { font-size: 15px; letter-spacing: .14em; }
     .line { font-size: 13px; letter-spacing: .14em; }
-    .spread { grid-template-columns: 1fr; height: auto; }
-    .spread::before, .fold { display: none; }
-    .hui { order: -1; border-bottom: 1px solid var(--line); }
-    .leaf { height: 340px; }
+    /* 手机上两个半叶上下叠着，不要版心 */
+    .book { --u: calc((100vw - 2 * var(--gutter) - 24px - 24px) / 9); padding: 8px; }
+    .ye { grid-template-columns: 1fr; height: auto; }
+    .hui, .zhu { grid-column: 1; }
+    .zhu { grid-row: 2; }
+    .ye::after, .banxin { display: none; }
+    .half { height: calc(var(--u) * 9.4); }
+    .zhu { border-top: 1px solid var(--ink-line); }
     .pairs { grid-template-columns: 1fr; }
   }
 </style>

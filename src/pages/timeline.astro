@@ -1,8 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import PersonLink from '../components/PersonLink.astro';
+import PageHead from '../components/PageHead.astro';
 import { EVENTS, EVENT_KINDS, type EventKind } from '../data/events.ts';
-import { CHAPTERS, isSequel } from '../lib/data.ts';
+import { CHAPTERS, isSequel, cn } from '../lib/data.ts';
 
 const cnOf = new Map(CHAPTERS.map(c => [c.n, c.cn]));
 const titleOf = new Map(CHAPTERS.map(c => [c.n, c.title.join('　')]));
@@ -12,15 +13,9 @@ const span = (c: number[]) => (c.length > 1 && c.at(-1) !== c[0] ? `${cnOf.get(c
 const kinds = Object.keys(EVENT_KINDS) as EventKind[];
 const people = [...new Set(EVENTS.flatMap(e => e.ids))];
 ---
-<Base title="大事眉批" description={`《红楼梦》一百二十回里的 ${EVENTS.length} 件大事，按回目排开，像旧书眉批一样圈点。可以按类别、人物筛，也可以只看前八十回。`} section="chapters" sub="timeline">
+<Base title="大事眉批" description={`《红楼梦》一百二十回里的${cn(EVENTS.length)}件大事，按回目排开，像旧书眉批一样圈点。可以按类别、人物筛，也可以只看前八十回。`} section="chapters" sub="timeline">
   <div class="wrap">
-    <header class="page-head">
-      <div>
-        <span class="eyebrow ink-in">回目 · 贰</span>
-        <h1 class="ink-in" style="--d:.1s">大事眉批</h1>
-      </div>
-      <p class="lede ink-in" style="--d:.25s">全书一百二十回排成一行，一点一回，朱圈是大事。点圈跳到那件事，点空点去读那一回。下面五十件事按回目排开，后四十回是续书，颜色压淡一些。</p>
-    </header>
+    <PageHead title="大事眉批" slip="大事眉批" quote="三春去后诸芳尽｜各自须寻各自门" from="第十三回　秦可卿托梦" />
 
     <nav class="axis reveal" aria-label="一百二十回大事分布">
       <div class="ax-row">
@@ -32,8 +27,8 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
         })}
       </div>
       <div class="ax-scale" aria-hidden="true">
-        {[1, 20, 40, 60, 100, 120].map(n => <span style={`--at:${(n - .5) / 120}`}>{n}</span>)}
-        <b style="--at:.6667">脂本止于此 · 以下续书</b>
+        {[1, 20, 40, 60, 100, 120].map(n => <span style={`--at:${(n - .5) / 120}`}>{cn(n)}</span>)}
+        <b style="--at:.6667">脂本止于此　以下续书</b>
       </div>
     </nav>
 
@@ -51,14 +46,14 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
         <input list="tl-names" data-who placeholder="人物" aria-label="只看某个人的经历">
         <datalist id="tl-names">{people.map(p => <option value={p} />)}</datalist>
       </label>
-      <span class="tl-count" data-count aria-live="polite">{EVENTS.length} 件</span>
+      <span class="tl-count" data-count aria-live="polite">{cn(EVENTS.length)}件</span>
     </div>
 
     <ol class="tl">
       {EVENTS.map((e, i) => (
         <li class:list={['te', 'reveal', { big: e.m, xu: isSequel(e.c[0]) }]} id={`ev${i}`} data-kind={e.k} data-late={isSequel(e.c[0]) ? '1' : ''} data-ids={e.ids.join(' ')} style={`--kc:${EVENT_KINDS[e.k]}`}>
           <div class="te-hui">
-            <a class="kai" href={`/chapters/${e.c[0]}/`}>{span(e.c)}</a>
+            <a href={`/chapters/${e.c[0]}/`}>{span(e.c)}</a>
             <small>{CHAPTERS[e.c[0] - 1].title.map(t => <span>{t}</span>)}</small>
           </div>
           <div class="te-mark" aria-hidden="true"><span class="brush">{e.s.slice(0, 2)}</span></div>
@@ -76,6 +71,7 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
 </Base>
 
 <script>
+  import { cn } from '../client/site.ts';
   const items = [...document.querySelectorAll<HTMLElement>('.te')];
   const axes = [...document.querySelectorAll<HTMLElement>('[data-ax]')];
   const who = document.querySelector<HTMLInputElement>('[data-who]')!;
@@ -94,7 +90,7 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
       if (ok) { n++; li.classList.add('in'); }
       axes.filter(a => +a.dataset.ax! === i).forEach(a => a.classList.toggle('dim', !ok));
     });
-    count.textContent = `${n} 件`;
+    count.textContent = `${cn(n)}件`;
     empty.hidden = n > 0;
     const url = new URL(location.href);
     p ? url.searchParams.set('p', p) : url.searchParams.delete('p');
@@ -138,17 +134,17 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
   .ax.dim i { opacity: .15; }
   .ax:hover i { transform: scale(1.7); }
   .ax-scale { position: relative; height: 26px; margin-top: 4px; border-top: 1px solid var(--line); }
-  .ax-scale span { position: absolute; left: calc(var(--at) * 100%); top: 6px; transform: translateX(-50%); font: 600 11px var(--label); color: var(--ink-3); }
-  .ax-scale b { position: absolute; left: calc(var(--at) * 100%); top: -36px; bottom: 0; border-left: 1px dashed var(--cinnabar); padding: 30px 0 0 8px; font: 600 11px var(--label); color: var(--cinnabar); letter-spacing: .1em; white-space: nowrap; }
+  .ax-scale span { position: absolute; left: calc(var(--at) * 100%); top: 6px; transform: translateX(-50%); font: 400 11px var(--title); color: var(--ink-3); }
+  .ax-scale b { position: absolute; left: calc(var(--at) * 100%); top: -36px; bottom: 0; border-left: 1px dashed var(--cinnabar); padding: 30px 0 0 8px; font: 400 11px var(--title); color: var(--cinnabar); letter-spacing: .1em; white-space: nowrap; }
 
   .tl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin: 28px 0 10px; }
   .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); }
-  .seg button { padding: 7px 14px; border-radius: 999px; font: 600 13px/1 var(--label); color: var(--ink-3); }
+  .seg button { padding: 7px 14px; border-radius: 999px; font: 400 13px/1 var(--title); color: var(--ink-3); }
   .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
   .kinds { display: flex; flex-wrap: wrap; gap: 6px; }
-  .who { display: inline-flex; align-items: center; gap: 8px; font: 600 12.5px var(--label); color: var(--ink-3); }
+  .who { display: inline-flex; align-items: center; gap: 8px; font: 400 12.5px var(--title); color: var(--ink-3); }
   .who input { width: 110px; height: 34px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); font-size: 14px; color: var(--ink); }
-  .tl-count { margin-left: auto; font: 600 12.5px var(--label); color: var(--ink-3); }
+  .tl-count { margin-left: auto; font: 400 12.5px var(--title); color: var(--ink-3); }
 
   .tl { list-style: none; margin: 0; padding: 0; }
   .te { display: grid; grid-template-columns: 170px 64px minmax(0, 1fr); gap: 0 26px; padding: 26px 0; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) + 20px); }
@@ -159,10 +155,10 @@ const people = [...new Set(EVENTS.flatMap(e => e.ids))];
   .te-mark { display: grid; justify-items: center; }
   .te-mark span { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--kc); color: var(--kc); font-size: 19px; writing-mode: vertical-rl; letter-spacing: .05em; }
   .te.big .te-mark span { border: 2.5px solid var(--cinnabar); color: #fff6ea; background: var(--cinnabar); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cinnabar) 15%, transparent); }
-  .te-k { display: flex; align-items: center; gap: 8px; font: 700 11.5px/1 var(--label); letter-spacing: .2em; color: var(--kc); }
+  .te-k { display: flex; align-items: center; gap: 8px; font: 400 11.5px/1 var(--title); letter-spacing: .2em; color: var(--kc); }
   .te-k i { width: 14px; height: 2px; background: var(--kc); }
   .te-k em { font-style: normal; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 3px; padding: 2px 5px; letter-spacing: .1em; }
-  .te h2 { font: 700 clamp(24px, 2.4vw, 30px)/1.25 var(--display); margin: 10px 0 8px; }
+  .te h2 { font: 400 clamp(24px, 2.4vw, 30px)/1.25 var(--title); margin: 10px 0 8px; }
   .te-d { font-size: 16px; line-height: 1.95; color: var(--ink-2); max-width: 42em; }
   .te .mem { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 14.5px; }
   .te.xu { opacity: .78; }

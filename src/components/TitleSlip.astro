@@ -1,10 +1,12 @@
 ---
-/* 题签：“紅樓夢”三字用齐伋体刻本字形，按笔顺一笔一笔写出来。
+/* 题签：字用齐伋体刻本字形，按笔顺一笔一笔写出来。首页写“紅樓夢”，各页写页名。
    每个字的笔画中线做成遮罩，依次描出，刻本字就跟着显出来；写完再整个补满，免得中线没盖到的边角露白。 */
 import GLYPHS from '../data/title-glyphs.json';
 
-interface Props { start?: number; class?: string }
-const { start = 0, class: cls } = Astro.props;
+interface Props { text?: string; start?: number; class?: string; size?: 'lg' | 'md' }
+const { text = '紅樓夢', start = 0, class: cls, size = 'lg' } = Astro.props;
+const G = GLYPHS as Record<string, { glyph: string; tf: string; medians: string[] }>;
+const uid = [...text].map(c => c.codePointAt(0)!.toString(36)).join('');
 
 const len = (pts: string) => {
   const p = pts.split(' ').map(s => s.split(',').map(Number));
@@ -13,7 +15,7 @@ const len = (pts: string) => {
   return l;
 };
 let t = start;
-const chars = GLYPHS.map(g => {
+const chars = [...text].map(ch => G[ch]).map(g => {
   const strokes = g.medians.map(m => {
     const dur = .04 + len(m) / 1024 * .17;
     const s = { pts: m, delay: t, dur };
@@ -25,16 +27,16 @@ const chars = GLYPHS.map(g => {
   return { ...g, strokes, fill };
 });
 ---
-<span class:list={['slip-wrap', cls]} style={`--done:${t.toFixed(2)}s`}>
+<span class:list={['slip-wrap', `sz-${size}`, cls]} style={`--done:${t.toFixed(2)}s`}>
 <span class="slip">
   <span class="slip-in">
     {chars.map((c, i) => (
-      <svg viewBox="0 0 1024 1024" class="g" role={i ? undefined : 'img'} aria-label={i ? undefined : '红楼梦'} aria-hidden={i ? 'true' : undefined}>
-        <mask id={`slip-m${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <svg viewBox="0 0 1024 1024" class="g" role={i ? undefined : 'img'} aria-label={i ? undefined : text} aria-hidden={i ? 'true' : undefined}>
+        <mask id={`slip-${uid}-${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
           {c.strokes.map(s => <polyline points={s.pts} pathLength="1" style={`animation-delay:${s.delay.toFixed(3)}s;animation-duration:${s.dur.toFixed(3)}s`} />)}
           <rect class="fill" width="1024" height="1024" style={`animation-delay:${c.fill.toFixed(3)}s`} />
         </mask>
-        <g mask={`url(#slip-m${i})`}><path d={c.glyph} transform={c.tf} /></g>
+        <g mask={`url(#slip-${uid}-${i})`}><path d={c.glyph} transform={c.tf} /></g>
       </svg>
     ))}
   </span>
@@ -53,6 +55,7 @@ const chars = GLYPHS.map(g => {
     background-image: radial-gradient(circle at 30% 20%, rgb(255 255 255 / .5), transparent 60%), var(--paper-grain);
     box-shadow: 0 1px 0 rgb(255 255 255 / .6) inset, 0 10px 30px -12px rgb(30 22 10 / .5), 0 2px 4px rgb(30 22 10 / .25);
   }
+  .sz-md .slip { --w: clamp(56px, 4.6vw, 70px); }
   .slip-in { display: flex; flex-direction: column; gap: calc(var(--w) * .02); padding: calc(var(--w) * .1) 0; outline: 1.5px solid #3b2f22; outline-offset: calc(var(--w) * .05); border: .5px solid #3b2f22; }
   .g { display: block; width: 100%; height: auto; }
   .g path { fill: #1d1712; }

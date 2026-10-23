@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PersonLink from '../components/PersonLink.astro';
+import PageHead from '../components/PageHead.astro';
 import { HOUSES, HOUSE_LINKS, GUANFU } from '../data/families.ts';
 
 type Key = keyof typeof HOUSES;
@@ -28,13 +29,7 @@ const links = HOUSE_LINKS.map((l, i) => {
 ---
 <Base title="四大家族" description="《红楼梦》第四回护官符上的贾史王薛四大家族，以及林家：各家来历、房分，谁嫁进了谁家。" section="relations" sub="families">
   <div class="wrap">
-    <header class="page-head">
-      <div>
-        <span class="eyebrow ink-in">关系 · 叁</span>
-        <h1 class="ink-in" style="--d:.1s">四大家族</h1>
-      </div>
-      <p class="lede ink-in" style="--d:.25s">第四回贾雨村到应天府上任，门子递给他一张“护官符”，上面四句俗谚，说的就是贾、史、王、薛四家。四家“皆连络有亲，一损皆损，一荣皆荣”。林家不在符上，靠贾敏一门亲事连在一起。</p>
-    </header>
+    <PageHead title="四大家族" slip="四大家族" quote="这四家皆连络有亲｜一损皆损｜一荣皆荣" from="第四回　门子" />
 
     <div class="fam" data-fam>
       <aside class="guan" aria-label="护官符">
@@ -74,7 +69,7 @@ const links = HOUSE_LINKS.map((l, i) => {
             );
           })}
         </svg>
-        <p class="map-hint muted small">白文印是护官符上的四家，朱文印是林家。箭头从娘家指向夫家，点印或线看详情。</p>
+        <p class="map-hint">白文印四家在护官符上，朱文印林家不在。箭头由娘家指向夫家。</p>
       </div>
 
       <div class="panels">
@@ -86,7 +81,7 @@ const links = HOUSE_LINKS.map((l, i) => {
             <section class="panel" data-panel={`h:${k}`} hidden={k !== 'jia'} style={`--c:var(--g-${h.grp})`}>
               <div class="pn-head">
                 <span class:list={['pn-seal', { zhu: k === 'lin' }]}>{h.name}</span>
-                <div><h2>{h.name}家 · {h.label}</h2><p class="pn-k">{i < 0 ? '不在护官符上' : `护官符第${NUM[i]}句`}</p></div>
+                <div><h2>{h.name}家　{h.label}</h2><p class="pn-k">{i < 0 ? '不在护官符上' : `护官符第${NUM[i]}句`}</p></div>
               </div>
               <dl>
                 <dt>出身</dt><dd>{h.guan}</dd>
@@ -154,16 +149,17 @@ const links = HOUSE_LINKS.map((l, i) => {
   .guan { display: flex; flex-direction: row-reverse; gap: 6px; padding: 20px 16px; background: #f6efdf; border: 1px solid #d8c9a6; box-shadow: 0 2px 0 #e3d6b8, var(--shadow); color: #3a2e22; }
   :global(:root[data-theme="dark"]) .guan { background: #26221c; border-color: #4a4235; color: #d8ccb4; box-shadow: none; }
   .guan-t { writing-mode: vertical-rl; display: flex; align-items: center; gap: 10px; padding-left: 8px; border-left: 1px solid currentColor; }
-  .guan-t b { font: 700 26px/1 var(--display); letter-spacing: .3em; color: var(--cinnabar); }
-  .guan-t small { font: 500 11px/1 var(--label); letter-spacing: .3em; opacity: .7; }
+  .guan-t b { font: 400 26px/1 var(--title); letter-spacing: .3em; color: var(--cinnabar); }
+  .guan-t small { font: 400 11px/1 var(--title); letter-spacing: .3em; opacity: .7; }
   .guan-col { writing-mode: vertical-rl; display: flex; gap: 6px; padding: 6px 4px; text-align: start; border-radius: 4px; color: inherit; transition: background .2s; }
   .guan-col:hover { background: color-mix(in srgb, var(--c) 10%, transparent); }
   .guan-col.on { background: color-mix(in srgb, var(--c) 14%, transparent); }
-  .guan-m { font: 400 20px/1.4 var(--kai); letter-spacing: .14em; }
+  .guan-m { font: 400 20px/1.4 var(--title); letter-spacing: .14em; }
   .guan-seal { display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; margin-bottom: .4em; font: normal 400 .9em/1 var(--display); color: #fff; background: var(--c); border-radius: 3px; writing-mode: horizontal-tb; }
-  .guan-col.on .guan-m { text-decoration: underline wavy color-mix(in srgb, var(--cinnabar) 70%, transparent) 1.5px; text-underline-offset: 6px; }
-  .guan-n { font: 13px/1.6 var(--kai); opacity: .65; max-block-size: 16em; }
-  .guan-end { writing-mode: vertical-rl; font: 12px/1.6 var(--kai); opacity: .55; padding-right: 8px; border-right: 1px solid currentColor; }
+  /* 选中的一句照古书批点的样子，字旁加朱圈 */
+  .guan-col.on .guan-m { text-emphasis: open circle var(--cinnabar); -webkit-text-emphasis: open circle var(--cinnabar); text-emphasis-position: right; -webkit-text-emphasis-position: right; }
+  .guan-n { font: 13px/1.6 var(--title); opacity: .65; max-block-size: 16em; }
+  .guan-end { writing-mode: vertical-rl; font: 12px/1.6 var(--title); opacity: .55; padding-right: 8px; border-right: 1px solid currentColor; }
 
   .map svg { width: 100%; height: auto; overflow: visible; }
   .map-hint { margin-top: 6px; text-align: center; }
@@ -174,7 +170,7 @@ const links = HOUSE_LINKS.map((l, i) => {
   .fm-node:hover .body { transform: scale(1.04); }
   .fm-node .inner { fill: none; stroke: #fff6ea; stroke-width: 1.2; opacity: .7; }
   .fm-node .big { font-family: var(--display); fill: #fff6ea; text-anchor: middle; }
-  .fm-node .sm { font: 600 12px var(--label); letter-spacing: .2em; fill: var(--ink-2); text-anchor: middle; }
+  .fm-node .sm { font: 400 12px var(--title); letter-spacing: .2em; fill: var(--ink-2); text-anchor: middle; }
   /* 林家用朱文印：印面留白，字和边框是颜色 */
   .fm-node.zhu .body { fill: var(--card); stroke: var(--c); stroke-width: 3; }
   .fm-node.zhu .inner { stroke: var(--c); }
@@ -184,25 +180,25 @@ const links = HOUSE_LINKS.map((l, i) => {
   .fm-link { fill: none; stroke: var(--ink-3); stroke-width: 1.6; transition: stroke .2s, stroke-width .2s; }
   .fm-arrow { fill: var(--ink-3); transition: fill .2s; }
   .fm-l.late .fm-link { stroke-dasharray: 5 4; }
-  .fm-lab { font: 13px var(--kai); fill: var(--ink-2); text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 4px; }
+  .fm-lab { font: 13px var(--title); fill: var(--ink-2); text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 4px; }
   .fm-l:hover .fm-link, .fm-l.on .fm-link { stroke: var(--cinnabar); stroke-width: 2.4; }
   .fm-l:hover .fm-arrow, .fm-l.on .fm-arrow { fill: var(--cinnabar); }
   .fm-l.on .fm-lab { fill: var(--cinnabar); font-weight: 700; }
 
   .panel { padding: 24px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 6px; animation: ink-in .5s var(--ease-ink); }
   .pn-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 16px; }
-  .pn-head h2 { font: 700 26px/1.2 var(--display); }
-  .pn-k { font: 500 12px/1.6 var(--label); color: var(--ink-3); letter-spacing: .1em; }
-  .pn-seal { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 5px; background: var(--c); color: #fff6ea; font: 700 26px/1 var(--display); }
+  .pn-head h2 { font: 400 26px/1.2 var(--title); }
+  .pn-k { font: 400 12px/1.6 var(--title); color: var(--ink-3); letter-spacing: .1em; }
+  .pn-seal { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 5px; background: var(--c); color: #fff6ea; font: 400 26px/1 var(--title); }
   .pn-seal.zhu { background: var(--card); color: var(--c); box-shadow: inset 0 0 0 2.5px var(--c); }
-  .pn-to { font: 600 12px/1 var(--label); color: var(--ink-3); }
+  .pn-to { font: 400 12px/1 var(--title); color: var(--ink-3); }
   .panel dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; font-size: 15px; line-height: 1.8; }
-  .panel dt { font: 700 11.5px/1.9 var(--label); letter-spacing: .16em; color: var(--ink-3); white-space: nowrap; }
+  .panel dt { font: 400 11.5px/1.9 var(--title); letter-spacing: .16em; color: var(--ink-3); white-space: nowrap; }
   .panel dd { margin: 0; }
   .fang { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; max-width: 200px; }
   .fang i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--c); }
   .fang i.du { background: var(--c); }
-  .fang-t { font: 500 12.5px/1.6 var(--label); color: var(--ink-3); }
+  .fang-t { font: 400 12.5px/1.6 var(--title); color: var(--ink-3); }
   .pn-p { font-size: 15.5px; line-height: 1.9; }
   .mem { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; font-size: 15px; }
   @media (max-width: 1100px) {

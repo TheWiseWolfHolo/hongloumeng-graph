@@ -10,7 +10,7 @@ if (!existsSync(dist)) { console.error('没有 dist，先跑 astro build'); proc
 const MUST = {
   'index.html': ['红楼梦', '/fonts/fonts.css'],
   'graph/index.html': ['关系星图'],
-  'garden/index.html': ['随贾政一行游园'],
+  'garden/index.html': ['大观园', '题对额'],
   'timeline/index.html': ['大事眉批'],
   'twelve/index.html': ['金陵十二钗'],
   'lineage/index.html': ['贾府世系'],
@@ -23,7 +23,7 @@ const MUST = {
   'people/index.html': ['人物谱'],
   'people/林黛玉/index.html': ['林黛玉'],
   '404.html': ['四〇四'],
-  'fonts/fonts.css': ['HLM Serif', 'HLM Kai', 'HLM Qiji'],
+  'fonts/fonts.css': ['HLM Serif', 'HLM Qiji'],
   'manifest.webmanifest': ['红楼梦']
 };
 

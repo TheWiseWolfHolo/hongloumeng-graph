@@ -1,18 +1,19 @@
 ---
 import Base from '../layouts/Base.astro';
 import Seal from '../components/Seal.astro';
-import { PEOPLE, EDGES, TOTAL_CHARS, TOTAL_NOTES } from '../lib/data.ts';
+import { PEOPLE, EDGES, TOTAL_CHARS, TOTAL_NOTES, cn } from '../lib/data.ts';
+import PageHead from '../components/PageHead.astro';
 import { EVENTS } from '../data/events.ts';
 import { GARDEN } from '../data/garden.ts';
 
 const wan = (n: number) => Math.round(n / 10000);
 const ITEMS = [
   { k: '一', h: '底本', p: [
-    `前八十回用《脂砚斋重评石头记》，取自维基文库的汇校本，带着各本脂批；后四十回用程甲本。全书共约 ${wan(TOTAL_CHARS)} 万字，统一转成简体。`,
+    `前八十回用《脂砚斋重评石头记》，取自维基文库的汇校本，带着各本脂批；后四十回用程甲本。全书共约${cn(wan(TOTAL_CHARS))}万字，统一转成简体。`,
     '回目标题前八十回取脂本，下面附人民文学出版社通行本的回目对照。各本异文不一一列出。'
   ] },
   { k: '二', h: '脂批', p: [
-    `原文里收了 ${TOTAL_NOTES.toLocaleString()} 条脂批，按出处标为甲戌、庚辰、己卯、蒙府、戚序等本，按位置分侧批、夹批、眉批和回前回后总批。阅读页右上角可以切换显示方式。`,
+    `原文里收了${cn(TOTAL_NOTES)}条脂批，按出处标为甲戌、庚辰、己卯、蒙府、戚序等本，按位置分侧批、夹批、眉批和回前回后总批。阅读页右上角可以切换显示方式。`,
     '脂批出自不同时期、不同的批者，彼此也有出入。本站引用时注明本子，不替它们裁断。'
   ] },
   { k: '三', h: '前八十回与续书', p: [
@@ -20,13 +21,13 @@ const ITEMS = [
     '续书的情节都标了“续书”，统计图里也压成浅色。人物出场次数、常同场的人等统计，只算前八十回。'
   ] },
   { k: '四', h: '人物与关系', p: [
-    `人物谱收 ${PEOPLE.length} 人，关系 ${EDGES.length} 条，分血亲、婚配、姻亲族亲、情缘、前世神缘、主仆、交游师友、恩怨八类。家族归属按书中所在的府第和娘家划分。`,
+    `人物谱收${cn(PEOPLE.length)}人，关系${cn(EDGES.length)}条，分血亲、婚配、姻亲族亲、情缘、前世神缘、主仆、交游师友、恩怨八类。家族归属按书中所在的府第和娘家划分。`,
     '出场次数按人名及其常用称呼在正文里出现的次数算，“二爷”“姑娘”这类泛称不算，所以数字偏少，只能看个大概。'
   ] },
   { k: '五', h: '图', p: [
-    `大观园是示意图，${GARDEN.length} 处院落景致的方位按书中叙述大致安排，并非考据地图。贾府世系依第二回冷子兴的说法和各回出现的辈分排定。`,
-    '十二钗的画像是站长自己画的，判词、曲子照第五回原文。',
-    '首页的大观园全景出自清代孙温绘《红楼梦》画册，开卷四轴取自清代改琦《红楼梦图咏》的木刻，都已进入公有领域。标题用齐伋体，字形取自明代闵齐伋刻本；正文用思源宋体，引文用霞鹜文楷；题签的笔顺来自 Make Me a Hanzi。'
+    `大观园是示意图，${cn(GARDEN.length)}处院落景致的方位按书中叙述大致安排，并非考据地图。贾府世系依第二回冷子兴的说法和各回出现的辈分排定。`,
+    '本轮更新的二十一位人物画像根据前八十回的外貌、衣饰与性情描写设计，由 AI 辅助绘制；巧姐、惜春保留原图。原文未写明的五官、纹样和配色作适度补画。判词、曲子照第五回原文。',
+    '首页的大观园全景出自清代孙温绘《红楼梦》画册，已进入公有领域。开卷四轴是站长另画的意象插画，不对应某一回的场面。标题、引文和批语用齐伋体，字形取自明代闵齐伋刻本；正文用思源宋体；题签的笔顺来自 Make Me a Hanzi。'
   ] },
   { k: '六', h: '防剧透', p: [
     '没读完的朋友，结局和判词解说都先遮着，点开才看。读到哪一回，站里会记下来，前面已经读过的部分就不再遮。记录只存在你自己的浏览器里。'
@@ -44,13 +45,7 @@ const KEYS = [['/', '打开搜索'], ['Ctrl K', '打开搜索'], ['Esc', '关闭
 ---
 <Base title="凡例" description="本站的底本、脂批、续书处理、人物统计口径和图的说明。" section="about">
   <div class="wrap narrow">
-    <header class="page-head">
-      <div>
-        <span class="eyebrow ink-in">卷末</span>
-        <h1 class="ink-in" style="--d:.1s">凡例</h1>
-      </div>
-      <p class="lede ink-in" style="--d:.25s">这一页交代本站用的什么本子、怎样算数、哪些是原著哪些是续书。</p>
-    </header>
+    <PageHead title="凡例" slip="凡例" quote="假作真时真亦假｜无为有处有还无" from="第一回　太虚幻境" />
 
     <ol class="fl">
       {ITEMS.map((it, i) => (
@@ -86,19 +81,19 @@ const KEYS = [['/', '打开搜索'], ['Ctrl K', '打开搜索'], ['Esc', '关闭
   .narrow { max-width: 920px; }
   .fl { list-style: none; margin: 40px 0 0; padding: 0; }
   .fl li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 24px; padding: 26px 0; border-top: 1px solid var(--line); }
-  .fl-k { font-size: 34px; line-height: 1; color: var(--cinnabar); text-align: center; }
-  .fl h2 { font: 700 20px/1.3 var(--serif); letter-spacing: .1em; margin-bottom: 8px; }
+  .fl-k { font: 400 34px/1 var(--title); color: var(--cinnabar); text-align: center; }
+  .fl h2 { font: 400 22px/1.3 var(--title); letter-spacing: .16em; margin-bottom: 10px; }
   .fl p { font-size: 16px; line-height: 2; color: var(--ink-2); }
   .fl p + p { margin-top: 6px; }
-  .srcs { margin-top: 30px; padding: 22px 26px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
-  .srcs h2 { font: 700 13px/1 var(--label); letter-spacing: .24em; color: var(--ink-3); margin-bottom: 14px; }
+  .srcs { margin-top: 30px; padding: 24px 28px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+  .srcs h2 { font: 400 18px/1 var(--title); letter-spacing: .24em; color: var(--ink-2); margin-bottom: 16px; }
   .srcs dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 24px; margin: 0; }
   .srcs dl div { display: flex; gap: 12px; align-items: baseline; }
-  .srcs dt { font: 700 15px var(--serif); color: var(--cinnabar); min-width: 3em; }
+  .srcs dt { font: 400 17px var(--title); color: var(--cinnabar); min-width: 3em; }
   .srcs dd { margin: 0; font-size: 14px; color: var(--ink-2); }
-  kbd { font: 600 12px var(--label); padding: 3px 7px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--paper); }
+  kbd { font: 400 12px var(--title); padding: 3px 7px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--paper); }
   .colophon { display: grid; justify-items: center; gap: 16px; margin: 70px 0 30px; text-align: center; }
   .colophon p { font-size: 19px; line-height: 2; letter-spacing: .14em; }
-  .colophon .link { font: 500 13px var(--label); color: var(--ink-3); }
+  .colophon .link { font: 400 13px var(--title); color: var(--ink-3); }
   @media (max-width: 600px) { .fl li { grid-template-columns: 40px minmax(0, 1fr); gap: 14px; } .fl-k { font-size: 26px; } }
 </style>

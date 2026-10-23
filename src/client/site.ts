@@ -7,6 +7,7 @@ const store = {
   set(k: string, v: string | null) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* 隐私模式下存不了，不影响浏览 */ } }
 };
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+import { cn } from '../lib/cn.ts';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- 主题 ---------- */
@@ -17,14 +18,11 @@ $('[data-theme-toggle]')?.addEventListener('click', () => {
   if (vt && !reduced) vt.call(document, apply); else apply();
 });
 
-/* ---------- 页头：往下读时收起，往上翻时出来 ---------- */
+/* ---------- 页头：一直钉在顶上，不随滚动伸缩；离开页首后底下加一道细影 ---------- */
 const header = $('[data-header]');
-let lastY = scrollY;
-addEventListener('scroll', () => {
-  const y = scrollY;
-  if (header && !document.body.classList.contains('menu-lock')) header.classList.toggle('hide', y > 240 && y > lastY + 4);
-  if (Math.abs(y - lastY) > 4) lastY = y;
-}, { passive: true });
+const lift = () => header?.classList.toggle('lifted', scrollY > 8);
+addEventListener('scroll', lift, { passive: true });
+lift();
 
 /* ---------- 手机目录 ---------- */
 const menu = $('[data-menu]');
@@ -255,7 +253,7 @@ async function showPeek(a: HTMLAnchorElement) {
   const p = peopleMap![id];
   if (!p || peekFor !== a) return;
   peek ??= Object.assign(document.createElement('div'), { className: 'peek', role: 'tooltip' });
-  peek.innerHTML = `<div class="peek-head">${p[4] ? `<img src="${p[4]}" alt="" width="44" height="66" style="width:44px;height:58px;object-fit:cover;border-radius:4px">` : `<span class="seal" style="--s:40px;--seal-bg:var(--g-${p[0]})">${SEAL[p[0]]}</span>`}<div><div class="peek-name">${esc(id)}</div><div class="peek-title">${esc(p[1])}</div></div></div><p class="peek-bio">${esc(p[2])}</p><div class="peek-foot"><span>${esc(p[3])}</span><span style="color:var(--cinnabar)">点开看详情 →</span></div>`;
+  peek.innerHTML = `<div class="peek-head">${p[4] ? `<img class="peek-img" src="${p[4]}" alt="" width="44" height="58">` : `<span class="seal" style="--s:40px;--seal-bg:var(--g-${p[0]})">${SEAL[p[0]]}</span>`}<div><div class="peek-name">${esc(id)}</div><div class="peek-title">${esc(p[1])}</div></div></div><p class="peek-bio">${esc(p[2])}</p>${p[3] ? `<p class="peek-end"><b>结局</b>${esc(p[3])}</p>` : ''}`;
   document.body.append(peek);
   const r = a.getBoundingClientRect();
   const w = peek.offsetWidth, h = peek.offsetHeight;
@@ -286,4 +284,4 @@ if (canHover) {
   addEventListener('scroll', hidePeek, { passive: true });
 }
 
-export { $, $$, store, esc };
+export { $, $$, store, esc, cn };

@@ -15,12 +15,12 @@ const bars = m.map((v, i) => {
 const peak = bars.reduce((a, b) => (b.v > a.v ? b : a), bars[0]);
 ---
 <figure class:list={["strip", { compact }]} style={`--c:${color};--h:${height}px`}>
-  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${id}在一百二十回里被提到的次数，最多的是第${cn(peak.n)}回，${peak.v}次`}>
+  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${id}在一百二十回里被提到的次数，最多的是第${cn(peak.n)}回，${cn(peak.v)}次`}>
     <rect x={colW * 80} y="0" width={colW * 40} height={base} class="xu-bg" />
     <line x1={colW * 80} x2={colW * 80} y1="0" y2={base} class="xu" />
     {bars.map(b => (
-      <a href={`/chapters/${b.n}/`} class:list={['bar', { zero: !b.v, xu: b.n > 80 }]} aria-label={`${chapter(b.n).cn}，提到${b.v}次`}>
-        <title>{`${chapter(b.n).cn}　${chapter(b.n).title.join(' ')}　提到 ${b.v} 次`}</title>
+      <a href={`/chapters/${b.n}/`} class:list={['bar', { zero: !b.v, xu: b.n > 80 }]} aria-label={`${chapter(b.n).cn}，提到${cn(b.v)}次`}>
+        <title>{`${chapter(b.n).cn}　${chapter(b.n).title.join(' ')}　提到${cn(b.v)}次`}</title>
         <rect x={(b.n - 1) * colW} y="0" width={colW} height={base} class="hit" />
         <rect x={(b.n - 1) * colW + colW * .22} y={base - b.h} width={colW * .56} height={b.h}  style={`opacity:${b.v ? .28 + b.t * .72 : .18}`} class="ink" />
       </a>
@@ -42,8 +42,8 @@ const peak = bars.reduce((a, b) => (b.v > a.v ? b : a), bars[0]);
   .strip .xu-bg { fill: var(--paper-2); opacity: .6; }
   .strip .bar.xu .ink { fill: var(--ink-4); }
   .strip .xu-cap { color: var(--ink-4); }
-  .ticks { position: relative; height: 18px; margin-top: 6px; font: 500 11px/1 var(--label); color: var(--ink-3); }
+  .ticks { position: relative; height: 18px; margin-top: 8px; font: 400 13px/1 var(--title); color: var(--ink-3); }
   .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 500 11.5px/1 var(--label); letter-spacing: .2em; color: var(--ink-3); margin-top: 8px; }
+  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 400 13px/1 var(--title); letter-spacing: .2em; color: var(--ink-3); margin-top: 10px; }
   .strip figcaption span:last-child { padding-left: 10px; border-left: 1px dashed var(--line-2); }
 </style>
