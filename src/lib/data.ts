@@ -122,7 +122,7 @@ export function spanOf(id: string): [number, number] | null {
 }
 
 /* ---- 其他 ---- */
-export const homesOf = (id: string) => GARDEN.filter(g => g.kind === 'home' && g.who.includes(id));
+export const homesOf = (id: string) => GARDEN.filter(g => g.kind === 'home' && g.id !== 'dgl' && g.who.includes(id));
 export const verseOf = (id: string) => [...TWELVE, ...TWELVE_MORE].find(v => v.ids.includes(id));
 export const RANK: Record<string, number> = { c: 0, m: 1, o: 2, s: 3 };
 

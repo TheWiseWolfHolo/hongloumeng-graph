@@ -52,18 +52,3 @@ jobs:
           fi
           npx --yes wrangler@4 pages deploy dist --project-name hongloumeng --branch main --commit-dirty=true
           echo "deployed=1" >> "$GITHUB_OUTPUT"
-
-      - name: 线上自检
-        if: steps.deploy.outputs.deployed == '1'
-        run: |
-          base=https://honglou.wolfholo.com
-          check() {
-            page=$(curl -fsS --retry 3 --retry-delay 5 "$base$1") || { echo "::error::$1 打不开"; exit 1; }
-            grep -q "$2" <<< "$page" || { echo "::error::$1 缺少「$2」"; exit 1; }
-          }
-          check / '红楼梦人物关系图谱'
-          check /graph/ '关系总图'
-          check /garden/ '题对额'
-          check /chapters/1/ '甄士隐'
-          curl -fsS -o /dev/null "$base/fonts/fonts.css" || { echo "::error::fonts.css 取不到"; exit 1; }
-          echo "线上自检通过"

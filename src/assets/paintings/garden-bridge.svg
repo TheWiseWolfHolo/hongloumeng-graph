@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="790" viewBox="0 0 1200 790">
+  <g id="hengwu-bridge" class="garden-bridge" stroke-linejoin="round" stroke-linecap="round" pointer-events="none">
+    <path d="M443.8 156.7 428.3 179.5 408.8 195.5" fill="none" stroke="#596b61" stroke-width="5.4" opacity=".13"/>
+    <path d="M423.2 174.8 426.2 176.2 426.1 182.6 423.4 181.8Z M428.3 176.4 430.1 175 430.3 180.5 428.3 182.1Z" fill="#ad9c7b" stroke="#756b56" stroke-width=".45"/>
+    <path d="M446.2 154.4 429.2 177.1 410.2 193.8 410.2 196 429.2 179.1 446.2 156.1Z" fill="#b5a384" stroke="#776b55" stroke-width=".5"/>
+    <path d="M439.8 149.6 422.8 170.9 403.8 186.2 410.2 193.8 429.2 177.1 446.2 154.4Z" fill="#ded0ae" stroke="#786c52" stroke-width=".65"/>
+    <path d="M440.2 150.6 423.5 171.3 405 186.4" fill="none" stroke="#f0e5cc" stroke-width=".7" opacity=".9"/>
+    <path d="M435.5 155.1 441.9 160 M431.3 160.6 437.8 165.6 M427.1 166 433.6 171.2 M418 175 424.7 181.2 M413.3 178.8 419.9 185.5 M408.6 182.6 415.1 189.7" fill="none" stroke="#a99a7b" stroke-width=".37" opacity=".9"/>
+    <path d="M439.3 155.7 437.7 157.7 M432.6 163.8 430.8 165.7 M425.2 173.2 422.8 175.3 M418.5 181.2 416.2 183.1 M411.3 187.3 409.6 188.6" fill="none" stroke="#efe3c9" stroke-width=".45" opacity=".8"/>
+    <path d="M439.8 149.6 439.8 146.4 M434.1 156.7 434.1 153.5 M428.5 163.8 428.5 160.6 M422.8 170.9 422.8 167.7 M416.5 176 416.5 172.8 M410.1 181.1 410.1 177.9 M403.8 186.2 403.8 183" fill="none" stroke="#706047" stroke-width=".63"/>
+    <path d="M439.8 146.4 422.8 167.7 403.8 183 M439.8 148 422.8 169.3 403.8 184.6" fill="none" stroke="#8b7858" stroke-width=".5"/>
+    <path d="M446.2 154.4 446.2 151.2 M440.5 162 440.5 158.8 M434.9 169.5 434.9 166.3 M429.2 177.1 429.2 173.9 M422.9 182.7 422.9 179.5 M416.5 188.2 416.5 185 M410.2 193.8 410.2 190.6" fill="none" stroke="#65573f" stroke-width=".67"/>
+    <path d="M446.2 151.2 429.2 173.9 410.2 190.6 M446.2 152.8 429.2 175.5 410.2 192.2" fill="none" stroke="#826e4e" stroke-width=".55"/>
+    <path d="M439.4 146.3 440.2 146.5 M422.4 167.6 423.2 167.8 M403.4 182.9 404.2 183.1 M445.8 151.1 446.6 151.3 M428.8 173.8 429.6 174 M409.8 190.5 410.6 190.7" fill="none" stroke="#b8a280" stroke-width=".75"/>
+    <g class="bridge-snow" fill="none" stroke="#f4f0df" opacity=".88">
+      <path d="M439.9 146.1 423 167.4 403.9 182.7 M446.2 150.9 429.2 173.6 410.2 190.3" stroke-width=".72"/>
+      <path d="M440.4 150.3 423.5 171.2 405 186.3" stroke-width=".55" opacity=".7"/>
+    </g>
+  </g>
+</svg>

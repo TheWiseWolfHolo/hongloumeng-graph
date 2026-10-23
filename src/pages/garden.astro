@@ -7,10 +7,18 @@
    寻人，挑一个人，看她在园里到过哪几处。 */
 import Base from '../layouts/Base.astro';
 import PageHead from '../components/PageHead.astro';
+import { getImage } from 'astro:assets';
+import gardenAtlas from '../assets/paintings/garden-atlas.png';
+import gardenSummer from '../assets/paintings/garden-summer.png';
+import gardenAutumn from '../assets/paintings/garden-autumn.png';
+import gardenWinter from '../assets/paintings/garden-winter.png';
 import { PEOPLE, cn } from '../lib/data.ts';
 import { GARDEN, GARDEN_TOUR, SEASONS, LIFE, VACATE } from '../data/garden.ts';
 import { EVENTS } from '../data/events.ts';
 import '../styles/garden.css';
+
+const gardenArtworks = await Promise.all([gardenAtlas, gardenSummer, gardenAutumn, gardenWinter].map(src => getImage({ src, width: src.width, format: 'webp', quality: 88 })));
+const seasonalArt = Object.fromEntries(['春', '夏', '秋', '冬'].map((season, i) => [season, gardenArtworks[i].src]));
 
 const groups = Object.fromEntries(PEOPLE.map(p => [p.id, p.group]));
 /* 园里出现过的人，按人物谱的次序 */
@@ -18,7 +26,8 @@ const inGarden = new Set(GARDEN.flatMap(b => b.who));
 const walkers = PEOPLE.filter(p => inGarden.has(p.id)).map(p => p.id);
 const evByTitle = Object.fromEntries(EVENTS.map(e => [e.t, e.c]));
 const data = {
-  places: GARDEN.map(b => ({ id: b.id, kind: b.kind, name: b.name, seal: b.seal ?? '', alias: b.alias, who: b.who, scene: b.scene, note: b.note, ev: b.ev.map(t => [t, evByTitle[t]?.[0] ?? 0, (evByTitle[t]?.[0] ?? 0) > 80 ? 1 : 0, evByTitle[t]?.[1] ?? 121]) })),
+  artwork: seasonalArt,
+  places: GARDEN.map(b => ({ id: b.id, kind: b.kind, name: b.name, seal: b.seal ?? '', alias: b.alias, who: b.who, scene: b.scene, note: b.note, basis: b.basis ?? [], positionNote: b.positionNote ?? '', ev: b.ev.map(t => { const chapters = evByTitle[t]; return [t, chapters[0], chapters[0] > 80 ? 1 : 0, chapters.at(-1)!]; }) })),
   tour: GARDEN_TOUR.map(t => ({ name: t.name, site: t.site ?? '', text: t.text, plq: t.plq ?? '', dui: t.dui ?? null })),
   seasons: SEASONS,
   life: LIFE,
@@ -35,7 +44,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
 
   <div class="yuan">
     <div class="modes" role="tablist" aria-label="看园子的法子">
-      {MODES.map(([k, t], i) => <button type="button" role="tab" class="mode" data-mode={k} aria-selected={i === 0 ? 'true' : 'false'}>{t}</button>)}
+      {MODES.map(([k, t], i) => <button type="button" role="tab" class="mode" data-mode={k} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>{t}</button>)}
     </div>
 
     <div class="ctl" data-ctl="shi" hidden>
@@ -57,10 +66,26 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     </div>
 
     <div class="stage">
-      <div class="gmap" data-map>
-        <div class="gscroll"><svg id="gardenSvg" viewBox="0 0 1200 790" role="group" aria-label="大观园图"></svg></div>
-        <canvas class="snow" data-snow aria-hidden="true"></canvas>
-        <div class="mist" aria-hidden="true"></div>
+      <div class="map-sheet">
+        <div class="map-tools">
+          <span>大觀園意繪</span>
+          <div role="group" aria-label="园图大小">
+            <button type="button" data-zoom="out" aria-label="缩小园图" disabled>缩小</button>
+            <button type="button" data-zoom="reset">全图</button>
+            <button type="button" data-zoom="in" aria-label="放大园图">放大</button>
+          </div>
+        </div>
+        <div class="gmap" data-map>
+          <div class="gscroll"><svg id="gardenSvg" data-artwork={seasonalArt['春']} viewBox="0 0 1200 790" role="group" aria-label="大观园意绘，地点可以点选"></svg></div>
+          <canvas class="snow" data-snow aria-hidden="true"></canvas>
+          <div class="mist" aria-hidden="true"></div>
+        </div>
+        <details class="map-basis">
+          <summary>園圖小記</summary>
+          <p>本图据原文中的近邻、行路与临水关系安排院落，距离和全园方位为意绘。各处所据回文，可在点选后的“原文依据”中查阅。</p>
+          <p>沁芳亭与沁芳闸分列。原文对水路进出的叙述有不同语境，图中不标单向流向。园景为据文意创作的插画；旅顺博物馆所藏孙温、孙允谟《红楼梦》画册作为鸟瞰构图的阅读参考。</p>
+          <a href="https://lvshunmuseum.cn/mobile/service_Detail.aspx?ID=325" target="_blank" rel="noreferrer">旅顺博物馆藏画说明</a>
+        </details>
       </div>
       <aside class="jian" data-jian aria-label="园中详情">
         <button type="button" class="jian-close" data-jian-close>收起详情</button>
@@ -74,10 +99,12 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
 
 <script>
   import Garden from '../client/garden-map.js';
-  import { applyGuard } from '../client/site.ts';
+  import { createGardenSnow } from '../client/garden-snow.ts';
+  import { applyGuard, progress } from '../client/site.ts';
 
-  type Place = { id: string; kind: string; name: string; seal: string; alias: string; who: string[]; scene: string; note: string; ev: [string, number, number, number][] };
+  type Place = { id: string; kind: string; name: string; seal: string; alias: string; who: string[]; scene: string; note: string; basis: { ch: number; paragraph: number; quote: string; note?: string }[]; positionNote: string; ev: [string, number, number, number][] };
   const D: {
+    artwork: Record<string, string>;
     places: Place[]; tour: { name: string; site: string; text: string; plq: string; dui: [string, string] | null }[];
     seasons: { s: string; ch: number; at: string; t: string; d: string }[];
     life: { ch: number; t: string; d: string; at?: string }[];
@@ -92,6 +119,21 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   const jian = document.querySelector<HTMLElement>('[data-jian-content]')!;
   const map = document.querySelector<HTMLElement>('[data-map]')!;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const plot = document.querySelector<SVGSVGElement>('#gardenSvg')!;
+  const scroller = map.querySelector<HTMLElement>('.gscroll')!;
+  const zoomIn = document.querySelector<HTMLButtonElement>('[data-zoom="in"]')!;
+  const zoomOut = document.querySelector<HTMLButtonElement>('[data-zoom="out"]')!;
+  let zoom = 1;
+  const sizeMap = () => { plot.style.width = zoom === 1 ? '100%' : `${Math.max(760, scroller.clientWidth) * zoom}px`; };
+  new ResizeObserver(sizeMap).observe(scroller);
+  document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach(button => button.addEventListener('click', () => {
+    zoom = button.dataset.zoom === 'reset' ? 1 : Math.max(1, Math.min(2, zoom + (button.dataset.zoom === 'in' ? .25 : -.25)));
+    sizeMap();
+    zoomOut.disabled = zoom === 1;
+    zoomIn.disabled = zoom === 2;
+    if (zoom === 1) scroller.scrollLeft = 0;
+    else Garden.center(cur);
+  }));
   /* 笺换内容时先淡出再淡入，不在原地跳 */
   let swapT = 0;
   const write = (html: string) => {
@@ -102,7 +144,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   const guard = (ch: number, html: string) => `<div class="spoil" data-ch="${ch}"><div class="spoil-body">${html}</div></div>`;
   function nearby(id?: string) {
     if (id) Garden.center(id);
-    if (!matchMedia('(max-width: 1100px)').matches) return;
+    if (!matchMedia('(max-width: 1300px)').matches) return;
     detail.classList.add('is-open');
     if (id) requestAnimationFrame(() => {
       const selected = [...map.querySelectorAll<SVGGElement>('[data-id]')].find(g => g.dataset.id === id)!;
@@ -111,8 +153,13 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
       scrollTo({ top: scrollY + r.top + r.height / 2 - (top + detail.getBoundingClientRect().top) / 2, behavior: reduced ? 'auto' : 'smooth' });
     });
   }
-  document.querySelector('[data-jian-close]')!.addEventListener('click', () => detail.classList.remove('is-open'));
-  addEventListener('keydown', e => { if (e.key === 'Escape') detail.classList.remove('is-open'); });
+  const closeDetail = () => {
+    detail.classList.remove('is-open');
+    const selected = map.querySelector<SVGElement>('[data-id].on');
+    if (selected) selected.focus({ preventScroll: true });
+  };
+  document.querySelector('[data-jian-close]')!.addEventListener('click', closeDetail);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && detail.classList.contains('is-open')) closeDetail(); });
 
   let mode = 'you';
   let cur = 'yhy';
@@ -128,14 +175,15 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
       <header class="jh">
         ${vert(b.name, 'bian')}
         <div class="jh-r">
-          <p class="kind">${b.kind === 'home' ? '院落' : '景致'}</p>
+          <p class="kind">${b.id === 'dgl' ? '省亲正殿' : b.kind === 'home' ? '院落' : '景致'}</p>
           <p class="alias">${esc(b.alias)}</p>
           <p class="who">${b.who.map(person).join('')}</p>
         </div>
       </header>
       <section class="js"><h3>景</h3><p>${esc(b.scene)}</p></section>
+      ${b.basis.length ? `<details class="source-note"><summary>原文依据</summary>${b.basis.map(s => guard(s.ch, `<blockquote>${esc(s.quote)}</blockquote>${s.note ? `<p>${esc(s.note)}</p>` : ''}<a href="/chapters/${s.ch}/?ref=garden#p${s.paragraph}">${hui(s.ch)} · 读这一段</a>`)).join('')}${b.positionNote ? `<p class="position-note">${esc(b.positionNote)}</p>` : ''}</details>` : ''}
       <section class="js"><h3>事</h3>${guard(121, `<p>${esc(b.note)}</p>`)}</section>
-      ${b.ev.length ? `<section class="js"><h3>回</h3><ul class="evs">${b.ev.map(([t, n, late, revealAt]) => `<li>${guard(revealAt, `<a href="/chapters/${n}/"><span class="n">${hui(n)}</span><span class="t">${esc(t)}</span>${late ? '<small>续书</small>' : ''}</a>`)}</li>`).join('')}</ul></section>` : ''}
+      ${b.ev.length ? `<section class="js"><h3>回</h3><ul class="evs">${b.ev.map(([t, n, late, revealAt]) => `<li>${guard(revealAt, `<a href="/chapters/${n}/?ref=garden"><span class="n">${hui(n)}</span><span class="t">${esc(t)}</span>${late ? '<small>续书</small>' : ''}</a>`)}</li>`).join('')}</ul></section>` : ''}
       ${seasons.length ? `<section class="js"><h3>時</h3><ul class="sea">${seasons.map(s => `<li>${guard(s.ch, `<b>${s.s}</b>${esc(s.t)}`)}</li>`).join('')}</ul></section>` : ''}
       ${life.length ? `<section class="js"><h3>變</h3><ul class="sea">${life.map(l => `<li>${guard(l.ch, `<b>${D.cn[l.ch]}</b>${esc(l.t)}`)}</li>`).join('')}</ul></section>` : ''}`);
     history.replaceState(null, '', '#' + id);
@@ -159,83 +207,46 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
         <button type="button" data-tour="prev" ${i === 0 ? 'disabled' : ''}>上一处</button>
         <button type="button" class="on" data-tour="${i === n - 1 ? 'end' : 'next'}">${i === n - 1 ? '游罢' : '下一处'}</button>
       </div>
-      ${st.site ? `<button type="button" class="more" data-goto="${st.site}">看${esc(place(st.site).name)}的住户与旧事</button>` : ''}`);
+      ${st.site ? `<button type="button" class="more" data-goto="${st.site}">看${esc(place(st.site).name)}的景致与旧事</button>` : ''}`);
   }
 
   /* ---------- 岁时 ---------- */
   const SEASON_LINE: Record<string, string> = { 春: '桃花帘外东风软', 夏: '一夜蝉声', 秋: '秋花惨淡秋草黄', 冬: '琉璃世界白雪红梅' };
   function showSeason(s: string) {
     map.dataset.ji = s;
+    Garden.setArtwork(D.artwork[s]);
+    if (s === '冬') snow.start(); else snow.stop();
     const list = D.seasons.filter(x => x.s === s);
-    Garden.pins(list.map((x, k) => ({ id: x.at, n: k + 1 })));
-    Garden.focusOn(new Set(list.map(x => x.at)));
+    const visible = list.map((x, k) => ({ ...x, number: k + 1 })).filter(x => !progress() || x.ch <= progress());
+    Garden.pins(visible.map(x => ({ id: x.at, n: x.number })));
+    Garden.focusOn(new Set(visible.map(x => x.at)));
     Garden.mark(null);
     write(`
       <header class="season"><span class="big">${s}</span><span class="line">${esc(SEASON_LINE[s])}</span></header>
       <ol class="happen">${list.map((x, k) => `<li>${guard(x.ch, `<button type="button" data-at="${x.at}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(x.t)}</b><small>${hui(x.ch)}　${esc(place(x.at).name)}</small><span>${esc(x.d)}</span></span></button>`)}</li>`).join('')}</ol>`);
   }
 
-  /* 雪：冬天才下。每片大小、快慢、左右摆的幅度都不一样，远的小而慢、淡，近的大而快；风一阵一阵地变 */
-  const snowCv = map.querySelector<HTMLCanvasElement>('[data-snow]')!;
-  let snowRaf = 0, snowOn = false;
-  type Flake = { x: number; y: number; r: number; v: number; ph: number; sw: number; a: number };
-  function startSnow() {
-    if (snowOn) return;
-    snowOn = true;
-    const box = map.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
-    const w = box.width, h = box.height;
-    snowCv.width = Math.round(w * d);
-    snowCv.height = Math.round(h * d);
-    const mk = (y?: number): Flake => {
-      const near = Math.random() ** 1.7;
-      return { x: Math.random() * w, y: y ?? Math.random() * h, r: 1 + near * 2.6, v: 12 + near * 38 + Math.random() * 6, ph: Math.random() * 6.28, sw: 3 + Math.random() * 12, a: .7 + near * .3 };
-    };
-    const flakes = Array.from({ length: Math.round((w * h) / 2600) }, () => mk());
-    const ctx = snowCv.getContext('2d')!;
-    const paint = () => {
-      ctx.setTransform(d, 0, 0, d, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = '#fff';
-      /* 冬景本来就淡，雪片带一圈极淡的灰边才看得出 */
-      ctx.shadowColor = 'rgb(70 80 90 / .45)';
-      ctx.shadowBlur = 2 * d;
-      for (const f of flakes) {
-        ctx.globalAlpha = f.a;
-        ctx.beginPath();
-        ctx.arc(f.x + Math.sin(f.ph) * f.sw, f.y, f.r, 0, 7);
-        ctx.fill();
-      }
-    };
-    if (reduced) { paint(); return; }
-    let last = performance.now();
-    const step = (now: number) => {
-      const dt = Math.min(.05, (now - last) / 1000);
-      last = now;
-      const wind = Math.sin(now / 5300) * Math.sin(now / 2300) * 22;
-      for (const f of flakes) {
-        f.y += f.v * dt;
-        f.x += wind * dt * (.4 + f.r * .3);
-        f.ph += dt * (.5 + Math.random() * .3);
-        if (f.y > h + 4) Object.assign(f, mk(-4));
-        if (f.x < -24) f.x += w + 48; else if (f.x > w + 24) f.x -= w + 48;
-      }
-      paint();
-      snowRaf = requestAnimationFrame(step);
-    };
-    snowRaf = requestAnimationFrame(step);
-  }
-  function stopSnow() { cancelAnimationFrame(snowRaf); snowRaf = 0; snowOn = false; }
-  let mapVisible = false;
-  const syncSnow = () => { if (map.dataset.ji === '冬' && mapVisible && !document.hidden) startSnow(); else stopSnow(); };
-  new IntersectionObserver(entries => { mapVisible = entries[0].isIntersecting; syncSnow(); }).observe(map);
-  new MutationObserver(syncSnow).observe(map, { attributes: true, attributeFilter: ['data-ji'] });
-  document.addEventListener('visibilitychange', syncSnow);
-  new ResizeObserver(() => { if (snowOn) { stopSnow(); syncSnow(); } }).observe(map);
+  const snow = createGardenSnow(map.querySelector<HTMLCanvasElement>('[data-snow]')!, map, reduced);
 
   /* ---------- 盛衰 ---------- */
   const range = document.querySelector<HTMLInputElement>('[data-hui]')!;
   const out = document.querySelector<HTMLOutputElement>('[data-hui-out]')!;
   function showLife(n: number) {
+    const lastRead = progress();
+    range.max = String(lastRead ? Math.max(17, Math.min(112, lastRead)) : 112);
+    range.disabled = !!lastRead && lastRead < 17;
+    playBtn.disabled = range.disabled;
+    n = Math.min(n, +range.max);
+    range.value = String(n);
+    if (range.disabled) {
+      out.textContent = '尚未读到';
+      range.setAttribute('aria-valuetext', '尚未读到第十七回');
+      Garden.vacant(new Set());
+      Garden.mark(null);
+      map.style.setProperty('--decay', '0');
+      write(guard(17, '<p class="said">第十七回起，园中的院落与人物随回目展开。</p>'));
+      return;
+    }
     out.textContent = hui(n);
     range.setAttribute('aria-valuetext', hui(n));
     const empty = new Set(Object.entries(D.vacate).filter(([, [a, b]]) => n < a || n > b).map(([id]) => id));
@@ -245,7 +256,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     map.style.setProperty('--decay', decay.toFixed(3));
     const now = [...D.life].reverse().find(l => l.ch <= n)!;
     Garden.mark(now.at ?? null);
-    const homes = D.places.filter(p => p.kind === 'home');
+    const homes = D.places.filter(p => p.kind === 'home' && p.id !== 'dgl');
     const homesHtml = guard(121, `<ul class="homes">${homes.map(h => `<li class="${empty.has(h.id) ? 'off' : ''}"><span>${esc(h.name)}</span><small>${empty.has(h.id) ? (n < D.vacate[h.id][0] ? '未住' : '已空') : esc(h.seal)}</small></li>`).join('')}</ul>`);
     const html = `
       <p class="kind">${hui(now.ch)}${now.ch > 80 ? '　续书' : ''}</p>
@@ -263,12 +274,12 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   const stopPlay = () => { clearInterval(timer); timer = 0; playBtn.classList.remove('on'); };
   playBtn.addEventListener('click', () => {
     if (timer) { stopPlay(); return; }
-    if (+range.value >= 112) range.value = '17';
+    if (+range.value >= +range.max) range.value = '17';
     playBtn.classList.add('on');
     timer = window.setInterval(() => {
       range.value = String(+range.value + 1);
       showLife(+range.value);
-      if (+range.value >= 112) stopPlay();
+      if (+range.value >= +range.max) stopPlay();
     }, 260);
   });
 
@@ -281,7 +292,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     Garden.pins(at.map((p, k) => ({ id: p.id, n: k + 1 })));
     Garden.mark(null);
     write(`
-      <p class="kind">${at.some(p => p.kind === 'home' && p.who[0] === id) ? '住在园里' : '在园里出现过'}</p>
+      <p class="kind">人物与园中地点</p>
       <h2 class="stop">${person(id)}</h2>
       <ol class="happen">${at.map((p, k) => `<li><button type="button" data-at="${p.id}"><span class="no">${D.cn[k + 1]}</span><span class="b"><b>${esc(p.name)}</b><small>${esc(p.alias)}</small></span></button>${guard(121, `<p>${esc(p.note)}</p>`)}</li>`).join('')}</ol>`);
   }
@@ -294,12 +305,14 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     if (Garden.touring()) Garden.endTour();
     stopPlay();
     mode = m;
-    modes.forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    modes.forEach(b => { b.setAttribute('aria-selected', String(b.dataset.mode === m)); b.tabIndex = b.dataset.mode === m ? 0 : -1; });
     ctls.forEach(c => { c.hidden = c.dataset.ctl !== m; });
     Garden.pins(null);
     Garden.focusOn(null);
     Garden.vacant(new Set());
     map.dataset.ji = '';
+    if (m !== 'shi') Garden.setArtwork(D.artwork['春']);
+    snow.stop();
     map.style.setProperty('--decay', '0');
     delete jian.dataset.life;
     if (m === 'you') showPlace(cur);
@@ -309,6 +322,13 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     if (m === 'xun') showPerson(rens.find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.ren ?? '林黛玉');
   }
   modes.forEach(b => b.addEventListener('click', () => { setMode(b.dataset.mode!); nearby(); }));
+  modes.forEach((button, index) => button.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? modes.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + modes.length) % modes.length;
+    setMode(modes[next].dataset.mode!);
+    modes[next].focus();
+  }));
   document.querySelectorAll<HTMLButtonElement>('[data-ji]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-ji]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     showSeason(b.dataset.ji!);
@@ -327,7 +347,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     else setMode('you');
   });
   document.addEventListener('keydown', e => {
-    if (mode !== 'ti' || /INPUT|TEXTAREA/.test((document.activeElement as HTMLElement).tagName)) return;
+    if (mode !== 'ti' || (document.activeElement as HTMLElement).closest('input,textarea,select,button,a,dialog,[contenteditable="true"]')) return;
     if (e.key === 'ArrowRight') { e.preventDefault(); showStop(Garden.tourGo(Garden.tourIndex() + 1)); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); showStop(Garden.tourGo(Garden.tourIndex() - 1)); }
   });
@@ -343,7 +363,7 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
     const id = decodeURIComponent(location.hash.slice(1));
     if (D.places.some(p => p.id === id)) { setMode('you'); showPlace(id); nearby(id); }
   });
-  addEventListener('hlm:progress', () => applyGuard(jian));
+  addEventListener('hlm:progress', () => { setMode(mode); applyGuard(jian); });
 </script>
 
 <style>
@@ -351,15 +371,17 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   /* 看法：刻本字，当前一种右上角一个朱圈 */
   .modes { display: flex; justify-content: center; gap: clamp(10px, 3vw, 44px); margin-bottom: 22px; }
   .mode { position: relative; padding: 10px 14px; font: 400 21px/1 var(--title); letter-spacing: .24em; color: var(--ink-3); transition: color .3s; }
-  .mode::after { content: ''; position: absolute; right: 4px; top: 3px; width: 8px; height: 8px; border-radius: 50%; border: 1.6px solid var(--cinnabar); opacity: 0; transform: scale(.4); transition: opacity .3s, transform .4s var(--ease); }
+  .mode::after { content: ''; position: absolute; right: 4px; top: 3px; width: 8px; height: 9px; border-radius: 48% 59% 43% 55%; border: 1.4px solid var(--cinnabar); opacity: 0; transform: rotate(-12deg) scale(.4); transition: opacity .3s, transform .4s var(--ease); pointer-events: none; }
   .mode:hover { color: var(--ink); }
   .mode[aria-selected="true"] { color: var(--ink); }
   .mode[aria-selected="true"]::after { opacity: 1; transform: none; }
 
   .ctl { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px 18px; min-height: 52px; margin-bottom: 20px; }
-  .ji { width: 44px; height: 44px; border-radius: 50%; font: 400 21px/1 var(--title); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s, box-shadow .3s; }
+  .ji { position: relative; width: 44px; height: 44px; font: 400 21px/1 var(--title); color: var(--ink-3); transition: color .3s; }
+  .ji::after { content: ''; position: absolute; inset: 5px; border: 1.4px solid transparent; border-radius: 45% 58% 43% 55%; transform: rotate(-9deg); pointer-events: none; }
   .ji:hover { color: var(--ink); }
-  .ji[aria-pressed="true"] { color: #fff6ea; background: var(--cinnabar); box-shadow: none; }
+  .ji[aria-pressed="true"] { color: var(--cinnabar); }
+  .ji[aria-pressed="true"]::after { border-color: var(--cinnabar); }
   .sheng { gap: 18px; }
   .play { padding: 8px 14px; font: 400 17px/1 var(--title); letter-spacing: .3em; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s; }
   .play.on, .play:hover { color: var(--cinnabar); }
@@ -375,25 +397,33 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .ren:hover { color: var(--ink); }
   .ren[aria-pressed="true"] { color: var(--ink); background-size: 100% 1.5px; }
 
-  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
-  /* 季节与盛衰都只是给画加一层颜色 */
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+  .map-sheet { min-width: 0; }
+  .map-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; font: 400 15px/1.6 var(--title); color: var(--ink-3); letter-spacing: .12em; }
+  .map-tools > span { color: var(--ink-2); }
+  .map-tools [role="group"] { display: flex; gap: 14px; }
+  .map-tools button { min-height: 40px; padding: 4px 2px; border-bottom: 1px solid var(--line-2); font: inherit; }
+  .map-tools button:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
+  .map-tools button:disabled { opacity: .35; cursor: default; }
+  .map-basis { margin-top: 16px; max-width: 60em; font-size: 14px; line-height: 1.9; color: var(--ink-3); }
+  .map-basis summary { width: fit-content; cursor: pointer; font: 400 16px/1.6 var(--title); letter-spacing: .15em; }
+  .map-basis p { margin-top: 10px; }
+  .map-basis a { color: var(--cinnabar); border-bottom: 1px solid var(--line-2); }
+  /* 四季各有画稿；褪色只用于盛衰。 */
   .gmap { --decay: 0; }
   .gmap :global(svg) { filter: saturate(calc(1 - var(--decay) * .8)) sepia(calc(var(--decay) * .3)); }
-  .gmap[data-ji="夏"] :global(svg) { filter: saturate(1.15) brightness(1.01); }
-  .gmap[data-ji="秋"] :global(svg) { filter: sepia(.32) saturate(1.15) hue-rotate(-10deg); }
-  .gmap[data-ji="冬"] :global(svg) { filter: saturate(.3) brightness(1.08) contrast(.94); }
   .mist { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgb(250 247 240 / .55), rgb(250 247 240 / .85)); opacity: calc(var(--decay) * .8); transition: opacity 1.2s; }
   .snow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.2s; }
   .gmap[data-ji="冬"] .snow { opacity: 1; }
 
   /* 笺 */
-  .jian { position: sticky; top: calc(var(--header-h) + 18px); max-height: calc(100vh - var(--header-h) - 36px); overflow-y: auto; scrollbar-width: thin; padding: 26px 26px 24px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent), inset 0 0 0 4px var(--card), inset 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent), 0 20px 40px -30px rgb(40 26 10 / .5); transition: opacity .16s; }
+  .jian { position: sticky; top: calc(var(--header-h) + 18px); margin-top: 50px; max-height: calc(100vh - var(--header-h) - 36px); overflow-y: auto; scrollbar-width: thin; padding: 24px 22px; background: var(--card); border-block: 1px solid var(--line-2); box-shadow: 0 16px 28px -28px rgb(40 26 10 / .3); transition: opacity .16s; }
   .jian.out { opacity: 0; }
   .jian-close { display: none; }
   .jian :global(.kind) { font: 400 14px/1.6 var(--title); letter-spacing: .3em; color: var(--cinnabar); }
   .jian :global(.jh) { display: flex; gap: 20px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
-  /* 竖匾：黑漆泥金 */
-  .jian :global(.bian) { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; background: #231c17; color: #e2c27a; font: 400 24px/1.1 var(--title); box-shadow: 0 0 0 3px #6a4a2c, 0 0 0 4px #3b2a19, 0 10px 18px -10px rgb(30 18 6 / .6); }
+  /* 地名按笺题排，朱线沿侧。 */
+  .jian :global(.bian) { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 10px 12px 2px; color: var(--ink); font: 400 27px/1.1 var(--title); border-right: 1px solid var(--cinnabar); }
   .jian :global(.bian i), .jian :global(.lian i) { font-style: normal; }
   .jian :global(.bian.big) { font-size: 26px; padding: 14px 9px; }
   .jian :global(.jh-r) { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -402,6 +432,12 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .jian :global(.js) { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 10px; padding-top: 16px; }
   .jian :global(.js h3) { font: 400 17px/1.8 var(--title); color: var(--cinnabar); }
   .jian :global(.js p) { font-size: 15px; line-height: 1.95; color: var(--ink); }
+  .jian :global(.source-note) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.9; color: var(--ink-2); }
+  .jian :global(.source-note summary) { cursor: pointer; width: fit-content; font: 400 16px/1.5 var(--title); color: var(--cinnabar); letter-spacing: .12em; }
+  .jian :global(.source-note blockquote) { margin: 14px 0 5px; padding-left: 12px; border-left: 1px solid var(--line-2); font-family: var(--title); font-size: 17px; }
+  .jian :global(.source-note p) { margin: 4px 0 8px; }
+  .jian :global(.source-note a) { font-family: var(--title); color: var(--cinnabar); border-bottom: 1px solid var(--line-2); }
+  .jian :global(.source-note .position-note) { margin-top: 14px; color: var(--ink-3); }
   .jian :global(.evs), .jian :global(.sea) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .jian :global(.evs a) { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; color: var(--ink); transition: color .2s; }
   .jian :global(.evs a:hover) { color: var(--cinnabar); }
@@ -418,11 +454,12 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .jian :global(.steps li:first-child::before) { left: 50%; }
   .jian :global(.steps li:last-child::before) { right: 50%; }
   .jian :global(.steps li.done::before) { border-color: var(--cinnabar); }
-  .jian :global(.steps button) { position: relative; width: 11px; height: 11px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--cinnabar); }
-  .jian :global(.steps .done button), .jian :global(.steps .cur button) { background: var(--cinnabar); }
+  .jian :global(.steps button) { position: relative; width: 28px; height: 32px; background: transparent; }
+  .jian :global(.steps button::after) { content: ''; position: absolute; inset: 10px 8px; border: 1px solid var(--cinnabar); border-radius: 45% 56% 42% 54%; background: var(--card); transform: rotate(-8deg); }
+  .jian :global(.steps .done button::after), .jian :global(.steps .cur button::after) { background: var(--cinnabar); }
   /* 门：匾在中间，上联在右，下联在左 */
   .jian :global(.men) { display: flex; justify-content: center; align-items: flex-start; gap: 18px; margin: 22px 0 6px; }
-  .jian :global(.lian) { display: flex; flex-direction: column; align-items: center; margin-top: 30px; padding: 10px 6px; background: #b8322a; color: #1d1712; font: 400 18px/1.25 var(--title); box-shadow: 0 6px 14px -8px rgb(60 20 10 / .6); }
+  .jian :global(.lian) { display: flex; flex-direction: column; align-items: center; margin-top: 30px; padding: 10px 6px; color: var(--ink-2); font: 400 18px/1.25 var(--title); border-inline: 1px solid var(--line); }
   .jian :global(.said) { margin-top: 16px; font-size: 15.5px; line-height: 2; color: var(--ink); }
   .jian :global(.go) { display: flex; gap: 10px; margin-top: 18px; }
   .jian :global(.go button) { padding: 9px 16px; font: 400 16px/1 var(--title); letter-spacing: .2em; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-2); transition: color .3s, background .3s; }
@@ -430,12 +467,12 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .jian :global(.go button:disabled) { opacity: .4; }
   .jian :global(.more) { display: block; margin-top: 16px; font: 400 15px/1.4 var(--title); letter-spacing: .14em; color: var(--cinnabar); }
   .jian :global(.season) { display: flex; align-items: center; gap: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-  .jian :global(.season .big) { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--cinnabar); color: #fff6ea; font: 400 36px/1 var(--title); }
+  .jian :global(.season .big) { display: grid; place-items: center; width: 64px; height: 64px; color: var(--cinnabar); font: 400 44px/1 var(--title); border-right: 1px solid var(--line-2); }
   .jian :global(.season .line) { font: 400 18px/1.6 var(--title); letter-spacing: .2em; color: var(--ink-2); }
   .jian :global(.happen) { list-style: none; margin: 8px 0 0; padding: 0; }
   .jian :global(.happen button) { display: flex; gap: 12px; width: 100%; padding: 12px 0; text-align: left; border-bottom: 1px solid var(--line); }
   .jian :global(.happen li:last-child button) { border-bottom: 0; }
-  .jian :global(.happen .no) { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 2px; border-radius: 50%; background: var(--cinnabar); color: #fff6ea; font: 400 12px/1 var(--title); }
+  .jian :global(.happen .no) { flex: none; display: grid; place-items: center; width: 24px; height: 26px; margin-top: 2px; border-radius: 46% 55% 40% 57%; border: 1px solid var(--cinnabar); color: var(--cinnabar); font: 400 14px/1 var(--title); }
   .jian :global(.happen .b) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .jian :global(.happen b) { font: 400 18px/1.3 var(--title); letter-spacing: .08em; }
   .jian :global(.happen small) { font: 400 13px/1.4 var(--title); color: var(--ink-3); letter-spacing: .08em; }
@@ -445,15 +482,20 @@ const MODES = [['you', '遊覽'], ['ti', '題對額'], ['shi', '歲時'], ['shen
   .jian :global(.homes li) { display: flex; justify-content: space-between; align-items: baseline; font: 400 16px/1.5 var(--title); transition: opacity .5s; }
   .jian :global(.homes li.off) { opacity: .35; }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1300px) {
     .stage { grid-template-columns: 1fr; }
-    .jian { position: static; max-height: none; }
+    .jian { position: static; max-height: none; margin-top: 0; }
     .jian.is-open { position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; top: auto; height: 38dvh; max-height: 38dvh; padding: 18px 24px max(20px, env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgb(30 20 10 / .16); }
-    .jian.is-open .jian-close { display: block; margin: 0 0 14px auto; padding: 6px 0 6px 14px; color: var(--cinnabar); font: 400 16px/1.4 var(--title); }
+    .jian.is-open .jian-close { display: block; position: sticky; z-index: 1; top: 0; width: 100%; margin: 0 0 14px; padding: 6px 0 10px 14px; text-align: right; background: var(--card); color: var(--cinnabar); font: 400 16px/1.4 var(--title); }
+  }
+  @media (min-width: 641px) and (max-width: 1300px) {
+    .jian.is-open { left: auto; right: var(--gutter); bottom: 20px; width: 380px; height: 48dvh; max-height: 48dvh; border: 1px solid var(--line-2); padding: 20px 24px; }
   }
   @media (max-width: 640px) {
     .mode { font-size: 17px; letter-spacing: .12em; padding: 8px 6px; }
     .modes { gap: 4px; }
     .track { width: 52vw; }
+    .map-tools { letter-spacing: .06em; }
+    .map-tools [role="group"] { gap: 10px; }
   }
 </style>
