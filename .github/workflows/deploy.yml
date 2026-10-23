@@ -62,8 +62,8 @@ jobs:
             grep -q "$2" <<< "$page" || { echo "::error::$1 缺少「$2」"; exit 1; }
           }
           check / '红楼梦人物关系图谱'
-          check /graph/ '关系星图'
-          check /garden/ '随贾政一行游园'
+          check /graph/ '关系总图'
+          check /garden/ '题对额'
           check /chapters/1/ '甄士隐'
           curl -fsS -o /dev/null "$base/fonts/fonts.css" || { echo "::error::fonts.css 取不到"; exit 1; }
           echo "线上自检通过"

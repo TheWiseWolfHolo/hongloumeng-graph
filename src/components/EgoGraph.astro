@@ -78,7 +78,7 @@ const capSize = (s: string, max: number) => Math.min(max, 112 / [...s].length);
 const uid = `eg${Math.abs([...id].reduce((h, c) => (h * 31 + c.codePointAt(0)!) | 0, 7))}`;
 ---
 {n > 0 && (
-<figure class="ego reveal">
+<figure class="ego reveal" data-scroll-start="center">
   <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${id}的亲友，共${n}人`}>
     <defs>
       {sectors.filter(s => s.label).map(s => <path id={`${uid}-${s.t}`} d={s.label} />)}
@@ -115,8 +115,9 @@ const uid = `eg${Math.abs([...id].reduce((h, c) => (h * 31 + c.codePointAt(0)!) 
 )}
 
 <style>
-  .ego { margin: 0; }
-  .ego svg { display: block; width: 100%; height: auto; }
+  .ego { margin: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  /* 窄屏上名字缩得太小就看不清，宁可横着滚 */
+  .ego svg { display: block; width: 100%; min-width: 560px; height: auto; }
   .ring { fill: none; stroke: var(--line-2); stroke-width: 1; }
   .ring.faint { stroke: var(--line); stroke-dasharray: 1 5; }
   .me-t, .cap text { text-anchor: middle; dominant-baseline: central; font-family: var(--display); }

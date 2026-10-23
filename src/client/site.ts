@@ -286,4 +286,11 @@ if (canHover) {
   addEventListener('scroll', hidePeek, { passive: true });
 }
 
+/* 窄屏上横着滚的图：年表类从右往左读，一打开先停在最右边；罗盘停在正中 */
+for (const el of $$<HTMLElement>('[data-scroll-start]')) {
+  const at = el.dataset.scrollStart;
+  if (el.scrollWidth <= el.clientWidth) continue;
+  el.scrollLeft = at === 'center' ? (el.scrollWidth - el.clientWidth) / 2 : el.scrollWidth;
+}
+
 export { $, $$, store, esc, cn };

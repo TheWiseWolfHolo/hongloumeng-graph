@@ -1,49 +1,51 @@
 ---
-/* 一百二十回的出场墨迹：每回一笔，提到得越多，墨越浓、笔越长。第八十回后隔一道线，是续书。 */
+/* 一百二十回里的身影，和首页的年表一个画法：右起第一回，每回一格，提到他就点一个墨点，提到越多点越大；
+   十回一道界栏，后四十回是续书，墨淡。点到哪一格就进哪一回。 */
 import { MENTIONS, cn, chapter } from '../lib/data.ts';
-interface Props { id: string; color?: string; height?: number; compact?: boolean }
-const { id, color = 'var(--ink)', height = 96, compact = false } = Astro.props;
+interface Props { id: string; color?: string }
+const { id, color = 'var(--ink)' } = Astro.props;
 const m = MENTIONS[id] ?? new Array(120).fill(0);
 const max = Math.max(1, ...m);
-const W = 1200, H = height, base = H;
-const colW = W / 120;
-const bars = m.map((v, i) => {
-  const t = v ? Math.sqrt(v / max) : 0;
-  const h = v ? 6 + t * (base - 8) : 2;
-  return { n: i + 1, v, h, t };
-});
-const peak = bars.reduce((a, b) => (b.v > a.v ? b : a), bars[0]);
+const W = 1200, TOP = 26, ROW = 44, H = TOP + ROW;
+const CW = W / 120;
+const cx = (n: number) => W - (n - .5) * CW;
+const f = (v: number) => +v.toFixed(1);
+const cells = m.map((v, i) => ({ n: i + 1, v, r: v ? f(Math.max(1.2, Math.sqrt(v / max) * CW * .7)) : 0 }));
+const peak = cells.reduce((a, b) => (b.v > a.v ? b : a), cells[0]);
 ---
-<figure class:list={["strip", { compact }]} style={`--c:${color};--h:${height}px`}>
-  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${id}在一百二十回里被提到的次数，最多的是第${cn(peak.n)}回，${cn(peak.v)}次`}>
-    <rect x={colW * 80} y="0" width={colW * 40} height={base} class="xu-bg" />
-    <line x1={colW * 80} x2={colW * 80} y1="0" y2={base} class="xu" />
-    {bars.map(b => (
-      <a href={`/chapters/${b.n}/`} class:list={['bar', { zero: !b.v, xu: b.n > 80 }]} aria-label={`${chapter(b.n).cn}，提到${cn(b.v)}次`}>
-        <title>{`${chapter(b.n).cn}　${chapter(b.n).title.join(' ')}　提到${cn(b.v)}次`}</title>
-        <rect x={(b.n - 1) * colW} y="0" width={colW} height={base} class="hit" />
-        <rect x={(b.n - 1) * colW + colW * .22} y={base - b.h} width={colW * .56} height={b.h}  style={`opacity:${b.v ? .28 + b.t * .72 : .18}`} class="ink" />
+<figure class="strip" style={`--c:${color}`}>
+  <div class="strip-box" data-scroll-start="end">
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${id}在一百二十回里被提到的次数，最多的是${chapter(peak.n).cn}，${cn(peak.v)}次`}>
+    <rect class="xu-bg" x="0" y={TOP} width={CW * 40} height={ROW} />
+    <line class="rule" x1="0" x2={W} y1={TOP} y2={TOP} />
+    <line class="rule" x1="0" x2={W} y1={H} y2={H} />
+    {Array.from({ length: 11 }, (_, i) => (i + 1) * 10).map(n => <line class:list={['rule', { eighty: n === 80 }]} x1={f(cx(n) - CW / 2)} x2={f(cx(n) - CW / 2)} y1={TOP - 6} y2={H} />)}
+    {[1, 20, 40, 60, 80, 100].map(n => <text class="tk" x={f(cx(n))} y={TOP - 10}>{cn(n)}</text>)}
+    {cells.map(c => (
+      <a href={`/chapters/${c.n}/`} class:list={['cell', { xu: c.n > 80 }]} aria-label={`${chapter(c.n).cn}，提到${cn(c.v)}次`}>
+        <title>{`${chapter(c.n).cn}　${chapter(c.n).title.join(' ')}　${c.v ? `提到${cn(c.v)}次` : '未提到'}`}</title>
+        <rect class="hit" x={f(cx(c.n) - CW / 2)} y={TOP} width={f(CW)} height={ROW} />
+        {c.v ? <circle cx={f(cx(c.n))} cy={TOP + ROW / 2} r={c.r} /> : <circle class="none" cx={f(cx(c.n))} cy={TOP + ROW / 2} r=".8" />}
       </a>
     ))}
   </svg>
-  {!compact && <div class="ticks" aria-hidden="true">{[1, 20, 40, 60, 80, 100, 120].map(n => <span style={`left:${((n - .5) / 120) * 100}%`}>{cn(n)}</span>)}</div>}
-  {!compact && <figcaption><span>前八十回</span><span class="xu-cap">后四十回 · 续书，非原作</span></figcaption>}
+  </div>
+  <figcaption><span>右起前八十回</span><span>左边四十回是续书，墨淡</span></figcaption>
 </figure>
 
 <style>
   .strip { margin: 0; }
-  .strip svg { width: 100%; height: var(--h); overflow: visible; }
-  .strip .ink { fill: var(--c); transition: fill .2s; }
-  .strip .zero .ink { fill: var(--ink-4); }
-  .strip .hit { fill: transparent; }
-  .strip .bar:hover .ink { fill: var(--cinnabar); opacity: 1 !important; }
-  .strip .bar:hover .hit { fill: var(--cinnabar-soft); }
-  .strip .xu { stroke: var(--line-2); stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
-  .strip .xu-bg { fill: var(--paper-2); opacity: .6; }
-  .strip .bar.xu .ink { fill: var(--ink-4); }
-  .strip .xu-cap { color: var(--ink-4); }
-  .ticks { position: relative; height: 18px; margin-top: 8px; font: 400 13px/1 var(--title); color: var(--ink-3); }
-  .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  .strip figcaption { display: grid; grid-template-columns: 80fr 40fr; font: 400 13px/1 var(--title); letter-spacing: .2em; color: var(--ink-3); margin-top: 10px; }
-  .strip figcaption span:last-child { padding-left: 10px; border-left: 1px dashed var(--line-2); }
+  .strip-box { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-top: 4px; }
+  .strip svg { display: block; width: 100%; min-width: 720px; height: auto; overflow: visible; }
+  .rule { stroke: color-mix(in srgb, var(--cinnabar) 30%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .rule.eighty { stroke: color-mix(in srgb, var(--cinnabar) 55%, transparent); stroke-dasharray: 3 3; }
+  .xu-bg { fill: color-mix(in srgb, var(--ink) 3%, transparent); }
+  .tk { font: 400 13px var(--title); fill: var(--ink-3); text-anchor: middle; }
+  .hit { fill: transparent; }
+  .cell circle { fill: var(--c); transition: fill .2s; }
+  .cell.xu circle { opacity: .35; }
+  .cell circle.none { fill: var(--ink-4); opacity: .5; }
+  .cell:hover circle, .cell:focus-visible circle { fill: var(--cinnabar); opacity: 1; }
+  .cell:hover .hit { fill: color-mix(in srgb, var(--cinnabar) 7%, transparent); }
+  .strip figcaption { display: flex; flex-direction: row-reverse; justify-content: space-between; margin-top: 10px; font: 400 13px/1.6 var(--title); letter-spacing: .2em; color: var(--ink-3); }
 </style>

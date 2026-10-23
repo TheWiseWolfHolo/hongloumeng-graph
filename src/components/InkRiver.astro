@@ -27,7 +27,7 @@ const rows = ids.map((id, i) => {
 const tens = Array.from({ length: 12 }, (_, i) => (i + 1) * 10);
 ---
 <figure class="nianbiao reveal">
-  <div class="nb-box">
+  <div class="nb-box" data-scroll-start="end">
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`原文提到最多的${count}个人在一百二十回里各回被提到的多少`}>
       <rect class="xu-bg" x={f(cx(120) - CW / 2)} y={TOP} width={f(CW * 40)} height={H - TOP - 6} />
       <g class="grid">
