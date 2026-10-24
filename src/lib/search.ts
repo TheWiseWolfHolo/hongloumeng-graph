@@ -22,9 +22,17 @@ export function parseHui(q: string): number | null {
   if (!m) return null;
   if (/^\d+$/.test(m[1])) { const n = +m[1]; return n >= 1 && n <= 120 ? n : null; }
   let s = m[1], n = 0;
-  if (s.startsWith('一百')) { n = 100; s = s.slice(2).replace(/^零/, ''); if (s.startsWith('一十')) s = s.slice(1); }
-  if (s.includes('十')) { const [a, b] = s.split('十'); n += (a ? digits[a] : 1) * 10 + (b ? digits[b] : 0); }
-  else if (s) n += digits[s];
+  if (s.startsWith('一百')) { n = 100; s = s.slice(2).replace(/^[零〇]/, ''); if (s.startsWith('一十')) s = s.slice(1); }
+  if (s.includes('十')) {
+    const parts = s.split('十');
+    if (parts.length > 2) return null;
+    const [a, b] = parts;
+    if ((a && digits[a] === undefined) || (b && digits[b] === undefined)) return null;
+    n += (a ? digits[a] : 1) * 10 + (b ? digits[b] : 0);
+  } else if (s) {
+    if (digits[s] === undefined) return null;
+    n += digits[s];
+  }
   return n >= 1 && n <= 120 ? n : null;
 }
 

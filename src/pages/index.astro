@@ -188,16 +188,6 @@ const DOORS = [
   .lady-name b { font: 700 26px/1 var(--display); }
   .lady-name small { font: 600 11px/1 var(--label); color: var(--cinnabar); letter-spacing: .2em; }
 
-  .river-note { max-width: 30em; }
-  .pairs { margin-top: 36px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
-  .pairs-h { font: 600 13px/1.8 var(--label); color: var(--ink-3); letter-spacing: .12em; }
-  .pairs ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; counter-reset: p; }
-  .pairs li { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 16.5px; counter-increment: p; }
-  .pairs li::before { content: counter(p); font: 400 18px/1 var(--display); color: var(--cinnabar); width: 1.3em; }
-  .pairs a:hover { color: var(--cinnabar); }
-  .amp { font-size: 13px; color: var(--ink-3); }
-  .pn { margin-left: auto; font: 500 12px/1 var(--label); color: var(--ink-3); }
-
   @media (max-width: 1000px) {
     .hangs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 72px; }
   }
@@ -206,6 +196,5 @@ const DOORS = [
     .scroll :global(.painting) { object-position: 56% 50%; }
     .hero-poem { font-size: 15px; letter-spacing: .14em; }
     .line { font-size: 13px; letter-spacing: .14em; }
-    .pairs { grid-template-columns: 1fr; }
   }
 </style>

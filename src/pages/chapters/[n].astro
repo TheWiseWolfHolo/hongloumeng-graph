@@ -92,6 +92,9 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
         </div>
         <button type="button" class="ctl" data-names aria-pressed="true">人名标注</button>
         <button type="button" class="ctl" data-vertical aria-pressed="false">竖排</button>
+        <button type="button" class="ctl" data-bm-toggle aria-pressed="false" title="在当前段落夹入或取出书签">夹签</button>
+        <button type="button" class="ctl" data-quote-open title="将当前段落或所选文字制成刻本摘句笺">摘句</button>
+        <button type="button" class="ctl" data-bm-open hidden>书签匣 <small data-bm-count></small></button>
         <button type="button" class="ctl" data-read-here hidden>从这里接着读</button>
       </div>
 
@@ -101,7 +104,7 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
         <button type="button" data-hit-next>下一处</button>
       </nav>
 
-      <div class="text" data-text set:html={html} />
+      <div class="text" data-text data-ch-cn={c.cn} data-ch-title={c.title.join('　')} set:html={html} />
 
       <footer class="ch-end">
         <Seal text="终" size={36} round />
@@ -113,6 +116,45 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
       </footer>
     </article>
   </div>
+
+  <dialog class="bm-dialog" data-bm-dialog aria-label="书签匣">
+    <div class="bm-box">
+      <header class="bm-head">
+        <h2>书签匣 <small>本机夹存</small></h2>
+        <button type="button" class="bm-close" data-bm-close aria-label="关闭">×</button>
+      </header>
+      <ul class="bm-list" data-bm-list></ul>
+      <p class="bm-empty" data-bm-empty hidden>尚未夹入书签。阅读时点选段落或直接按上方“夹签”，即可在此处留签。</p>
+    </div>
+  </dialog>
+
+  <dialog class="quote-dialog" data-quote-dialog aria-label="刻本摘句笺">
+    <div class="quote-box">
+      <div class="quote-leaf" data-quote-leaf>
+        <div class="quote-banxin">
+          <span class="qb-book">{sequel ? '程甲本红楼梦' : '脂砚斋重评石头记'}</span>
+          <span class="qb-fishtail" aria-hidden="true">❖</span>
+          <span class="qb-ch">{c.cn}</span>
+          <span class="qb-pid" data-quote-pid></span>
+        </div>
+        <div class="quote-body">
+          <p class="quote-text" data-quote-text></p>
+          <p class="quote-pi" data-quote-pi hidden></p>
+          <footer class="quote-colophon">
+            <span>{c.title[0]} · {c.title[1]}</span>
+            <Seal text="石头记" size={24} />
+          </footer>
+        </div>
+      </div>
+      <div class="quote-actions">
+        <button type="button" class="qa-btn" data-quote-toggle-pi hidden aria-pressed="true">附脂批</button>
+        <button type="button" class="qa-btn" data-quote-copy>复制佳句</button>
+        <button type="button" class="qa-btn" data-quote-link>复制段落链接</button>
+        <button type="button" class="qa-btn" data-quote-bm>夹入书签</button>
+        <button type="button" class="qa-btn qa-close" data-quote-close>收起</button>
+      </div>
+    </div>
+  </dialog>
 </Base>
 
 <script>
@@ -121,7 +163,8 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   const reader = document.querySelector<HTMLElement>('[data-reader]')!;
   const n = +reader.dataset.n!;
   const text = document.querySelector<HTMLElement>('[data-text]')!;
-  const root = document.documentElement;
+  const chCn = text.dataset.chCn || '';
+  const chTitle = text.dataset.chTitle || '';
   const params = new URLSearchParams(location.search);
   const query = params.get('q')?.trim();
   let reading = !query && !location.hash && !params.has('ref') && !params.has('hit');
@@ -214,16 +257,201 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   zpBtns.forEach(b => b.addEventListener('click', () => setZp(b.dataset.zp!)));
   const savedZp = store.get('hlm-zp');
   if (savedZp === 'off' || savedZp === 'full') setZp(savedZp);
-  text.addEventListener('click', e => {
-    const zb = (e.target as HTMLElement).closest<HTMLElement>('.zb');
-    if (zb) { zb.classList.toggle('open'); return; }
-    const dot = (e.target as HTMLElement).closest<HTMLButtonElement>('.zp-dot');
-    if (!dot) return;
-    const zp = dot.parentElement!;
-    const open = !zp.classList.contains('open');
-    zp.classList.toggle('open', open);
-    dot.setAttribute('aria-expanded', String(open));
+
+  /* 段落聚焦、书签夹与刻本摘句笺 */
+  interface BookmarkItem { n: number; cn: string; title: string; pid: string; snippet: string; ts: number }
+  let focusBlock: HTMLElement | null = null;
+  const loadBms = (): BookmarkItem[] => {
+    try { return JSON.parse(store.get('hlm-bookmarks') || '[]'); } catch { return []; }
+  };
+  const saveBms = (list: BookmarkItem[]) => {
+    store.set('hlm-bookmarks', list.length ? JSON.stringify(list) : null);
+    syncBmUI();
+  };
+  const cleanBlockText = (el: HTMLElement) => {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.zp, .zb-label').forEach(z => z.remove());
+    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  };
+  const blockNotesText = (el: HTMLElement) => {
+    const notes = [...el.querySelectorAll<HTMLElement>('.zp-text')].map(z => (z.textContent || '').trim()).filter(Boolean);
+    return notes.map(s => `〔${s}〕`).join('　');
+  };
+  const currentBlock = (): HTMLElement => {
+    if (focusBlock && text.contains(focusBlock)) return focusBlock;
+    const blocks = [...text.querySelectorAll<HTMLElement>('[id^="p"]')];
+    if (!blocks.length) return text;
+    if (isV()) {
+      const tr = text.getBoundingClientRect();
+      const targetX = tr.right - tr.width * 0.25;
+      let best = blocks[0], bestDist = Infinity;
+      for (const b of blocks) {
+        const r = b.getBoundingClientRect();
+        const d = Math.abs(r.right - targetX);
+        if (d < bestDist) { best = b; bestDist = d; }
+      }
+      return best;
+    }
+    const targetY = innerHeight * 0.36;
+    let best = blocks[0], bestDist = Infinity;
+    for (const b of blocks) {
+      const r = b.getBoundingClientRect();
+      const d = Math.abs(r.top - targetY);
+      if (d < bestDist) { best = b; bestDist = d; }
+    }
+    return best;
+  };
+
+  const bmToggleBtn = document.querySelector<HTMLButtonElement>('[data-bm-toggle]')!;
+  const bmOpenBtn = document.querySelector<HTMLButtonElement>('[data-bm-open]')!;
+  const bmCountEl = document.querySelector<HTMLElement>('[data-bm-count]')!;
+  const bmDialog = document.querySelector<HTMLDialogElement>('[data-bm-dialog]')!;
+  const bmListEl = document.querySelector<HTMLUListElement>('[data-bm-list]')!;
+  const bmEmptyEl = document.querySelector<HTMLElement>('[data-bm-empty]')!;
+
+  function syncBmUI() {
+    const list = loadBms();
+    bmOpenBtn.hidden = list.length === 0;
+    bmCountEl.textContent = list.length ? cn(list.length) : '';
+    const thisChPids = new Set(list.filter(x => x.n === n).map(x => x.pid));
+    text.querySelectorAll<HTMLElement>('[id^="p"]').forEach(el => {
+      el.classList.toggle('is-bookmarked', thisChPids.has(el.id));
+    });
+    const cur = currentBlock();
+    bmToggleBtn.setAttribute('aria-pressed', String(thisChPids.has(cur.id)));
+    bmListEl.innerHTML = '';
+    bmEmptyEl.hidden = list.length > 0;
+    for (const item of list) {
+      const li = document.createElement('li');
+      li.className = 'bm-item';
+      const a = document.createElement('a');
+      a.href = `/chapters/${item.n}/#${item.pid}`;
+      a.className = 'bm-link';
+      a.innerHTML = `<span class="bm-meta"><b>${item.cn}</b> · ${item.title} · 第${cn(+item.pid.slice(1) || 1)}段</span><p class="bm-snip"></p>`;
+      a.querySelector('.bm-snip')!.textContent = item.snippet;
+      a.addEventListener('click', () => bmDialog.close());
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'bm-del';
+      del.setAttribute('aria-label', '移除此书签');
+      del.textContent = '取出';
+      del.addEventListener('click', () => {
+        saveBms(loadBms().filter(x => !(x.n === item.n && x.pid === item.pid)));
+      });
+      li.append(a, del);
+      bmListEl.append(li);
+    }
+  }
+
+  function toggleBookmarkOn(block: HTMLElement) {
+    const pid = block.id || 'p1';
+    const list = loadBms();
+    const idx = list.findIndex(x => x.n === n && x.pid === pid);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+    } else {
+      const snippet = cleanBlockText(block).slice(0, 72);
+      list.unshift({ n, cn: chCn, title: chTitle, pid, snippet, ts: Date.now() });
+    }
+    saveBms(list.slice(0, 60));
+  }
+
+  bmToggleBtn.addEventListener('click', () => toggleBookmarkOn(currentBlock()));
+  bmOpenBtn.addEventListener('click', () => { syncBmUI(); bmDialog.showModal(); });
+  document.querySelector('[data-bm-close]')?.addEventListener('click', () => bmDialog.close());
+  bmDialog.addEventListener('click', e => { if (e.target === bmDialog) bmDialog.close(); });
+
+  /* 刻本摘句笺 */
+  const quoteDialog = document.querySelector<HTMLDialogElement>('[data-quote-dialog]')!;
+  const quoteTextEl = document.querySelector<HTMLElement>('[data-quote-text]')!;
+  const quotePiEl = document.querySelector<HTMLElement>('[data-quote-pi]')!;
+  const quotePidEl = document.querySelector<HTMLElement>('[data-quote-pid]')!;
+  const quoteTogglePi = document.querySelector<HTMLButtonElement>('[data-quote-toggle-pi]')!;
+  const quoteCopyBtn = document.querySelector<HTMLButtonElement>('[data-quote-copy]')!;
+  const quoteLinkBtn = document.querySelector<HTMLButtonElement>('[data-quote-link]')!;
+  const quoteBmBtn = document.querySelector<HTMLButtonElement>('[data-quote-bm]')!;
+  let quoteBlock: HTMLElement | null = null;
+
+  function openQuoteCard() {
+    const sel = window.getSelection();
+    const selStr = sel && sel.rangeCount && text.contains(sel.anchorNode) ? sel.toString().trim() : '';
+    const block = (sel?.anchorNode ? (sel.anchorNode as Node).parentElement?.closest<HTMLElement>('[id^="p"]') : null) || currentBlock();
+    quoteBlock = block;
+    const bodyStr = selStr.length >= 4 ? selStr : cleanBlockText(block).slice(0, 220);
+    const piStr = blockNotesText(block);
+    const pNum = +(block.id || 'p1').slice(1) || 1;
+    quoteTextEl.textContent = bodyStr;
+    quotePidEl.textContent = `第${cn(pNum)}段`;
+    if (piStr) {
+      quotePiEl.textContent = piStr;
+      quotePiEl.hidden = false;
+      quoteTogglePi.hidden = false;
+      quoteTogglePi.setAttribute('aria-pressed', 'true');
+    } else {
+      quotePiEl.textContent = '';
+      quotePiEl.hidden = true;
+      quoteTogglePi.hidden = true;
+    }
+    const hasBm = loadBms().some(x => x.n === n && x.pid === block.id);
+    quoteBmBtn.textContent = hasBm ? '已夹书签' : '夹入书签';
+    quoteDialog.showModal();
+  }
+
+  document.querySelector('[data-quote-open]')?.addEventListener('click', openQuoteCard);
+  quoteTogglePi.addEventListener('click', () => {
+    const show = quoteTogglePi.getAttribute('aria-pressed') !== 'true';
+    quoteTogglePi.setAttribute('aria-pressed', String(show));
+    quotePiEl.hidden = !show;
   });
+  quoteCopyBtn.addEventListener('click', async () => {
+    const piPart = !quotePiEl.hidden && quotePiEl.textContent ? `\n${quotePiEl.textContent}` : '';
+    const content = `「${quoteTextEl.textContent}」${piPart}\n——《红楼梦》${chCn}〈${chTitle}〉`;
+    try {
+      await navigator.clipboard.writeText(content);
+      quoteCopyBtn.textContent = '已复制佳句';
+      setTimeout(() => { quoteCopyBtn.textContent = '复制佳句'; }, 1600);
+    } catch { /* ignore */ }
+  });
+  quoteLinkBtn.addEventListener('click', async () => {
+    const pid = quoteBlock?.id || 'p1';
+    const url = `${location.origin}/chapters/${n}/#${pid}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      quoteLinkBtn.textContent = '已复制链接';
+      setTimeout(() => { quoteLinkBtn.textContent = '复制段落链接'; }, 1600);
+    } catch { /* ignore */ }
+  });
+  quoteBmBtn.addEventListener('click', () => {
+    if (!quoteBlock) return;
+    toggleBookmarkOn(quoteBlock);
+    const hasBm = loadBms().some(x => x.n === n && x.pid === quoteBlock!.id);
+    quoteBmBtn.textContent = hasBm ? '已夹书签' : '夹入书签';
+  });
+  document.querySelector('[data-quote-close]')?.addEventListener('click', () => quoteDialog.close());
+  quoteDialog.addEventListener('click', e => { if (e.target === quoteDialog) quoteDialog.close(); });
+
+  text.addEventListener('click', e => {
+    const target = e.target as HTMLElement;
+    const zb = target.closest<HTMLElement>('.zb');
+    if (zb) { zb.classList.toggle('open'); return; }
+    const dot = target.closest<HTMLButtonElement>('.zp-dot');
+    if (dot) {
+      const zp = dot.parentElement!;
+      const open = !zp.classList.contains('open');
+      zp.classList.toggle('open', open);
+      dot.setAttribute('aria-expanded', String(open));
+      return;
+    }
+    if (target.closest('a')) return;
+    const blk = target.closest<HTMLElement>('[id^="p"]');
+    if (blk) {
+      text.querySelectorAll('.is-focus').forEach(el => el !== blk && el.classList.remove('is-focus'));
+      const active = blk.classList.toggle('is-focus');
+      focusBlock = active ? blk : null;
+      syncBmUI();
+    }
+  });
+  syncBmUI();
 
   /* 侧栏人名悬停，正文里同一人亮起来 */
   const style = document.createElement('style');
@@ -270,22 +498,7 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
     readDone.disabled = true;
   });
 
-  /* 从首页“接着读”进来，回到上次的位置 */
-  try {
-    const last = JSON.parse(store.get('hlm-last') || 'null');
-    const resume = reading && last?.n === n && last.p > .02 && last.p < .98;
-    if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true, resume ? last.p : 0);
-    else if (resume) {
-      const r = text.getBoundingClientRect();
-      scrollTo({ top: scrollY + r.top + r.height * last.p - innerHeight * .4, behavior: 'instant' as ScrollBehavior });
-    }
-  } catch { /* 记录坏了就从头读 */ }
-  if (/^#p\d+$/.test(location.hash)) {
-    const paragraph = document.getElementById(location.hash.slice(1));
-    if (paragraph && text.contains(paragraph)) requestAnimationFrame(() => paragraph.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior }));
-  }
-
-  /* 搜索字位与 text.json 相同，批语不计入正文位置。 */
+  /* 搜索字位与 text.json 相同，批语不计入正文位置；须在竖排繁简转换（setFan）前包裹命中节点 */
   if (query) {
     const nodes: { node: Text; start: number }[] = [];
     let full = '';
@@ -347,6 +560,26 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
       requestAnimationFrame(() => selectHit(index >= 0 ? index : 0, false));
       prevHit.addEventListener('click', () => selectHit(selected - 1));
       nextHit.addEventListener('click', () => selectHit(selected + 1));
+    }
+  }
+
+  /* 从首页“接着读”进来，回到上次的位置 */
+  try {
+    const last = JSON.parse(store.get('hlm-last') || 'null');
+    const resume = reading && last?.n === n && last.p > .02 && last.p < .98;
+    if (store.get('hlm-vertical') === '1' && innerWidth > 700) setVertical(true, resume ? last.p : 0);
+    else if (resume) {
+      const r = text.getBoundingClientRect();
+      scrollTo({ top: scrollY + r.top + r.height * last.p - innerHeight * .4, behavior: 'instant' as ScrollBehavior });
+    }
+  } catch { /* 记录坏了就从头读 */ }
+  if (/^#p\d+$/.test(location.hash)) {
+    const paragraph = document.getElementById(location.hash.slice(1));
+    if (paragraph && text.contains(paragraph)) {
+      paragraph.classList.add('is-focus');
+      focusBlock = paragraph;
+      syncBmUI();
+      requestAnimationFrame(() => paragraph.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior }));
     }
   }
   onScroll(false);
@@ -542,6 +775,71 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
   .reader[data-zp="dot"].vertical .text :global(.zb .zb-text), .reader.vertical .text :global(.zb-text) { display: inline; overflow: visible; }
   .reader.vertical .text :global(mark.hit) { box-shadow: none; }
 
+  /* 段落聚焦与书签夹条 */
+  .text :global([id^="p"]) { position: relative; }
+  .reader:not(.vertical) .text :global(.is-focus)::before {
+    content: ''; position: absolute; left: -14px; top: .35em; bottom: .35em; width: 2px;
+    background: color-mix(in srgb, var(--cinnabar) 55%, transparent); border-radius: 1px;
+  }
+  .reader:not(.vertical) .text :global(.is-bookmarked)::after {
+    content: ''; position: absolute; left: -22px; top: .25em; width: 7px; height: 1.35em;
+    background: var(--cinnabar); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  }
+  .reader.vertical .text :global(.is-bookmarked) {
+    box-shadow: inset 0 4px 0 var(--cinnabar);
+  }
+  .controls [data-bm-open] small { font-size: 12px; color: var(--cinnabar); margin-left: 2px; }
+
+  /* 书签匣与刻本摘句笺弹窗 */
+  .bm-dialog, .quote-dialog {
+    border: 1px solid var(--line-2); padding: 0; background: var(--card); color: var(--ink);
+    box-shadow: var(--shadow); max-width: min(560px, 92vw); width: 100%; border-radius: 2px;
+  }
+  .bm-dialog::backdrop, .quote-dialog::backdrop { background: rgb(18 13 9 / .52); backdrop-filter: blur(2px); }
+  .bm-box { padding: 22px 26px 26px; max-height: 80vh; overflow-y: auto; }
+  .bm-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .bm-head h2 { font: 400 20px/1 var(--title); letter-spacing: .2em; color: var(--cinnabar); }
+  .bm-head h2 small { font-size: 12px; color: var(--ink-3); letter-spacing: .12em; margin-left: 8px; }
+  .bm-close { font: 400 22px/1 var(--serif); color: var(--ink-3); padding: 2px 6px; }
+  .bm-close:hover { color: var(--cinnabar); }
+  .bm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .bm-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); }
+  .bm-link { display: grid; gap: 4px; min-width: 0; }
+  .bm-meta { font: 400 13px/1.4 var(--title); color: var(--ink-3); letter-spacing: .08em; }
+  .bm-meta b { color: var(--cinnabar); font-weight: 400; }
+  .bm-snip { font-size: 14px; line-height: 1.75; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+  .bm-link:hover .bm-snip { color: var(--ink); }
+  .bm-del { font: 400 12px/1 var(--title); color: var(--ink-3); padding: 4px 8px; border: 1px solid var(--line); letter-spacing: .1em; }
+  .bm-del:hover { color: var(--cinnabar); border-color: var(--cinnabar); }
+  .bm-empty { font-size: 14px; color: var(--ink-3); text-align: center; padding: 24px 0; }
+
+  .quote-dialog { max-width: min(680px, 94vw); }
+  .quote-box { padding: 24px; display: grid; gap: 18px; }
+  .quote-leaf {
+    display: grid; grid-template-columns: 38px minmax(0, 1fr);
+    background: var(--paper); border: 2px solid var(--cinnabar);
+    box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px color-mix(in srgb, var(--cinnabar) 45%, transparent);
+    padding: 18px 20px; gap: 16px; min-height: 240px;
+  }
+  .quote-banxin {
+    writing-mode: vertical-rl; display: flex; align-items: center; justify-content: space-between;
+    padding-right: 12px; border-right: 1px solid color-mix(in srgb, var(--cinnabar) 40%, transparent);
+    font: 400 12.5px/1 var(--title); letter-spacing: .22em; color: var(--cinnabar); user-select: none;
+  }
+  .qb-fishtail { font-size: 14px; margin: 6px 0; }
+  .qb-pid { color: var(--ink-3); font-size: 11.5px; }
+  .quote-body { display: grid; align-content: space-between; gap: 16px; padding: 4px 4px 2px; }
+  .quote-text { font: 400 19px/2.05 var(--title); color: var(--ink); letter-spacing: .06em; text-align: justify; margin: 0; }
+  .quote-pi { font: 400 14.5px/1.85 var(--kai); color: var(--cinnabar); margin: 0; padding-top: 8px; border-top: 1px dashed color-mix(in srgb, var(--cinnabar) 30%, transparent); }
+  .quote-colophon { display: flex; justify-content: space-between; align-items: center; font: 400 13px/1.4 var(--title); color: var(--ink-3); letter-spacing: .16em; padding-top: 8px; }
+  .quote-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .qa-btn {
+    padding: 6px 13px; border: 1px solid var(--line-2); background: var(--paper);
+    font: 400 14px/1.2 var(--title); letter-spacing: .12em; color: var(--ink-2); transition: color .2s, border-color .2s;
+  }
+  .qa-btn:hover, .qa-btn[aria-pressed="true"] { color: var(--cinnabar); border-color: var(--cinnabar); }
+  .qa-close { margin-left: auto; }
+
   @media (max-width: 960px) {
     .reader { grid-template-columns: 1fr; }
     .side { position: static; max-height: none; order: 2; padding: 0; }
@@ -553,6 +851,9 @@ const altTitles = text.variants.filter(v => v.text.replace(/\s|　/g, '') !== c.
     .couplet { font-size: 19px; letter-spacing: .14em; }
     .ch-pager { grid-template-columns: 1fr; }
     .cp.next { text-align: left; }
-    .controls { top: calc(var(--header-h) + 12px); }
+    .controls { top: calc(var(--header-h) + 12px); flex-wrap: wrap; }
+    .quote-box { padding: 16px; }
+    .quote-leaf { padding: 14px; gap: 12px; grid-template-columns: 30px minmax(0, 1fr); }
+    .quote-text { font-size: 17px; }
   }
 </style>

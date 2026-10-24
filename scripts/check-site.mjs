@@ -9,19 +9,19 @@ if (!existsSync(dist)) { console.error('没有 dist，先跑 astro build'); proc
 
 const MUST = {
   'index.html': ['红楼梦', '/fonts/fonts.css'],
-  'graph/index.html': ['关系总图'],
+  'graph/index.html': ['关系总图', '按回次演进关系网'],
   'garden/index.html': ['大观园', '题对额'],
   'timeline/index.html': ['大事眉批'],
-  'twelve/index.html': ['金陵十二钗'],
+  'twelve/index.html': ['金陵十二钗', '八支花籤', '大觀園詩社七集'],
   'lineage/index.html': ['贾府世系'],
   'families/index.html': ['四大家族'],
   'love/index.html': ['木石前盟'],
-  'about/index.html': ['凡例'],
+  'about/index.html': ['凡例', '有正'],
   'chapters/index.html': ['一百二十回'],
-  'chapters/1/index.html': ['甄士隐'],
+  'chapters/1/index.html': ['甄士隐', '夹签', '摘句', '刻本摘句笺'],
   'chapters/120/index.html': ['续书'],
   'people/index.html': ['人物谱'],
-  'people/林黛玉/index.html': ['林黛玉'],
+  'people/林黛玉/index.html': ['林黛玉', '同段提及'],
   '404.html': ['四〇四'],
   'fonts/fonts.css': ['HLM Serif', 'HLM Qiji'],
   'manifest.webmanifest': ['红楼梦']
@@ -66,6 +66,19 @@ for (const p of pages) {
   }
 }
 for (const [u, n] of broken) errors.push(`死链 ${u}（${n} 处）`);
+
+/* 校验 120 回原文与脂批 JSON 不含残留维基标记或校记符号 */
+const textDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'text');
+for (const f of readdirSync(textDir).filter(x => x.endsWith('.json'))) {
+  const ch = JSON.parse(readFileSync(join(textDir, f), 'utf8'));
+  for (let i = 0; i < ch.blocks.length; i++) {
+    const b = ch.blocks[i];
+    if (/[【】{}[\]<>]|::|[a-zA-Z]/.test(b.s)) errors.push(`${f}#p${i + 1} 正文含残留标记: ${b.s.slice(0, 40)}`);
+    for (const n of b.n || []) {
+      if (/[【】{}[\]<>]|::|[a-zA-Z]/.test(n.s)) errors.push(`${f}#p${i + 1} 批语含残留标记: ${n.s.slice(0, 40)}`);
+    }
+  }
+}
 
 console.log(`${pages.length} 个页面，${links} 个站内链接`);
 if (errors.length) {

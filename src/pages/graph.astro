@@ -4,15 +4,22 @@
    一开始只露血亲、婚配、情缘和神缘这副骨架，点到人才把他的线全牵出来，线上写明是他的什么人。 */
 import Base from '../layouts/Base.astro';
 import { layBoard } from '../lib/board-layout.ts';
-import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE } from '../lib/data.ts';
+import { GROUPS, REL_TYPES, TYPE_ORDER, byId, tiesOf, PEOPLE, STATS } from '../lib/data.ts';
 
 const B = layBoard();
 const NAME_OF: Record<string, string> = { b: '血親', m: '婚配', lv: '情緣', my: '前世', in: '姻親', sv: '主僕', fr: '交遊', ri: '恩怨' };
 const SPOOLS = ['m', 'lv', 'b', 'in', 'my', 'sv', 'fr', 'ri'];
+const coMap: Record<string, [number, number]> = {};
+for (const [a, list] of Object.entries(STATS.companions)) {
+  for (const [b, , refs] of list) {
+    if (refs?.length && a < b) coMap[`${a}|${b}`] = refs[0];
+  }
+}
 const client = {
-  p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name, p.tier]])),
+  p: Object.fromEntries(PEOPLE.map(p => [p.id, [p.group, p.title, GROUPS[p.group].name, p.tier, STATS.firstSeen[p.id]?.n ?? 1]])),
   t: Object.fromEntries(PEOPLE.map(p => [p.id, tiesOf(p.id).filter(t => byId.has(t.other)).map(t => [t.other, t.type, t.role, t.revealAt])])),
-  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name]))
+  types: Object.fromEntries(TYPE_ORDER.map(t => [t, REL_TYPES[t].name])),
+  co: coMap
 };
 /* 祥云，太虚幻境那一层里散几朵 */
 const CLOUDS: [number, number, number][] = [[260, 70, 1], [520, 120, .8], [820, 60, 1.1], [1180, 118, .9], [1430, 64, 1], [1640, 128, .75]];
@@ -38,6 +45,10 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
         ))}
       </div>
       <button type="button" class="reveal-relations" data-reveal-relations hidden>显示后文关系</button>
+      <div class="evo" data-evo>
+        <label for="g-hui" class="evo-lbl" data-evo-lbl>百二十回全</label>
+        <input id="g-hui" type="range" min="1" max="120" value="120" data-evo-range aria-label="按回次演进关系网">
+      </div>
       <div class="zoomer" role="group" aria-label="缩放">
         <button type="button" data-zoom="1" aria-label="放大">大</button>
         <button type="button" data-zoom="-1" aria-label="缩小">小</button>
@@ -90,8 +101,10 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
 
 <script>
   import { progress } from '../client/site.ts';
+  import { cn } from '../lib/cn.ts';
   type Tie = [string, string, string, number];
-  const D: { p: Record<string, [string, string, string, string]>; t: Record<string, Tie[]>; types: Record<string, string> } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const D: { p: Record<string, [string, string, string, string, number]>; t: Record<string, Tie[]>; types: Record<string, string>; co: Record<string, [number, number]> } = JSON.parse(document.getElementById('g-data')!.textContent!);
+  const coLink = (a: string, b: string) => D.co[a < b ? `${a}|${b}` : `${b}|${a}`];
   const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   const NS = 'http://www.w3.org/2000/svg';
   const frame = document.querySelector<HTMLElement>('[data-frame]')!;
@@ -100,8 +113,12 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   const threads = [...document.querySelectorAll<SVGPathElement>('.th')];
   const slips = new Map([...document.querySelectorAll<SVGGElement>('.slip')].map(g => [g.dataset.id!, g]));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const evoRange = document.querySelector<HTMLInputElement>('[data-evo-range]')!;
+  const evoLbl = document.querySelector<HTMLElement>('[data-evo-lbl]')!;
   let revealRelations = false;
-  const ties = (id: string) => (D.t[id] ?? []).filter(t => revealRelations || !progress() || t[3] <= progress());
+  let evoCap = progress() || 120;
+  const capHui = () => revealRelations ? evoCap : Math.min(evoCap, progress() || 120);
+  const ties = (id: string) => (D.t[id] ?? []).filter(t => t[3] <= capHui());
   const revealButton = document.querySelector<HTMLButtonElement>('[data-reveal-relations]')!;
   const allowed = (p: SVGPathElement) => ties(p.dataset.a!).some(t => t[0] === p.dataset.b && t[1] === p.dataset.type);
   const touches = (p: SVGPathElement, id: string) => p.dataset.a === id || p.dataset.b === id;
@@ -133,12 +150,32 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     setZoom(zoom * Math.exp(-e.deltaY * .0025), e.clientX, e.clientY);
   }, { passive: false });
   let pan: { x: number; y: number; sl: number; id: number } | null = null;
+  const touchesMap = new Map<number, { x: number; y: number }>();
+  let pinchDist = 0, pinchZoom = 1;
   frame.addEventListener('pointerdown', e => {
-    if (e.button !== 0 || e.pointerType === 'touch' || (e.target as Element).closest('.slip, .panel')) return;
+    if (e.pointerType === 'touch') {
+      touchesMap.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touchesMap.size === 2) {
+        const [a, b] = [...touchesMap.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+        pinchZoom = zoom;
+      }
+      return;
+    }
+    if (e.button !== 0 || (e.target as Element).closest('.slip, .panel')) return;
     pan = { x: e.clientX, y: e.clientY, sl: frame.scrollLeft, id: e.pointerId };
     dragged = false;
   });
   addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch' && touchesMap.has(e.pointerId)) {
+      touchesMap.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touchesMap.size === 2 && pinchDist > 10) {
+        const [a, b] = [...touchesMap.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        setZoom(pinchZoom * (d / pinchDist), (a.x + b.x) / 2, (a.y + b.y) / 2);
+      }
+      return;
+    }
     if (!pan || e.pointerId !== pan.id) return;
     const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
     if (!dragged && Math.hypot(dx, dy) < 5) return;
@@ -146,21 +183,34 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     frame.scrollLeft = pan.sl - dx;
     scrollBy({ top: -(e.movementY || 0), behavior: 'instant' as ScrollBehavior });
   });
-  addEventListener('pointerup', () => {
+  const endTouch = (e: PointerEvent) => {
+    touchesMap.delete(e.pointerId);
+    if (touchesMap.size < 2) pinchDist = 0;
+  };
+  addEventListener('pointerup', e => {
+    endTouch(e);
     if (!pan) return;
     pan = null;
     frame.classList.remove('panning');
     /* 拖完那一下的点击不算 */
     setTimeout(() => { dragged = false; }, 0);
   });
+  addEventListener('pointercancel', endTouch);
 
   /* ---------- 线轴：哪几种线露在外面 ---------- */
   const shown = new Set(['b', 'm', 'lv', 'my']);
-  const applyShown = () => threads.forEach(p => {
-    const visible = allowed(p);
-    p.classList.toggle('guarded', !visible);
-    p.classList.toggle('show', visible && shown.has(p.dataset.type!));
-  });
+  const applyShown = () => {
+    const cap = capHui();
+    threads.forEach(p => {
+      const visible = allowed(p);
+      p.classList.toggle('guarded', !visible);
+      p.classList.toggle('show', visible && shown.has(p.dataset.type!));
+    });
+    slips.forEach((g, id) => {
+      const firstHui = D.p[id]?.[4] ?? 1;
+      g.classList.toggle('unseen', cap < 120 && firstHui > cap && ties(id).length === 0);
+    });
+  };
   document.querySelectorAll<HTMLButtonElement>('[data-type]').forEach(b => b.addEventListener('click', () => {
     const t = b.dataset.type!;
     shown.has(t) ? shown.delete(t) : shown.add(t);
@@ -272,7 +322,11 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
       <p class="pn-g" style="--gc:var(--g-${group})">${esc(gname)}</p>
       <h2>${esc(id)}</h2>
       <p class="pn-t">${esc(title)}</p>
-      ${[...by].map(([t, list]) => `<div class="pn-sec t-${t}"><h3>${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => `<li><button type="button" data-go="${esc(o)}">${esc(o)}</button><span>${esc(role)}</span></li>`).join('')}</ul></div>`).join('')}
+      ${[...by].map(([t, list]) => `<div class="pn-sec t-${t}"><h3>${esc(D.types[t])}</h3><ul>${list.map(([o, , role]) => {
+        const co = coLink(id, o);
+        const coHtml = co && co[0] <= capHui() ? `<a class="pn-co" href="/chapters/${co[0]}/#p${co[1] + 1}" title="跳至两人同场原段">同场·${cn(co[0])}回</a>` : '';
+        return `<li><button type="button" data-go="${esc(o)}">${esc(o)}</button><span>${esc(role)}</span>${coHtml}</li>`;
+      }).join('')}</ul></div>`).join('')}
       <p class="pn-acts"><a href="/people/${encodeURIComponent(id)}/">看他的生平</a><button type="button" data-pair-from="${esc(id)}">和谁相干</button></p>`;
     panel.hidden = false;
     panel.scrollTop = 0;
@@ -344,10 +398,12 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
     writeTags(items, [...ids]);
     /* 一句一句念下来：后一位是前一位的什么人 */
     const said = a === b ? '选的是同一个人。' : steps ? steps.map(s => `<button type="button" data-go="${esc(s.to)}">${esc(s.to)}</button>是<button type="button" data-go="${esc(s.from)}">${esc(s.from)}</button>的${esc(s.tie[2])}`).join('；') + '。' : '';
+    const directCo = a !== b ? coLink(a, b) : undefined;
+    const coNote = directCo && directCo[0] <= capHui() ? `<p class="pn-acts"><a href="/chapters/${directCo[0]}/#p${directCo[1] + 1}">读第${cn(directCo[0])}回两人同场原段</a></p>` : '';
     panel.innerHTML = `<button type="button" class="pn-x" data-close aria-label="收起">×</button>
       <p class="pn-g">兩人之間</p>
       <h2 class="pn-pair">${esc(a)}<small>与</small>${esc(b)}</h2>
-      <p class="pn-said kai">${steps ? said : progress() && !revealRelations ? '已读内容里暂未连起这两个人。' : `${esc(a)}与${esc(b)}，书里牵不上线。`}</p>`;
+      <p class="pn-said kai">${steps ? said : capHui() < 120 ? '当前回次范围内暂未连起这两个人。' : `${esc(a)}与${esc(b)}，书里牵不上线。`}</p>${coNote}`;
     panel.hidden = false;
     /* 滚到整条路线的中段 */
     const rs = [...ids].map(k => slips.get(k)!.getBoundingClientRect());
@@ -357,14 +413,25 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   }
 
   /* ---------- 起步 ---------- */
+  function syncEvoLabel() {
+    const c = capHui();
+    evoRange.value = String(c);
+    evoLbl.textContent = c >= 120 ? '百二十回全' : `至第${cn(c)}回`;
+  }
   function updateGuard() {
     revealButton.hidden = !progress() || revealRelations;
+    syncEvoLabel();
     applyShown();
     if (focusId) focus(focusId, false);
     else if (frame.classList.contains('paired')) go();
   }
-  revealButton.addEventListener('click', () => { revealRelations = true; updateGuard(); });
-  addEventListener('hlm:progress', () => { revealRelations = false; updateGuard(); });
+  evoRange.addEventListener('input', () => {
+    evoCap = +evoRange.value;
+    if (progress() && evoCap > progress()) revealRelations = true;
+    updateGuard();
+  });
+  revealButton.addEventListener('click', () => { revealRelations = true; evoCap = 120; updateGuard(); });
+  addEventListener('hlm:progress', () => { revealRelations = false; evoCap = progress() || 120; updateGuard(); });
   updateGuard();
   const params = new URLSearchParams(location.search);
   if (params.get('from') && params.get('to')) { setPair(true); qIn.value = params.get('from')!; toIn.value = params.get('to')!; go(); }
@@ -376,6 +443,10 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .loom { --t-m: #b02d22; --t-lv: #c95a4a; --t-b: #2b221b; --t-in: #7d6c58; --t-sv: #a8895a; --t-fr: #3f7a70; --t-ri: #3f4c78; --t-my: #b48a33; position: relative; padding-bottom: 40px; }
   .loom :global(.t-m) { --tc: var(--t-m); } .loom :global(.t-lv) { --tc: var(--t-lv); } .loom :global(.t-b) { --tc: var(--t-b); } .loom :global(.t-in) { --tc: var(--t-in); }
   .loom :global(.t-sv) { --tc: var(--t-sv); } .loom :global(.t-fr) { --tc: var(--t-fr); } .loom :global(.t-ri) { --tc: var(--t-ri); } .loom :global(.t-my) { --tc: var(--t-my); }
+  :global([data-theme="dark"]) .bar .t-b { --tc: #cdbfa8; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme="light"])) .bar .t-b { --tc: #cdbfa8; }
+  }
 
   .bar { position: sticky; top: var(--header-h); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 18px 32px; flex-wrap: wrap; padding: 14px var(--gutter); background: color-mix(in srgb, var(--paper) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
   .find { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
@@ -406,6 +477,11 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   .zoomer button { width: 40px; height: 40px; font: 400 17px/1 var(--title); color: var(--ink-2); transition: color .2s, background .2s; }
   .zoomer button + button { box-shadow: inset 1px 0 0 var(--line); }
   .zoomer button:hover { color: var(--cinnabar); background: color-mix(in srgb, var(--cinnabar) 6%, transparent); }
+  .evo { display: flex; align-items: center; gap: 10px; }
+  .evo-lbl { font: 400 14.5px/1 var(--title); letter-spacing: .12em; color: var(--ink-2); min-width: 6.2em; text-align: right; }
+  .evo input[type="range"] { width: 110px; accent-color: var(--cinnabar); cursor: pointer; }
+  .slip.unseen { opacity: .2; }
+  .pn-co { font: 400 12px/1 var(--title); color: var(--cinnabar) !important; letter-spacing: .06em; border-bottom: 1px dashed color-mix(in srgb, var(--cinnabar) 45%, transparent); }
   .silk { display: block; width: 100%; min-width: 1080px; max-width: none; height: auto; box-shadow: 0 0 0 1px rgb(90 66 30 / .18), 0 30px 60px -40px rgb(40 26 10 / .55); user-select: none; -webkit-user-select: none; }
 
   .cloud { color: #a99a7e; opacity: .35; }

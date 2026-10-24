@@ -42,6 +42,7 @@ export function namesOf(p: Person): string[] {
   const seen = new Set([p.id]);
   const out: string[] = [];
   for (const n of [...(p.names ?? []), ...(p.alias ?? [])].map(plainName)) {
+    if (/^(这一个|也有|因找|果有|我家|他们家)/.test(n)) continue;
     if (!seen.has(n)) { seen.add(n); out.push(n); }
   }
   return out;
@@ -80,14 +81,14 @@ export const STATS = statsJson as {
   totals: Record<string, number>;
   sequel: Record<string, number>;
   firstSeen: Record<string, { n: number; block: number; text: string }>;
-  companions: Record<string, [string, number][]>;
+  companions: Record<string, [string, number, [number, number][]?][]>;
   topPairs: [string, string, number][];
 };
 /* 批语里点到某人的，挑过的十来条 */
 export interface ZhiNote { n: number; block: number; src: string[]; kind: string; s: string; ctx: string }
 export const NOTES = notesJson as Record<string, { total: number; top: ZhiNote[] }>;
 /* 批语出处的全称 */
-export const SRC_NAME: Record<string, string> = { 甲戌: '甲戌本', 庚辰: '庚辰本', 己卯: '己卯本', 蒙府: '蒙府本', 戚序: '戚序本', 靖藏: '靖藏本', 梦稿: '梦稿本', 列藏: '列藏本', 甲辰: '甲辰本', 舒序: '舒序本' };
+export const SRC_NAME: Record<string, string> = { 甲戌: '甲戌本', 庚辰: '庚辰本', 己卯: '己卯本', 有正: '有正本', 蒙府: '蒙府本', 戚序: '戚序本', 靖藏: '靖藏本', 梦稿: '梦稿本', 列藏: '列藏本', 甲辰: '甲辰本', 舒序: '舒序本' };
 /* 批者：批语末尾署了名的才认，正文里提到某人不算。脂砚、畸笏的几种署法归成一个名字 */
 const SIGNERS: [RegExp, string][] = [[/脂砚斋?/, '脂砚斋'], [/畸笏(?:叟|老人)?/, '畸笏叟'], [/梅溪/, '梅溪'], [/松斋/, '松斋'], [/棠村/, '棠村'], [/绮园/, '绮园'], [/立松轩/, '立松轩'], [/鉴堂/, '鉴堂'], [/玉蓝坡/, '玉蓝坡']];
 const SIGN_RE = /(?:^|[。，！？；」』）\s]|[春夏秋冬])(脂砚斋?|畸笏(?:叟|老人)?|梅溪|松斋|棠村|绮园|立松轩|鉴堂|玉蓝坡)(?=[。！]|\s*$)/;

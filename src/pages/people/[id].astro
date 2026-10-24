@@ -96,7 +96,7 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
             {zhi && <div><dt>批语点到</dt><dd><b>{cn(zhi.total)}</b>次</dd></div>}
             {span && <div><dt>提及回目</dt><dd><a href={`/chapters/${span[0]}/?ref=1`}>{huiName(span[0])}</a>{span[1] !== span[0] && <> 至 <a href={`/chapters/${span[1]}/?ref=1`}>{huiName(span[1])}</a></>}</dd></div>}
             {ties.length > 0 && <div><dt>亲友</dt><dd><b>{cn(ties.length)}</b>人</dd></div>}
-            {homes.length > 0 && <div class="spoil" data-ch="121"><dt>园中住处</dt><dd class="spoil-body">{homes.map(h => <a href={`/garden/#${h.id}`}>{h.name}</a>)}</dd></div>}
+            {homes.length > 0 && <div class="spoil" data-ch="23"><dt>园中住处</dt><dd class="spoil-body">{homes.map(h => <a href={`/garden/#${h.id}`}>{h.name}</a>)}</dd></div>}
           </dl>
         </div>
       </div>
@@ -131,7 +131,7 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
       <section class="wrap block">
         <div class="block-head reveal"><h2>親友</h2></div>
         <div class="ties">
-          <div class="ego-guard spoil" data-ch="121"><div class="spoil-body"><EgoGraph id={p.id} /></div></div>
+          <EgoGraph id={p.id} />
           <div class="tie-lists">
             {grouped.map(({ t, list }) => (
               <div class="tie-group reveal">
@@ -177,15 +177,18 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
       <section class="wrap block">
         <div class="block-head reveal"><h2>批语</h2></div>
         <ol class="zhi">
-          {zhi.top.map(x => (
-            <li class:list={['zhi-item reveal spoil', { late: x.src.length > 0 && x.src.every(s => ['蒙府', '戚序', '梦稿', '列藏', '甲辰', '舒序'].includes(s)) }]} data-ch="121">
-              <div class="spoil-body">
-              <a class="zhi-where" href={`/chapters/${x.n}/#p${x.block + 1}`}><span>{huiName(x.n)}</span><b>{noteLabel(x)}</b></a>
-              {x.ctx && <p class="zhi-ctx">……{x.ctx}</p>}
-              <p class="zhi-s">{x.s}</p>
-              </div>
-            </li>
-          ))}
+          {zhi.top.map(x => {
+            const zhiCh = /伏|后文|将来|迷失|八十回后|狱神庙|悬崖撒手|泪尽|夭亡|为僧|为尼|远嫁|抄|事败/.test(x.s) ? 121 : x.n;
+            return (
+              <li class:list={['zhi-item reveal spoil', { late: x.src.length > 0 && x.src.every(s => ['蒙府', '戚序', '梦稿', '列藏', '甲辰', '舒序'].includes(s)) }]} data-ch={zhiCh}>
+                <div class="spoil-body">
+                <a class="zhi-where" href={`/chapters/${x.n}/#p${x.block + 1}`}><span>{huiName(x.n)}</span><b>{noteLabel(x)}</b></a>
+                {x.ctx && <p class="zhi-ctx">……{x.ctx}</p>}
+                <p class="zhi-s">{x.s}</p>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       </section>
     )}
@@ -203,11 +206,24 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
         )}
         {companions.length > 0 && (
           <div>
-            <div class="block-head"><h2>同段提及</h2></div>
+            <div class="block-head"><h2>同段提及</h2><p class="src">点回次可直达同框原段</p></div>
             <ol class="comp">
-              {companions.map(([o, v], i) => {
+              {companions.map(([o, v, refs]) => {
                 const op = byId.get(o)!;
-                return <li style={`--w:${Math.round((v / companions[0][1]) * 100)}%;--gc:var(--g-${op.group})`}><PersonLink id={o} /><span class="bar"><i /></span><span class="cnt">{cn(v)}</span></li>;
+                return (
+                  <li style={`--w:${Math.round((v / companions[0][1]) * 100)}%;--gc:var(--g-${op.group})`}>
+                    <PersonLink id={o} />
+                    <span class="bar"><i /></span>
+                    <span class="cnt">{cn(v)}</span>
+                    {refs && refs.length > 0 && (
+                      <span class="comp-chs">
+                        {refs.slice(0, 5).map(([chN, bIdx]) => (
+                          <a href={`/chapters/${chN}/#p${bIdx + 1}`} class="comp-ch">{huiName(chN)}</a>
+                        ))}
+                      </span>
+                    )}
+                  </li>
+                );
               })}
             </ol>
           </div>
@@ -348,11 +364,14 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
   .first { margin: 0 0 16px; padding: 22px 26px; font: 400 18px/2.05 var(--serif); background: var(--card); box-shadow: inset 2px 0 0 var(--pc), 0 14px 30px -26px rgb(40 26 10 / .5); }
   .first :global(mark) { background: none; color: var(--cinnabar); text-emphasis: open circle var(--cinnabar); -webkit-text-emphasis: open circle var(--cinnabar); text-emphasis-position: under right; -webkit-text-emphasis-position: under right; }
   .comp { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .comp li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 6em; align-items: center; gap: 12px; font-size: 15.5px; }
+  .comp li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 6em; align-items: center; gap: 4px 12px; font-size: 15.5px; }
   /* 同场多少用一串圈点量：点越长，同场越多 */
   .comp .bar { height: 8px; overflow: hidden; }
   .comp .bar i { display: block; height: 100%; width: var(--w); background: radial-gradient(circle, var(--gc) 1.6px, transparent 2px) 0 50% / 8px 8px repeat-x; opacity: .85; transform-origin: left; }
   .comp .cnt { font: 400 13px/1 var(--title); color: var(--ink-3); text-align: right; }
+  .comp-chs { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 2px; }
+  .comp-ch { font: 400 12.5px/1.3 var(--title); letter-spacing: .08em; color: var(--ink-3); transition: color .2s; }
+  .comp-ch:hover { color: var(--cinnabar); }
   @media (prefers-reduced-motion: no-preference) {
     .reveal.in .comp .bar i, .two.in .comp .bar i { animation: grow 1s var(--ease-ink) both; }
   }
@@ -381,7 +400,7 @@ const desc = `${p.id}，${preview.title}。${preview.bio}`;
   .zhi-where b { font-weight: 400; color: var(--cinnabar); }
   .zhi-where:hover span { color: var(--cinnabar); }
   .zhi-ctx { margin-top: 10px; font-size: 13.5px; line-height: 1.85; color: var(--ink-3); }
-  .zhi-s { margin-top: 8px; font: 400 18px/1.95 var(--title); color: #a8291f; letter-spacing: .04em; }
+  .zhi-s { margin-top: 8px; font: 400 18px/1.95 var(--title); color: var(--cinnabar); letter-spacing: .04em; }
   .zhi-item.late .zhi-s { color: var(--ink-2); }
 
   .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: clamp(56px, 8vw, 100px); padding-top: 22px; border-top: 1px solid var(--line); }

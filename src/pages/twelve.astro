@@ -53,6 +53,27 @@ const leaves = BOOKS.map(b => ({
     fates: v.ids.map(id => byId.get(id)!).filter(p => p.fate || p.xu)
   }))
 }));
+
+const FLOWER_LOTS = [
+  { who: '薛宝钗', flower: '牡丹', motto: '艳冠群芳', poem: '任是无情也动人', poet: '唐 · 罗隐《牡丹花》', rule: '在席共贺一杯，此为群芳之冠，随意命人，不拘诗词雅谑，道一则以侑酒。', p: 'p8' },
+  { who: '贾探春', flower: '杏花', motto: '瑶池仙品', poem: '日边红杏倚云栽', poet: '唐 · 高蟾《下第后上永崇高侍郎》', rule: '得此签者，必得贵婿，大家恭贺一杯，共同饮一杯。', p: 'p12' },
+  { who: '李纨', flower: '老梅', motto: '霜晓寒姿', poem: '竹篱茅舍自甘心', poet: '宋 · 王琪《梅》', rule: '自饮一杯，下家掷骰。', p: 'p14' },
+  { who: '史湘云', flower: '海棠', motto: '香梦沉酣', poem: '只恐夜深花睡去', poet: '宋 · 苏轼《海棠》', rule: '既云“香梦沉酣”，掣此签者不便饮酒，只令上下两家各饮一杯。', p: 'p16' },
+  { who: '麝月', flower: '荼蘼', motto: '韶华胜极', poem: '开到荼縻花事了', poet: '宋 · 王琪《暮春游小园》', rule: '在席各饮三杯送春。', p: 'p18' },
+  { who: '香菱', flower: '并蒂花', motto: '联春绕瑞', poem: '连理枝头花正开', poet: '宋 · 朱淑真《落花》', rule: '共贺掣者三杯，大家陪饮一杯。', p: 'p20' },
+  { who: '林黛玉', flower: '芙蓉', motto: '风露清愁', poem: '莫怨东风当自嗟', poet: '宋 · 欧阳修《明妃曲》', rule: '自饮一杯，牡丹陪饮一杯。', p: 'p22' },
+  { who: '袭人', flower: '桃花', motto: '武陵别景', poem: '桃红又是一年春', poet: '宋 · 谢枋得《庆全庵桃花》', rule: '杏花陪一盏，坐中同庚者陪一盏，同辰者陪一盏，同姓者陪一盏。', p: 'p24' }
+];
+
+const POETRY_GATHERINGS = [
+  { n: 37, cn: '第三十七回', title: '秋爽斋偶结海棠社', place: '秋爽斋', who: ['贾探春', '林黛玉', '薛宝钗', '贾宝玉', '史湘云', '李纨'], quote: '偷来梨蕊三分白，借得梅魂一缕芳。', note: '探春发帖创社，众人各取雅号，以“盆中白海棠”限门、盆、魂、痕、昏韵成七律。李纨评宝钗含蓄浑厚居首，黛玉风流别致次之。' },
+  { n: 38, cn: '第三十八回', title: '林潇湘魁夺菊花诗', place: '藕香榭', who: ['林黛玉', '薛宝钗', '史湘云', '贾探春', '贾宝玉'], quote: '满纸自怜题素怨，片言谁解诉秋心。', note: '湘云、宝钗同拟十二菊题，不限韵脚。黛玉《咏菊》《问菊》《菊梦》三首连夺魁首，席间复作《螃蟹咏》讽世。' },
+  { n: 48, cn: '第四十八回', title: '慕雅女雅集苦吟诗', place: '蘅芜苑', who: ['香菱', '林黛玉', '薛宝钗'], quote: '精华欲掩料应难，影自娟娟魄自寒。', note: '香菱入园拜黛玉为师，昼夜苦思咏月，三易其稿，终在梦中得句，众姐妹遂邀她入社。' },
+  { n: 50, cn: '第五十回', title: '芦雪庵争联即景诗', place: '芦雪庵', who: ['史湘云', '薛宝琴', '林黛玉', '薛宝钗', '王熙凤'], quote: '一夜北风紧，开门雪尚飘。', note: '凤姐以“一夜北风紧”起句，湘云、宝琴、黛玉、宝钗抢联五言排律三十五韵；宝玉落第，往拢翠庵向妙玉乞得红梅，众姐妹再赋《红梅花》三首。' },
+  { n: 64, cn: '第六十四回', title: '幽淑女悲题五美吟', place: '潇湘馆', who: ['林黛玉', '贾宝玉', '薛宝钗'], quote: '长揖雄谈态自殊，美人巨眼识穷途。', note: '黛玉私室感怀古史西施、虞姬、明妃、绿珠、红拂五位女子，作五律五首；宝钗见而赞其寄托深远。' },
+  { n: 70, cn: '第七十回', title: '林黛玉重建桃花社', place: '潇湘馆 · 怡红院', who: ['林黛玉', '薛宝钗', '贾探春', '薛宝琴', '史湘云', '贾宝玉'], quote: '好风凭借力，送我上青云。', note: '暮春重建诗社，改海棠社为桃花社，同填《唐多令 · 柳絮词》。黛玉词极缠绵悲戚，宝钗则翻出偏得掌故之胜，复放风筝以除晦气。' },
+  { n: 76, cn: '第七十六回', title: '凹晶馆联诗悲寂寞', place: '凹晶溪馆 · 拢翠庵', who: ['林黛玉', '史湘云', '妙玉'], quote: '寒塘渡鹤影，冷月葬花魂。', note: '大观园诸事渐衰，中秋夜黛玉、湘云于池边联句，出“寒塘渡鹤影，冷月葬花魂”绝唱；妙玉闻声邀入庵中，续成三十五韵收束全篇。' }
+];
 ---
 <Base title="金陵十二钗" description="《红楼梦》第五回薄命司里的判词册：金陵十二钗正册、副册、又副册的画、判词与《红楼梦》十二支曲，附脂砚斋批语。" section="people" sub="twelve">
   <div class="wrap">
@@ -99,7 +120,7 @@ const leaves = BOOKS.map(b => ({
               <h2>{v.ids.map((id, j) => <>{j > 0 && <span class="and">与</span>}<PersonLink id={id} /></>)}</h2>
               <dl>
                 {sg.length > 0 && <><dt>曲</dt><dd>{sg.map(s => <a href={`#${songAnchor(s)}`}>《{s}》</a>)}</dd></>}
-                {v.flower && <><dt>籤</dt><dd>{v.flower}<small>第六十三回</small></dd></>}
+                {v.flower && <><dt>籤</dt><dd><a href="#flower-lots">{v.flower}</a><small><a href="/chapters/63/#p7">第六十三回</a></small></dd></>}
               </dl>
               <details class="gloss">
                 <summary>判词怎么读，结局如何</summary>
@@ -138,6 +159,56 @@ const leaves = BOOKS.map(b => ({
             {s.ids.length > 0 && <p class="song-who">{s.ids.map(id => <PersonLink id={id} />)}</p>}
             <p class="song-text">{s.text}</p>
             {s.notes.map(n => <div class="spoil" data-ch="121"><p class="song-pi spoil-body"><b>{n.label}</b>{n.s}</p></div>)}
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="lots-sec" id="flower-lots">
+      <header class="sh reveal">
+        <h2>壽怡紅群芳開夜宴 · 八支花籤</h2>
+        <p>象牙花名签子，画着名花，题着四字机括与一句旧诗，暗伏掣签人的终身。<cite><a href="/chapters/63/#p7">第六十三回</a></cite></p>
+      </header>
+      <div class="spoil" data-ch="63">
+        <ol class="lots-grid spoil-body">
+          {FLOWER_LOTS.map((f, i) => (
+            <li class="lot-card reveal" style={`--d:${i * 35}ms;--c:var(--g-${byId.get(f.who)?.group ?? 'jia'})`}>
+              <div class="lot-stick">
+                <span class="lot-flower">{f.flower}</span>
+                <span class="lot-motto">{f.motto}</span>
+              </div>
+              <div class="lot-detail">
+                <div class="lot-top">
+                  <PersonLink id={f.who} />
+                  <a class="lot-link" href={`/chapters/63/#${f.p}`}>第六十三回 · 原文</a>
+                </div>
+                <p class="lot-poem">“{f.poem}”<small>{f.poet}</small></p>
+                <p class="lot-rule">{f.rule}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="poetry-sec" id="poetry-society">
+      <header class="sh reveal">
+        <h2>大觀園詩社七集</h2>
+        <p>自秋爽斋偶结海棠社，至中秋夜凹晶馆悲寂联句，一园兴衰尽付吟咏。<cite>第三十七至七十六回</cite></p>
+      </header>
+      <ol class="poetry-list">
+        {POETRY_GATHERINGS.map((g, i) => (
+          <li class="poetry-item reveal spoil" data-ch={g.n} style={`--d:${i * 40}ms`}>
+            <div class="poetry-body spoil-body">
+              <div class="poetry-head">
+                <a class="poetry-hui" href={`/chapters/${g.n}/`}>{g.cn}</a>
+                <h3><a href={`/chapters/${g.n}/`}>{g.title}</a></h3>
+                <span class="poetry-place">{g.place}</span>
+              </div>
+              <p class="poetry-quote">「{g.quote}」</p>
+              <p class="poetry-note">{g.note}</p>
+              <p class="poetry-who">{g.who.map(id => <PersonLink id={id} />)}</p>
+            </div>
           </li>
         ))}
       </ol>
@@ -283,8 +354,43 @@ const leaves = BOOKS.map(b => ({
   .song-n { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 4px; font: 400 15px/1 var(--title); color: var(--cinnabar); box-shadow: inset 0 0 0 1px currentColor; letter-spacing: 0; }
   .song-who { display: flex; gap: 14px; margin-top: 8px; font-size: 14.5px; }
   .song-text { margin-top: 14px; font: 400 18px/2.1 var(--title); letter-spacing: .06em; color: var(--ink); }
-  .song-pi { margin-top: 8px; font: 400 15px/1.85 var(--title); color: #a8291f; }
+  .song-pi { margin-top: 8px; font: 400 15px/1.85 var(--title); color: var(--cinnabar); }
   .song-pi b { font: 400 13px/1 var(--title); margin-right: 8px; opacity: .75; }
+
+  /* 群芳花签与大观园诗社 */
+  .lots-sec, .poetry-sec { padding-top: clamp(72px, 9vw, 120px); scroll-margin-top: calc(var(--header-h) + 24px); }
+  .sh cite a { color: var(--cinnabar); }
+  .lots-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+  .lot-card {
+    display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding: 16px 18px;
+    background: var(--card); box-shadow: inset 0 0 0 1px var(--line-2); border-top: 2px solid var(--c);
+  }
+  .lot-stick {
+    writing-mode: vertical-rl; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 6px; background: var(--paper); border: 1px solid color-mix(in srgb, var(--cinnabar) 35%, var(--line-2));
+    border-radius: 18px 18px 3px 3px; font-family: var(--title); user-select: none;
+  }
+  .lot-flower { font-size: 16px; color: var(--cinnabar); letter-spacing: .18em; }
+  .lot-motto { font-size: 13px; color: var(--ink-2); letter-spacing: .22em; margin-top: 8px; }
+  .lot-detail { display: grid; align-content: start; gap: 8px; min-width: 0; }
+  .lot-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 17px; }
+  .lot-link { font: 400 12.5px/1 var(--title); color: var(--ink-3); letter-spacing: .1em; }
+  .lot-link:hover { color: var(--cinnabar); }
+  .lot-poem { font: 400 18px/1.6 var(--title); color: var(--ink); letter-spacing: .08em; margin: 0; }
+  .lot-poem small { display: block; font-size: 12.5px; color: var(--ink-3); letter-spacing: .08em; margin-top: 2px; }
+  .lot-rule { font-size: 13.5px; line-height: 1.75; color: var(--ink-2); margin: 0; }
+
+  .poetry-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .poetry-item { padding: 20px 24px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); border-left: 3px solid var(--cinnabar); }
+  .poetry-body { display: grid; gap: 8px; }
+  .poetry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; }
+  .poetry-hui { font: 400 14px/1 var(--title); color: var(--cinnabar); letter-spacing: .16em; }
+  .poetry-head h3 { font: 400 21px/1.3 var(--title); letter-spacing: .12em; margin: 0; }
+  .poetry-head h3 a:hover { color: var(--cinnabar); }
+  .poetry-place { font: 400 13px/1 var(--title); color: var(--ink-3); letter-spacing: .14em; margin-left: auto; }
+  .poetry-quote { font: 400 18px/1.7 var(--title); color: var(--cinnabar); letter-spacing: .1em; margin: 2px 0 0; }
+  .poetry-note { font-size: 14.5px; line-height: 1.85; color: var(--ink-2); margin: 0; }
+  .poetry-who { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; margin: 2px 0 0; }
 
   @media (max-width: 900px) {
     .spread { grid-template-columns: 1fr; }

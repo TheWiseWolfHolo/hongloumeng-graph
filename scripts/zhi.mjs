@@ -25,7 +25,7 @@ export async function zhiIndex(cache, refresh) {
 /* 维基的繁简转换标记：-{字}- 照写字，-{zh:余;zh-hant:餘;…}- 取 zh 那一项 */
 export function noConv(s) {
   return s.replace(/-\{([^}]*)\}-/g, (_, x) => {
-    if (!/zh(-[a-z]+)?:/.test(x)) return x;
+    if (!/zh(-[a-z]+)?:/.test(x)) return x.replace(/^[A-Za-z-]+\|/, '');
     const pick = /(?:^|;)\s*zh\s*:([^;]*)/.exec(x) ?? /zh-hans\s*:([^;]*)/.exec(x) ?? /:([^;]*)/.exec(x);
     return pick[1].trim();
   });
@@ -58,10 +58,11 @@ function splitArgs(s) {
 /* 版本简称对照。蒙府、戚序两本的批语多是后人所加，页面上照样注明出处 */
 const SOURCES = [
   [/^(甲戌|甲)/, '甲戌'], [/^(庚辰|庚|辰)/, '庚辰'], [/^(己卯|已卯|己)/, '己卯'],
-  [/^蒙/, '蒙府'], [/^戚/, '戚序'], [/^靖(藏|本)?/, '靖藏'], [/^(梦|夢|杨|楊)/, '梦稿'], [/^列/, '列藏'], [/^(觉|覺)/, '甲辰'], [/^舒/, '舒序']
+  [/^有(正)?/, '有正'], [/^蒙/, '蒙府'], [/^戚/, '戚序'], [/^靖(藏|本)?/, '靖藏'],
+  [/^(梦|夢|杨|楊)/, '梦稿'], [/^列/, '列藏'], [/^(觉|覺)/, '甲辰'], [/^舒/, '舒序']
 ];
 function label(raw) {
-  let rest = raw.replace(/\s/g, '');
+  let rest = raw.replace(/\s/g, '').replace(/^前/, '');
   const src = [];
   for (let guard = 0; guard < 6 && rest; guard++) {
     const hit = SOURCES.find(([re]) => re.test(rest));
@@ -82,10 +83,12 @@ function label(raw) {
 /* 把一条批语的原文拆成出处、类别和内容 */
 export function parseNote(text) {
   /* 抄录时的折行去掉，只留句末之后的分段 */
-  const t = text.trim().replace(/^【/, '').replace(/】$/, '')
+  let t = text.trim().replace(/^【/, '').replace(/】$/, '')
     .replace(/\n+(?=[，。、；：！？”’）])/g, '')
     .replace(/([^。！？”’）】\n])\n+/g, '$1');
-  const m = /^([^：:】]{1,14})[：:]([\s\S]*)$/.exec(t);
+  /* 批语末尾偶带“】蒙本回末批同。”或“】（庚辰……）”校记，把内部残余的】去掉 */
+  t = t.replace(/】(?=[（(]|蒙本)/g, ' ');
+  const m = /^([^：:】]{1,24})[：:]([\s\S]*)$/.exec(t);
   if (!m) return { src: [], kind: '批', s: t };
   const l = label(m[1]);
   /* “题曰”一类不是版本名，整句留着 */
@@ -99,6 +102,18 @@ export function cleanZhi(wiki) {
   /* 第六十七回庚辰本缺，页面并列了列藏本和程高本两种文字，取列藏本 */
   s = s.replace(/^==程高本==[\s\S]*$/m, '');
   s = noConv(s);
+  /* 维基用生僻字图片或纹样图的地方，还原成通行文字 */
+  s = s.replace(/\[\[File(?::|%3A)紅樓夢生字Jiba\.png[^\]]*\]\]/gi, '鸡巴');
+  s = s.replace(/\[\[File(?::|%3A)Wan[_ ]?fu[_ ]?wan[_ ]?shou\.png[^\]]*\]\]/gi, '“万福万寿”');
+  s = s.replace(/\[\[File(?::|%3A)[^\]]*\]\]/gi, '');
+  /* 第二十二回庚辰残本与戚序本补文衔接处，维基把宝钗《更香》谜重复录了两次，去掉前一段裸写的重文与按语 */
+  s = s.replace(/【庚辰批語\s*暫記寶釵製謎云：[\s\S]*?（庚辰本、俄藏本二十二回正文到此為止[^）]*）/g, '');
+  /* 第七十八回混入正文的括号重文、残缺标签与现代校者按语 */
+  s = s.replace(/（不觉吃一大惊，[\s\S]*?再与黛玉相伴。）/g, '');
+  s = s.replace(/（\s*只這兩三個人，[\s\S]*?王夫人命人送寶玉至書房裡。）/g, '');
+  s = s.replace(/<\/(?=<br|\s|$)/g, '');
+  s = s.replace(/[（(](?:校者注|注|按)[：:][^）)]*[）)]/g, '');
+  s = s.replace(/\(口害\)/g, '嗐').replace(/□\(左分右瓜\)/g, '颁').replace(/□\(上[乔喬]下皿\)/g, '䀇');
   s = s.replace(/<\/?br\s*\/?>/gi, '\n');
   s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1');
   s = s.replace(/<font style="display:none">[\s\S]*?<\/font>/g, '');
@@ -111,7 +126,20 @@ export function cleanZhi(wiki) {
     const next = s.replace(/\{\{((?:(?!\{\{|\}\}).)*)\}\}/s, (_, body) => {
       const [name, ...args] = splitArgs(body);
       const key = name.trim();
-      if (key === '~' || key === '~~') { notes.push(args.join('|')); return `\u0007${notes.length - 1}\u0008`; }
+      if (key === '~' || key === '~~') {
+        const rawNote = args.join('|');
+        /* 单个模板里若连写了多条【……】【……】，拆成独立占位符 */
+        const parts = rawNote.split(/】\s*【/);
+        if (parts.length > 1) {
+          return parts.map((p, idx) => {
+            const norm = (idx > 0 ? '【' : '') + p + (idx < parts.length - 1 ? '】' : '');
+            notes.push(norm);
+            return `\u0007${notes.length - 1}\u0008`;
+          }).join('');
+        }
+        notes.push(rawNote);
+        return `\u0007${notes.length - 1}\u0008`;
+      }
       if (key === '*' || key === 'gap' || /^(header|Footer|未校訂|Textquality)/i.test(key)) return '\n';
       if (key === '另' || key === '僻字') return args[0] ?? '';
       if (key === 'center') return `\u0001CENTER${args.join('|')}\u0002`;
@@ -129,15 +157,23 @@ export function cleanZhi(wiki) {
       const t = notes[id].trim();
       if (open >= 0) {
         notes[open] += '\n' + t;
-        if (t.endsWith('】')) open = -1;
+        if (t.includes('】')) open = -1;
         continue;
       }
       out.push(id);
-      if (t.startsWith('【') && !t.endsWith('】')) open = id;
+      if (t.startsWith('【') && !t.includes('】')) open = id;
     }
     return out.map(id => `\u0007${id}\u0008`).join('\n');
   });
-  s = s.replace(/<br\s*\/?>/g, '\n').replace(/<\/?(span|div|ul|li|sub|font)[^>]*>/g, '');
+  s = s.replace(/<br\s*\/?>/g, '\n');
+  /* 用 :: 缩进的诗偈、灯谜与联句（不含护官符带 <sub> 小注的四行），转成 <poem> 块 */
+  s = s.replace(/(?:^::+(?!.*<sub)[^\n]+\n?)+/gm, block => {
+    const lines = block.trim().split('\n').map(l => l.replace(/^:+/, '').trim());
+    return `<poem>${lines.join('\n')}</poem>\n`;
+  });
+  /* 其余行首残留的 ::（如第四回护官符）去掉冒号 */
+  s = s.replace(/^:+/gm, '');
+  s = s.replace(/<\/?(span|div|ul|li|sub|font)[^>]*>/g, '');
   s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1').replace(/'''?/g, '');
   return { s, notes };
 }

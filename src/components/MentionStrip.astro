@@ -21,13 +21,16 @@ const peak = cells.reduce((a, b) => (b.v > a.v ? b : a), cells[0]);
     <line class="rule" x1="0" x2={W} y1={H} y2={H} />
     {Array.from({ length: 11 }, (_, i) => (i + 1) * 10).map(n => <line class:list={['rule', { eighty: n === 80 }]} x1={f(cx(n) - CW / 2)} x2={f(cx(n) - CW / 2)} y1={TOP - 6} y2={H} />)}
     {[1, 20, 40, 60, 80, 100].map(n => <text class="tk" x={f(cx(n))} y={TOP - 10}>{cn(n)}</text>)}
-    {cells.map(c => (
-      <a href={`/chapters/${c.n}/`} class:list={['cell', { xu: c.n > 80 }]} aria-label={`${chapter(c.n).cn}，提到${cn(c.v)}次`}>
-        <title>{`${chapter(c.n).cn}　${chapter(c.n).title.join(' ')}　${c.v ? `提到${cn(c.v)}次` : '未提到'}`}</title>
-        <rect class="hit" x={f(cx(c.n) - CW / 2)} y={TOP} width={f(CW)} height={ROW} />
-        {c.v ? <circle cx={f(cx(c.n))} cy={TOP + ROW / 2} r={c.r} /> : <circle class="none" cx={f(cx(c.n))} cy={TOP + ROW / 2} r=".8" />}
-      </a>
-    ))}
+    {cells.map(c => {
+      const fullTitle = `${chapter(c.n).cn}　${chapter(c.n).title.join(' ')}　${c.v ? `提到${cn(c.v)}次` : '未提到'}`;
+      return (
+        <a href={`/chapters/${c.n}/`} class:list={['cell', { xu: c.n > 80 }]} data-strip-ch={c.n} data-full-title={fullTitle} aria-label={`${chapter(c.n).cn}，提到${cn(c.v)}次`}>
+          <title>{fullTitle}</title>
+          <rect class="hit" x={f(cx(c.n) - CW / 2)} y={TOP} width={f(CW)} height={ROW} />
+          {c.v ? <circle cx={f(cx(c.n))} cy={TOP + ROW / 2} r={c.r} /> : <circle class="none" cx={f(cx(c.n))} cy={TOP + ROW / 2} r=".8" />}
+        </a>
+      );
+    })}
   </svg>
   </div>
   <figcaption><span>右起前八十回</span><span>左边四十回是续书，墨淡</span></figcaption>
@@ -44,6 +47,7 @@ const peak = cells.reduce((a, b) => (b.v > a.v ? b : a), cells[0]);
   .hit { fill: transparent; }
   .cell circle { fill: var(--c); transition: fill .2s; }
   .cell.xu circle { opacity: .35; }
+  :global(html.guard) .strip .cell.ahead circle { opacity: .14; }
   .cell circle.none { fill: var(--ink-4); opacity: .5; }
   .cell:hover circle, .cell:focus-visible circle { fill: var(--cinnabar); opacity: 1; }
   .cell:hover .hit { fill: color-mix(in srgb, var(--cinnabar) 7%, transparent); }

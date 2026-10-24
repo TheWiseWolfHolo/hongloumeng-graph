@@ -117,6 +117,7 @@ async function source(f) {
 
 const textFile = join(cache, 'chars.txt');
 writeFileSync(textFile, text);
+let rebuilt = false;
 for (const f of FONTS) {
   const out = join(outRoot, f.key);
   const stamp = join(out, '.stamp');
@@ -125,7 +126,8 @@ for (const f of FONTS) {
   const cleanHash = f.clean ? createHash('sha1').update(readFileSync(join(root, f.clean))).digest('hex').slice(0, 10) : '';
   const subsetWant = `${f.file}|${textHash}|${f.hanOnly ? 'han' : 'all'}|${cleanHash}`;
   const want = `${subsetWant}|ui64-frequency128-v2|${groupHash}`;
-  if (!force && existsSync(stamp) && readFileSync(stamp, 'utf8') === want) { console.log(f.key, '没有新字，跳过'); continue; }
+  if (!force && existsSync(stamp) && readFileSync(stamp, 'utf8') === want && existsSync(join(outRoot, 'fonts.css'))) { console.log(f.key, '没有新字，跳过'); continue; }
+  rebuilt = true;
   let src = await source(f);
   /* 扫描字形里带着邻字残笔的先洗掉，大小不匀的按配套的规整字体统一 */
   if (f.clean) {
@@ -167,13 +169,18 @@ for (const f of FONTS) {
 }
 
 /* 几份字体样式合成一份，去掉生成器的注释，路径改成从 /fonts/ 起算 */
-let css = '';
-for (const f of FONTS) {
-  const raw = readFileSync(join(outRoot, f.key, 'result.css'), 'utf8');
-  css += raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/url\("\.\/([^"]+)"\)/g, `url("/fonts/${f.key}/$1")`).replace(/src:local\("[^"]*"\),/g, 'src:').trim()
-    .replace(/font-weight:400;/g, `font-weight:400;${f.metrics ?? ''}`) + '\n';
+if (rebuilt) {
+  let css = '';
+  for (const f of FONTS) {
+    const resCss = join(outRoot, f.key, 'result.css');
+    const raw = readFileSync(resCss, 'utf8');
+    css += raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/url\("\.\/([^"]+)"\)/g, `url("/fonts/${f.key}/$1")`).replace(/src:local\("[^"]*"\),/g, 'src:').trim()
+      .replace(/font-weight:400;/g, `font-weight:400;${f.metrics ?? ''}`) + '\n';
+    rmSync(resCss, { force: true });
+    rmSync(join(outRoot, f.key, 'index.proto'), { force: true });
+  }
+  writeFileSync(join(outRoot, 'fonts.css'), css);
+  console.log('fonts.css', (css.length / 1024).toFixed(0), 'KB');
 }
-writeFileSync(join(outRoot, 'fonts.css'), css);
-console.log('fonts.css', (css.length / 1024).toFixed(0), 'KB');
 /* cn-font-split 的原生库在进程自然退出时会崩，写完直接退出 */
 process.exit(0);

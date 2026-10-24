@@ -171,18 +171,16 @@ dialog::backdrop { background: rgba(20, 16, 12, .42); backdrop-filter: blur(3px)
 .pal-main { min-width: 0; flex: 1; }
 .pal-name { font-size: 16px; font-weight: 600; }
 .pal-name mark { background: none; color: var(--cinnabar); }
-.pal-sub { font: 400 12.5px/1.5 var(--label); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-sub { display: block; font: 400 12.5px/1.5 var(--label); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pal-sub mark, .pal-quote mark { background: var(--gold-soft); color: inherit; border-radius: 2px; padding: 0 1px; }
 .pal-quote { font: 400 13.5px/1.7 var(--kai); color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.pal-hui { font: 600 12px/1 var(--label); color: var(--cinnabar); flex: none; width: 54px; text-align: center; }
+.pal-hui { font: 600 12px/1.6 var(--label); color: var(--cinnabar); flex: none; width: 6em; text-align: center; }
 .pal-empty { padding: 30px 10px; text-align: center; color: var(--ink-3); font-size: 14.5px; }
 .pal-foot { display: flex; gap: 18px; padding: 10px 16px; border-top: 1px solid var(--line); font: 500 12px/1 var(--label); color: var(--ink-3); flex-wrap: wrap; }
 .pal-foot kbd { margin-right: 3px; }
 .pal-text-link { display: block; padding: 13px 20px; border-top: 1px solid var(--line); color: var(--cinnabar); font: 400 17px/1.5 var(--title); }
 .pal-text-link:hover { background: var(--paper-2); }
 .pal-empty button { color: var(--cinnabar); text-decoration: underline; text-underline-offset: 3px; }
-.pal-hui { width: 6em; line-height: 1.6; }
-.pal-sub { display: block; }
 @media (max-width: 640px) {
   .palette { margin-top: 12px; max-height: calc(100dvh - 24px); }
   .pal-foot { display: none; }

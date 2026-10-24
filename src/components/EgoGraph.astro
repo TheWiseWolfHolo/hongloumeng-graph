@@ -97,7 +97,7 @@ const uid = `eg${Math.abs([...id].reduce((h, c) => (h * 31 + c.codePointAt(0)!) 
       </g>
     ))}
     {nodes.map((nd, i) => (
-      <a href={`/people/${nd.other}/`} class={`nd t-${nd.type}`} style={`--tc:${typeColor[nd.type]};--gc:var(--g-${nd.p.group});--i:${i}`} data-peek aria-label={`${nd.other}，${nd.role}`}>
+      <a href={`/people/${nd.other}/`} class={`nd t-${nd.type}`} style={`--tc:${typeColor[nd.type]};--gc:var(--g-${nd.p.group});--i:${i}`} data-peek data-ego-ch={nd.revealAt} aria-label={`${nd.other}，${nd.role}`}>
         <path d={nd.hit} class="hit" />
         <path d={nd.line} class="ln" stroke-dasharray={REL_TYPES[nd.type].dash || undefined} />
         <circle cx={nd.dot[0]} cy={nd.dot[1]} r={nd.p.tier === 'c' ? 6.5 : 4.5} class="dot" />
@@ -142,9 +142,10 @@ const uid = `eg${Math.abs([...id].reduce((h, c) => (h * 31 + c.codePointAt(0)!) 
   .ego:has(.sec.t-b:hover) .nd:not(.t-b), .ego:has(.sec.t-m:hover) .nd:not(.t-m), .ego:has(.sec.t-in:hover) .nd:not(.t-in),
   .ego:has(.sec.t-sv:hover) .nd:not(.t-sv), .ego:has(.sec.t-lv:hover) .nd:not(.t-lv), .ego:has(.sec.t-fr:hover) .nd:not(.t-fr),
   .ego:has(.sec.t-ri:hover) .nd:not(.t-ri), .ego:has(.sec.t-my:hover) .nd:not(.t-my) { opacity: .15; }
+  :global(html.guard) .ego .nd.ahead { opacity: 0; pointer-events: none; }
   :global([data-theme="dark"]) .ego .t-b, :global([data-theme="dark"]) .ego .sec.t-b { --tc: #cdbfa8; }
   @media (prefers-color-scheme: dark) {
-    :global(:root:not([data-theme="light"])) .ego .t-b { --tc: #cdbfa8; }
+    :global(:root:not([data-theme="light"])) .ego .t-b, :global(:root:not([data-theme="light"])) .ego .sec.t-b { --tc: #cdbfa8; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .ego.in .nd { animation: pop .7s var(--ease) backwards; animation-delay: calc(150ms + var(--i) * 18ms); }

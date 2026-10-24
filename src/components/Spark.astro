@@ -1,5 +1,5 @@
 ---
-/* 一行小墨迹，一百二十回出场的缩略，一条路径画完 */
+/* 一行小墨迹，一百二十回出场的缩略，与年表、人物页同为右起第一回，左至百二十回 */
 import { MENTIONS } from '../lib/data.ts';
 interface Props { id: string; color?: string; w?: number; h?: number }
 const { id, color = 'currentColor', w = 120, h = 18 } = Astro.props;
@@ -8,9 +8,9 @@ const max = Math.max(1, ...m);
 let d = '';
 m.forEach((v, i) => {
   if (!v) return;
-  const x = (i + .5) * (w / 120);
+  const x = (119.5 - i) * (w / 120);
   const len = 2 + Math.sqrt(v / max) * (h - 2);
   d += `M${x.toFixed(1)} ${h}v-${len.toFixed(1)}`;
 });
 ---
-<svg class="spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true" preserveAspectRatio="none"><line x1={w * 80 / 120} x2={w * 80 / 120} y1="0" y2={h} stroke="var(--line-2)" stroke-dasharray="1 2" /><path d={d} stroke={color} stroke-width={(w / 120) * .7} fill="none" /></svg>
+<svg class="spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true" preserveAspectRatio="none"><line x1={w * 40 / 120} x2={w * 40 / 120} y1="0" y2={h} stroke="var(--line-2)" stroke-dasharray="1 2" /><path d={d} stroke={color} stroke-width={(w / 120) * .7} fill="none" /></svg>

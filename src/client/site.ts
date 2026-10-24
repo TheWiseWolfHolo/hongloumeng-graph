@@ -82,6 +82,18 @@ export function applyGuard(root: ParentNode = document) {
       el.append(tip);
     }
   }
+  for (const el of $$<HTMLElement>('[data-ego-ch]', root)) {
+    el.classList.toggle('ahead', p > 0 && +el.dataset.egoCh! > p);
+  }
+  for (const el of $$<HTMLElement>('[data-strip-ch]', root)) {
+    const ch = +el.dataset.stripCh!;
+    const ahead = p > 0 && ch > p;
+    el.classList.toggle('ahead', ahead);
+    const titleEl = el.querySelector('title');
+    if (titleEl && el.dataset.fullTitle) {
+      titleEl.textContent = ahead ? `第${cn(ch)}回　尚未读到这一回` : el.dataset.fullTitle;
+    }
+  }
   if (badge) { badge.hidden = !p; badge.textContent = p ? cn(p) : ''; }
 }
 export function setProgress(p: number) {
@@ -146,12 +158,14 @@ function render() {
     }
   }
   const hui = parseHui(q);
-  const chapters = hui ? [index.c[hui - 1]] : q ? index.c.filter(c => (!limit || c[0] <= limit) && normSearch(c[2] + c[3]).includes(q)).slice(0, 6) : [];
+  const direct = hui ? [index.c[hui - 1]] : [];
+  const matched = q ? index.c.filter(c => c[0] !== hui && (!limit || c[0] <= limit) && normSearch(c[2] + c[3]).includes(q)) : [];
+  const chapters = [...direct, ...matched].slice(0, 6);
   if (chapters.length) {
     section('回目');
     for (const c of chapters) push(`<span class="pal-hui">${c[1]}</span><span class="pal-main"><span class="pal-name">${limit && c[0] > limit ? '尚未读到这一回' : `${highlight(c[2], raw)}　${highlight(c[3], raw)}`}</span></span>`, `/chapters/${c[0]}/?ref=search`);
   }
-  if (q && !hui) {
+  if (q) {
     const events = index.e.filter(e => (!limit || e[2] <= limit) && normSearch(e[0] + e[3]).includes(q)).slice(0, 4);
     const places = index.g.filter(g => normSearch(g[1] + g[2]).includes(q)).slice(0, 3);
     if (events.length || places.length) section('大事与园中');
@@ -163,7 +177,7 @@ function render() {
   items = $$<HTMLAnchorElement>('.pal-item', palList);
   items.forEach((el, i) => el.addEventListener('mousemove', () => select(i, false)));
   if (palText) {
-    palText.hidden = raw.length < 2 || Boolean(hui);
+    palText.hidden = raw.length < 2;
     palText.href = `/search/?q=${encodeURIComponent(raw)}`;
     palText.textContent = limit ? '在已读原文中查找' : '搜原文';
   }

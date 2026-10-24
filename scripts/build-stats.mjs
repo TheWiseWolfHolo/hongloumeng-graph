@@ -15,6 +15,7 @@ const pad = n => String(n).padStart(3, '0');
 
 const mentions = Object.fromEntries(PEOPLE.map(p => [p.id, new Array(120).fill(0)]));
 const pairs = new Map();
+const pairBlocks = new Map();
 const firstSeen = {};
 const notesOf = {};
 /* 真正的脂评出自甲戌、己卯、庚辰三本，蒙府、戚序本的批语多是后人所加，排在后面 */
@@ -46,6 +47,9 @@ for (let n = 1; n <= 120; n++) {
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
       const k = ids[i] + '|' + ids[j];
       pairs.set(k, (pairs.get(k) ?? 0) + 1);
+      let list = pairBlocks.get(k);
+      if (!list) { list = []; pairBlocks.set(k, list); }
+      if (list.length < 6 && (!list.length || list[list.length - 1][0] !== n)) list.push([n, bi]);
     }
   });
 }
@@ -72,12 +76,13 @@ for (const id in notesOf) {
   notesOf[id] = { total: list.length, top: picked.sort((a, b) => a.n - b.n || a.block - b.block).map(({ score, ...x }) => x) };
 }
 
-/* 每人取前八十回里同段出现最多的前十二位 */
+/* 每人取前八十回里同段出现最多的前十二位，附带最多六处同场章回与段落号 */
 const companions = {};
 for (const [k, v] of pairs) {
   const [a, b] = k.split('|');
-  (companions[a] ??= []).push([b, v]);
-  (companions[b] ??= []).push([a, v]);
+  const refs = pairBlocks.get(k) ?? [];
+  (companions[a] ??= []).push([b, v, refs]);
+  (companions[b] ??= []).push([a, v, refs]);
 }
 for (const id in companions) companions[id] = companions[id].sort((x, y) => y[1] - x[1]).slice(0, 12);
 const sum = (arr, a, b) => arr.slice(a, b).reduce((x, y) => x + y, 0);

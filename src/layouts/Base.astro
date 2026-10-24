@@ -1,9 +1,14 @@
 ---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import '../styles/global.css';
 import '../styles/site.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { PEOPLE, EDGES, TOTAL_CHARS, cn } from '../lib/data.ts';
+
+const fontsCss = readFileSync(join(process.cwd(), 'public', 'fonts', 'fonts.css'), 'utf8');
+const qijiPreload = [...fontsCss.matchAll(/font-family:"HLM Qiji";src:url\("([^"]+)"\)/g)].at(-1)?.[1];
 
 interface Props {
   title?: string;
@@ -42,9 +47,8 @@ const ogImage = new URL(image, Astro.site).href;
   <link rel="icon" type="image/svg+xml" href="/img/icon.svg">
   <link rel="apple-touch-icon" href="/img/icon-180.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="preload" href="/fonts/fonts.css" as="style">
-  <link rel="stylesheet" href="/fonts/fonts.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
+  {qijiPreload && <link rel="preload" href={qijiPreload} as="font" type="font/woff2" crossorigin>}
+  <link rel="stylesheet" href="/fonts/fonts.css">
   <script is:inline>
     /* 主题与阅读进度要在首屏绘制前定下，免得闪一下 */
     (function () {
