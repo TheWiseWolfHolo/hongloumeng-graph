@@ -7,7 +7,6 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { fontSplit } from 'cn-font-split';
 import { spread } from '../src/lib/kanben.ts';
 import { PEOPLE } from '../src/data/people.ts';
 import { TWELVE, TWELVE_MORE } from '../src/data/twelve.ts';
@@ -154,6 +153,10 @@ for (const f of FONTS) {
   }
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
+  if (process.platform === 'linux' && !existsSync(join(root, 'node_modules/cn-font-split/dist/libffi-x86_64-unknown-linux-gnu.so'))) {
+    execFileSync('npx', ['cn-font-split', 'i', 'default@7.6.8'], { stdio: 'inherit' });
+  }
+  const { fontSplit } = await import('cn-font-split');
   await fontSplit({
     input: new Uint8Array(readFileSync(sub)),
     subsets, autoSubset: false, languageAreas: false, reduceMins: false,
