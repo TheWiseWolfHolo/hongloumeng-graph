@@ -4,6 +4,7 @@ import PersonLink from '../components/PersonLink.astro';
 import PageHead from '../components/PageHead.astro';
 import { HOUSES, HOUSE_LINKS, GUANFU } from '../data/families.ts';
 import { EDGES, relationRevealAt } from '../data/relations.ts';
+import { STATS } from '../lib/data.ts';
 
 type Key = keyof typeof HOUSES;
 const ORDER: Key[] = ['jia', 'shi', 'wang', 'xue'];
@@ -27,7 +28,8 @@ const links = HOUSE_LINKS.map((l, i) => {
   const lx = .25 * p[0] + .5 * c[0] + .25 * q[0], ly = .25 * p[1] + .5 * c[1] + .25 * q[1];
   const revealAt = Math.max(...l.relations.map(([a, b]) => {
     const relation = EDGES.find(e => e[0] === a && e[1] === b && (e[2] === 'm' || e[2] === 'b'));
-    return relation ? relationRevealAt(relation) : 121;
+    const firstBoth = Math.max(STATS.firstSeen[a]?.n ?? 1, STATS.firstSeen[b]?.n ?? 1);
+    return relation ? relationRevealAt(relation, firstBoth) : 121;
   }));
   return { ...l, i, revealAt, path: `M${p}Q${c} ${q}`, arrow, lx, ly: ly + 5 };
 });

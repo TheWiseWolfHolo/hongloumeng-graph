@@ -17,8 +17,8 @@ export const REL_TYPES: Record<RelType, { name: string; dash: string }> = {
 
 export type Edge = [a: string, b: string, type: RelType, label: string, note?: string, revealAt?: number, noteAt?: number];
 
-/* 第二回冷子兴已经说明的亲属关系；附带旧事另按注释回次揭示。 */
-const OPENING_RELATIONS = new Set([
+/* 第二回冷子兴已经说明的亲属关系；其余关系按双方首次出场或具体情节回次揭示。 */
+export const OPENING_RELATIONS = new Set([
   '贾演|贾源', '贾演|贾代化', '贾代化|贾敬', '贾敬|贾珍', '贾珍|贾蓉',
   '贾敬|贾惜春', '贾珍|贾惜春', '贾源|贾代善', '贾代善|贾母',
   '贾代善|贾赦', '贾代善|贾政', '贾代善|贾敏', '贾母|贾赦',
@@ -29,8 +29,65 @@ const OPENING_RELATIONS = new Set([
   '贾敏|林黛玉', '林如海|林黛玉', '林如海|贾敏'
 ]);
 
-export const relationRevealAt = (edge: Edge) => edge[5] ?? (OPENING_RELATIONS.has(`${edge[0]}|${edge[1]}`) ? 2 : 121);
-export const relationNoteAt = (edge: Edge) => edge[6] ?? 121;
+/* 关系本身在晚于双方初见时才结成或揭破的回次 */
+export const LATE_RELATION_AT: Record<string, number> = {
+  '娇杏|贾雨村:m': 2,
+  '警幻仙子|贾宝玉:my': 5,
+  '秦钟|智能儿:lv': 7,
+  '王熙凤|贾瑞:ri': 11,
+  '李嬷嬷|袭人:ri': 20,
+  '王熙凤|贾芸:fr': 24,
+  '贾芸|贾宝玉:fr': 24,
+  '王熙凤|赵姨娘:ri': 25,
+  '贾宝玉|冯紫英:fr': 26,
+  '史湘云|卫若兰:m': 31,
+  '妙玉|贾母:fr': 41,
+  '巧姐|板儿:lv': 41,
+  '刘姥姥|巧姐:fr': 42,
+  '贾赦|鸳鸯:ri': 46,
+  '薛蟠|柳湘莲:fr': 47,
+  '林黛玉|香菱:fr': 48,
+  '晴雯|坠儿:ri': 52,
+  '王熙凤|贾探春:fr': 55,
+  '贾探春|李纨:fr': 55,
+  '贾探春|薛宝钗:fr': 55,
+  '贾宝玉|甄宝玉:my': 56,
+  '薛蝌|邢岫烟:m': 57,
+  '薛姨妈|林黛玉:fr': 57,
+  '贾琏|尤二姐:m': 65,
+  '柳湘莲|尤三姐:lv': 66,
+  '柳湘莲|贾琏:fr': 66,
+  '柳湘莲|渺渺真人:my': 66,
+  '王熙凤|尤二姐:ri': 67,
+  '贾琏|秋桐:m': 69,
+  '王夫人|晴雯:ri': 74,
+  '王夫人|四儿:ri': 77,
+  '多姑娘|晴雯:in': 77,
+  '贾赦|孙绍祖:ri': 79,
+  '孙绍祖|贾迎春:m': 79,
+  '薛蟠|夏金桂:m': 79,
+  '夏金桂|香菱:ri': 79,
+  '傻大姐|林黛玉:ri': 96,
+  '贾宝玉|薛宝钗:m': 97,
+  '贾政|赖尚荣:sv': 106,
+  '袭人|蒋玉菡:m': 120,
+  '茫茫大士|贾宝玉:my': 120
+};
+
+export const relationRevealAt = (edge: Edge, firstBoth = 1) => {
+  if (edge[5] != null) return edge[5];
+  const pair = `${edge[0]}|${edge[1]}`;
+  if (OPENING_RELATIONS.has(pair)) return 2;
+  const late = LATE_RELATION_AT[`${pair}:${edge[2]}`];
+  return late ?? Math.max(1, firstBoth);
+};
+export const relationNoteAt = (edge: Edge, revealAt = 121) => {
+  if (edge[6] != null) return edge[6];
+  const note = edge[4] ?? '';
+  if (!note) return revealAt;
+  if (/续书|成婚|出家|吞金|虐待|抵给孙|抄检|被撵|芙蓉女儿诔|自刎|上吊|投井|打得半死|古扇/.test(note)) return 121;
+  return revealAt;
+};
 
 export const EDGES: Edge[] = [
   ["贾演", "贾源", "b", "兄弟", "宁、荣两公，同胞兄弟"],

@@ -56,7 +56,10 @@ export function tiesOf(id: string): Tie[] {
     const [a, b, type, label, note] = edge;
     if (a !== id && b !== id) continue;
     const [p, q] = label.includes('/') ? label.split('/') : [label, label];
-    out.push(a === id ? { other: b, type, role: q, note, revealAt: relationRevealAt(edge), noteAt: relationNoteAt(edge) } : { other: a, type, role: p, note, revealAt: relationRevealAt(edge), noteAt: relationNoteAt(edge) });
+    const firstBoth = Math.max(STATS.firstSeen[a]?.n ?? 1, STATS.firstSeen[b]?.n ?? 1);
+    const revealAt = relationRevealAt(edge, firstBoth);
+    const noteAt = relationNoteAt(edge, revealAt);
+    out.push(a === id ? { other: b, type, role: q, note, revealAt, noteAt } : { other: a, type, role: p, note, revealAt, noteAt });
   }
   return out;
 }

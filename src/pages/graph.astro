@@ -118,7 +118,7 @@ const charY = (fs: number, i: number) => +(fs * .55 + (i + .88) * fs * 1.12).toF
   let revealRelations = false;
   let evoCap = progress() || 120;
   const capHui = () => revealRelations ? evoCap : Math.min(evoCap, progress() || 120);
-  const ties = (id: string) => (D.t[id] ?? []).filter(t => t[3] <= capHui());
+  const ties = (id: string) => (D.t[id] ?? []).filter(t => capHui() >= 120 || t[3] <= capHui());
   const revealButton = document.querySelector<HTMLButtonElement>('[data-reveal-relations]')!;
   const allowed = (p: SVGPathElement) => ties(p.dataset.a!).some(t => t[0] === p.dataset.b && t[1] === p.dataset.type);
   const touches = (p: SVGPathElement, id: string) => p.dataset.a === id || p.dataset.b === id;
